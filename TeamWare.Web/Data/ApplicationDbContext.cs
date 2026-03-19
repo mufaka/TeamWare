@@ -63,8 +63,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             entity.HasKey(t => t.Id);
             entity.Property(t => t.Title).IsRequired().HasMaxLength(300);
             entity.Property(t => t.Description).HasMaxLength(4000);
-            entity.Property(t => t.Status).HasConversion<string>().HasMaxLength(20);
-            entity.Property(t => t.Priority).HasConversion<string>().HasMaxLength(20);
+            entity.Property(t => t.Status).HasMaxLength(20);
+            entity.Property(t => t.Priority).HasMaxLength(20);
 
             entity.HasOne(t => t.Project)
                 .WithMany(p => p.Tasks)

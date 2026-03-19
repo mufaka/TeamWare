@@ -341,18 +341,16 @@ namespace TeamWare.Web.Data.Migrations
                     b.Property<bool>("IsSomedayMaybe")
                         .HasColumnType("INTEGER");
 
-                    b.Property<string>("Priority")
-                        .IsRequired()
+                    b.Property<int>("Priority")
                         .HasMaxLength(20)
-                        .HasColumnType("TEXT");
+                        .HasColumnType("INTEGER");
 
                     b.Property<int>("ProjectId")
                         .HasColumnType("INTEGER");
 
-                    b.Property<string>("Status")
-                        .IsRequired()
+                    b.Property<int>("Status")
                         .HasMaxLength(20)
-                        .HasColumnType("TEXT");
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("Title")
                         .IsRequired()
