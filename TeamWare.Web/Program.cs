@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using TeamWare.Web.Data;
 using TeamWare.Web.Models;
+using TeamWare.Web.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -28,6 +29,9 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.LogoutPath = "/Account/Logout";
     options.AccessDeniedPath = "/Account/AccessDenied";
 });
+
+builder.Services.AddScoped<IProjectService, ProjectService>();
+builder.Services.AddScoped<IProjectMemberService, ProjectMemberService>();
 
 builder.Services.AddControllersWithViews(options =>
 {
