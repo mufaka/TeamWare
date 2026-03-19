@@ -12,6 +12,7 @@ public class TaskServiceTests : IDisposable
     private readonly ApplicationDbContext _context;
     private readonly TaskService _taskService;
     private readonly ProjectService _projectService;
+    private readonly ActivityLogService _activityLogService;
 
     public TaskServiceTests()
     {
@@ -25,7 +26,8 @@ public class TaskServiceTests : IDisposable
         _context = new ApplicationDbContext(options);
         _context.Database.EnsureCreated();
 
-        _taskService = new TaskService(_context);
+        _activityLogService = new ActivityLogService(_context);
+        _taskService = new TaskService(_context, _activityLogService);
         _projectService = new ProjectService(_context);
     }
 

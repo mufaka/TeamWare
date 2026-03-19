@@ -21,6 +21,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 
     public DbSet<InboxItem> InboxItems => Set<InboxItem>();
 
+    public DbSet<ActivityLogEntry> ActivityLogEntries => Set<ActivityLogEntry>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -123,6 +125,33 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 
             entity.HasIndex(i => i.UserId);
             entity.HasIndex(i => i.Status);
+        });
+
+        builder.Entity<ActivityLogEntry>(entity =>
+        {
+            entity.HasKey(a => a.Id);
+            entity.Property(a => a.ChangeType).HasConversion<string>().HasMaxLength(30);
+            entity.Property(a => a.OldValue).HasMaxLength(500);
+            entity.Property(a => a.NewValue).HasMaxLength(500);
+
+            entity.HasOne(a => a.TaskItem)
+                .WithMany()
+                .HasForeignKey(a => a.TaskItemId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(a => a.Project)
+                .WithMany()
+                .HasForeignKey(a => a.ProjectId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(a => a.User)
+                .WithMany()
+                .HasForeignKey(a => a.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(a => a.TaskItemId);
+            entity.HasIndex(a => a.ProjectId);
+            entity.HasIndex(a => a.CreatedAt);
         });
     }
 }

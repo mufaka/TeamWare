@@ -7,10 +7,12 @@ namespace TeamWare.Web.Services;
 public class TaskService : ITaskService
 {
     private readonly ApplicationDbContext _context;
+    private readonly IActivityLogService _activityLog;
 
-    public TaskService(ApplicationDbContext context)
+    public TaskService(ApplicationDbContext context, IActivityLogService activityLog)
     {
         _context = context;
+        _activityLog = activityLog;
     }
 
     private async Task<bool> IsProjectMember(int projectId, string userId)
@@ -55,6 +57,9 @@ public class TaskService : ITaskService
         _context.TaskItems.Add(task);
         await _context.SaveChangesAsync();
 
+        await _activityLog.LogChange(task.Id, projectId, createdByUserId,
+            Models.ActivityChangeType.Created, newValue: task.Status.ToString());
+
         return ServiceResult<TaskItem>.Success(task);
     }
 
@@ -77,6 +82,7 @@ public class TaskService : ITaskService
             return ServiceResult<TaskItem>.Failure("You must be a project member to edit tasks.");
         }
 
+        var oldPriority = task.Priority;
         task.Title = title.Trim();
         task.Description = description?.Trim();
         task.Priority = priority;
@@ -84,6 +90,17 @@ public class TaskService : ITaskService
         task.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
+
+        if (oldPriority != priority)
+        {
+            await _activityLog.LogChange(taskId, task.ProjectId, userId,
+                Models.ActivityChangeType.PriorityChanged, oldPriority.ToString(), priority.ToString());
+        }
+        else
+        {
+            await _activityLog.LogChange(taskId, task.ProjectId, userId,
+                Models.ActivityChangeType.Updated);
+        }
 
         return ServiceResult<TaskItem>.Success(task);
     }
@@ -101,6 +118,8 @@ public class TaskService : ITaskService
             return ServiceResult.Failure("Only project owners and admins can delete tasks.");
         }
 
+        var taskProjectId = task.ProjectId;
+        var taskTitle = task.Title;
         _context.TaskItems.Remove(task);
         await _context.SaveChangesAsync();
 
@@ -120,10 +139,14 @@ public class TaskService : ITaskService
             return ServiceResult<TaskItem>.Failure("You must be a project member to change task status.");
         }
 
+        var oldStatus = task.Status;
         task.Status = newStatus;
         task.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
+
+        await _activityLog.LogChange(taskId, task.ProjectId, userId,
+            Models.ActivityChangeType.StatusChanged, oldStatus.ToString(), newStatus.ToString());
 
         return ServiceResult<TaskItem>.Success(task);
     }
@@ -166,6 +189,14 @@ public class TaskService : ITaskService
         task.UpdatedAt = DateTime.UtcNow;
         await _context.SaveChangesAsync();
 
+        foreach (var userId in userIdList)
+        {
+            var user = await _context.Users.FindAsync(userId);
+            var displayName = user?.DisplayName ?? userId;
+            await _activityLog.LogChange(taskId, task.ProjectId, assignedByUserId,
+                Models.ActivityChangeType.Assigned, newValue: displayName);
+        }
+
         return ServiceResult.Success();
     }
 
@@ -190,6 +221,14 @@ public class TaskService : ITaskService
         task.UpdatedAt = DateTime.UtcNow;
         await _context.SaveChangesAsync();
 
+        foreach (var assignment in assignments)
+        {
+            var user = await _context.Users.FindAsync(assignment.UserId);
+            var displayName = user?.DisplayName ?? assignment.UserId;
+            await _activityLog.LogChange(taskId, task.ProjectId, unassignedByUserId,
+                Models.ActivityChangeType.Unassigned, oldValue: displayName);
+        }
+
         return ServiceResult.Success();
     }
 
@@ -212,6 +251,9 @@ public class TaskService : ITaskService
 
         await _context.SaveChangesAsync();
 
+        await _activityLog.LogChange(taskId, task.ProjectId, userId,
+            Models.ActivityChangeType.MarkedNextAction);
+
         return ServiceResult<TaskItem>.Success(task);
     }
 
@@ -232,6 +274,9 @@ public class TaskService : ITaskService
         task.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
+
+        await _activityLog.LogChange(taskId, task.ProjectId, userId,
+            Models.ActivityChangeType.ClearedNextAction);
 
         return ServiceResult<TaskItem>.Success(task);
     }
@@ -255,6 +300,9 @@ public class TaskService : ITaskService
 
         await _context.SaveChangesAsync();
 
+        await _activityLog.LogChange(taskId, task.ProjectId, userId,
+            Models.ActivityChangeType.MarkedSomedayMaybe);
+
         return ServiceResult<TaskItem>.Success(task);
     }
 
@@ -275,6 +323,9 @@ public class TaskService : ITaskService
         task.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
+
+        await _activityLog.LogChange(taskId, task.ProjectId, userId,
+            Models.ActivityChangeType.ClearedSomedayMaybe);
 
         return ServiceResult<TaskItem>.Success(task);
     }

@@ -13,15 +13,21 @@ public class ProjectController : Controller
 {
     private readonly IProjectService _projectService;
     private readonly IProjectMemberService _memberService;
+    private readonly IActivityLogService _activityLogService;
+    private readonly IProgressService _progressService;
     private readonly UserManager<ApplicationUser> _userManager;
 
     public ProjectController(
         IProjectService projectService,
         IProjectMemberService memberService,
+        IActivityLogService activityLogService,
+        IProgressService progressService,
         UserManager<ApplicationUser> userManager)
     {
         _projectService = projectService;
         _memberService = memberService;
+        _activityLogService = activityLogService;
+        _progressService = progressService;
         _userManager = userManager;
     }
 
@@ -139,6 +145,10 @@ public class ProjectController : Controller
         var dashboard = result.Data!;
         var currentUserMember = dashboard.Project.Members.FirstOrDefault(m => m.UserId == userId);
 
+        var overdueTasks = await _progressService.GetOverdueTasks(id);
+        var upcomingDeadlines = await _progressService.GetUpcomingDeadlines(id);
+        var recentActivity = await _activityLogService.GetActivityForProject(id);
+
         var viewModel = new ProjectDashboardViewModel
         {
             Id = dashboard.Project.Id,
@@ -151,6 +161,27 @@ public class ProjectController : Controller
             TaskCountInReview = dashboard.TaskCountInReview,
             TaskCountDone = dashboard.TaskCountDone,
             CurrentUserRole = currentUserMember?.Role ?? ProjectRole.Member,
+            OverdueTaskCount = overdueTasks.Count,
+            UpcomingDeadlines = upcomingDeadlines.Select(t => new TaskDeadlineViewModel
+            {
+                Id = t.Id,
+                Title = t.Title,
+                DueDate = t.DueDate!.Value,
+                Status = t.Status,
+                Priority = t.Priority,
+                AssigneeNames = t.Assignments.Select(a => a.User.DisplayName).ToList()
+            }).ToList(),
+            RecentActivity = recentActivity.Select(a => new ActivityLogEntryViewModel
+            {
+                Id = a.Id,
+                TaskItemId = a.TaskItemId,
+                TaskTitle = a.TaskItem.Title,
+                UserDisplayName = a.User.DisplayName,
+                ChangeType = a.ChangeType,
+                OldValue = a.OldValue,
+                NewValue = a.NewValue,
+                CreatedAt = a.CreatedAt
+            }).ToList(),
             Members = dashboard.Project.Members.Select(m => new ProjectMemberViewModel
             {
                 UserId = m.UserId,
@@ -162,6 +193,26 @@ public class ProjectController : Controller
         };
 
         return View(viewModel);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> ActivityTimeline(int id)
+    {
+        var recentActivity = await _activityLogService.GetActivityForProject(id);
+
+        var viewModel = recentActivity.Select(a => new ActivityLogEntryViewModel
+        {
+            Id = a.Id,
+            TaskItemId = a.TaskItemId,
+            TaskTitle = a.TaskItem.Title,
+            UserDisplayName = a.User.DisplayName,
+            ChangeType = a.ChangeType,
+            OldValue = a.OldValue,
+            NewValue = a.NewValue,
+            CreatedAt = a.CreatedAt
+        }).ToList();
+
+        return PartialView("_ActivityTimeline", viewModel);
     }
 
     [HttpPost]

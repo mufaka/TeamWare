@@ -13,15 +13,18 @@ public class TaskController : Controller
     private readonly ITaskService _taskService;
     private readonly IProjectService _projectService;
     private readonly IProjectMemberService _memberService;
+    private readonly IActivityLogService _activityLogService;
 
     public TaskController(
         ITaskService taskService,
         IProjectService projectService,
-        IProjectMemberService memberService)
+        IProjectMemberService memberService,
+        IActivityLogService activityLogService)
     {
         _taskService = taskService;
         _projectService = projectService;
         _memberService = memberService;
+        _activityLogService = activityLogService;
     }
 
     private string GetUserId() => User.FindFirstValue(ClaimTypes.NameIdentifier)!;
@@ -208,6 +211,7 @@ public class TaskController : Controller
         var task = result.Data!;
         var membersResult = await _memberService.GetMembers(task.ProjectId, userId);
         var isOwnerOrAdmin = await IsOwnerOrAdmin(task.ProjectId, userId);
+        var activityHistory = await _activityLogService.GetActivityForTask(id);
 
         var viewModel = new TaskDetailViewModel
         {
@@ -225,6 +229,17 @@ public class TaskController : Controller
             CreatedAt = task.CreatedAt,
             UpdatedAt = task.UpdatedAt,
             CanDelete = isOwnerOrAdmin,
+            ActivityHistory = activityHistory.Select(a => new ActivityLogEntryViewModel
+            {
+                Id = a.Id,
+                TaskItemId = a.TaskItemId,
+                TaskTitle = task.Title,
+                UserDisplayName = a.User.DisplayName,
+                ChangeType = a.ChangeType,
+                OldValue = a.OldValue,
+                NewValue = a.NewValue,
+                CreatedAt = a.CreatedAt
+            }).ToList(),
             Assignees = task.Assignments.Select(a => new TaskAssigneeViewModel
             {
                 UserId = a.UserId,

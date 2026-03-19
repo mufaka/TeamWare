@@ -13,6 +13,7 @@ public class InboxServiceTests : IDisposable
     private readonly InboxService _inboxService;
     private readonly TaskService _taskService;
     private readonly ProjectService _projectService;
+    private readonly ActivityLogService _activityLogService;
 
     public InboxServiceTests()
     {
@@ -26,7 +27,8 @@ public class InboxServiceTests : IDisposable
         _context = new ApplicationDbContext(options);
         _context.Database.EnsureCreated();
 
-        _taskService = new TaskService(_context);
+        _activityLogService = new ActivityLogService(_context);
+        _taskService = new TaskService(_context, _activityLogService);
         _projectService = new ProjectService(_context);
         _inboxService = new InboxService(_context, _taskService);
     }

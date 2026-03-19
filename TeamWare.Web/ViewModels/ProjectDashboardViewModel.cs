@@ -27,6 +27,15 @@ public class ProjectDashboardViewModel
     public List<ProjectMemberViewModel> Members { get; set; } = new();
 
     public ProjectRole CurrentUserRole { get; set; }
+
+    public double CompletionPercentage =>
+        TotalTasks > 0 ? Math.Round((double)TaskCountDone / TotalTasks * 100, 1) : 0;
+
+    public int OverdueTaskCount { get; set; }
+
+    public List<TaskDeadlineViewModel> UpcomingDeadlines { get; set; } = new();
+
+    public List<ActivityLogEntryViewModel> RecentActivity { get; set; } = new();
 }
 
 public class ProjectMemberViewModel
