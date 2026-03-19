@@ -11,7 +11,7 @@ This document defines the phased implementation plan for TeamWare based on the [
 | 0 | Foundation and Infrastructure | Complete |
 | 1 | Project Management | Complete |
 | 2 | Task Management | Complete |
-| 3 | Inbox and GTD Workflow | Not Started |
+| 3 | Inbox and GTD Workflow | Complete |
 | 4 | Progress Tracking and Activity Log | Not Started |
 | 5 | Comments and Communication | Not Started |
 | 6 | Notifications | Not Started |
@@ -194,29 +194,29 @@ Deliver the personal inbox capture/clarify workflow and the Someday/Maybe list.
 
 ### 3.1 Domain Models
 
-- [ ] Create `InboxItem` entity (INBOX-01)
-- [ ] Create EF Core configuration
-- [ ] Add and apply the EF Core migration
-- [ ] Write unit tests for entity validation
+- [x] Create `InboxItem` entity (INBOX-01)
+- [x] Create EF Core configuration
+- [x] Add and apply the EF Core migration
+- [x] Write unit tests for entity validation
 
 ### 3.2 Services
 
-- [ ] Create `IInboxService` and `InboxService`
-  - [ ] `AddItem` (INBOX-02)
-  - [ ] `ClarifyItem` - assign to project, set priority, optionally flag as Next Action or Someday/Maybe (INBOX-03)
-  - [ ] `ConvertToTask` - creates a `TaskItem` from an inbox item and marks the inbox item as processed (INBOX-04)
-  - [ ] `DismissItem` (INBOX-05)
-  - [ ] `MoveToSomedayMaybe` (INBOX-07)
-  - [ ] `GetUnprocessedItems` / `GetUnprocessedCount` (INBOX-06)
-- [ ] Write unit tests for all service methods
+- [x] Create `IInboxService` and `InboxService`
+  - [x] `AddItem` (INBOX-02)
+  - [x] `ClarifyItem` - assign to project, set priority, optionally flag as Next Action or Someday/Maybe (INBOX-03)
+  - [x] `ConvertToTask` - creates a `TaskItem` from an inbox item and marks the inbox item as processed (INBOX-04)
+  - [x] `DismissItem` (INBOX-05)
+  - [x] `MoveToSomedayMaybe` (INBOX-07)
+  - [x] `GetUnprocessedItems` / `GetUnprocessedCount` (INBOX-06)
+- [x] Write unit tests for all service methods
 
 ### 3.3 Controllers and Views
 
-- [ ] Create `InboxController` with actions: Index (list), Add, Clarify, Dismiss
-- [ ] Build the inbox view with HTMX for quick-add and inline clarification
-- [ ] Display the unprocessed item count in the navigation bar
-- [ ] Build a Someday/Maybe list view (filtered from tasks + inbox items marked as such)
-- [ ] Write integration tests for all controller actions
+- [x] Create `InboxController` with actions: Index (list), Add, Clarify, Dismiss
+- [x] Build the inbox view with HTMX for quick-add and inline clarification
+- [x] Display the unprocessed item count in the navigation bar
+- [x] Build a Someday/Maybe list view (filtered from tasks + inbox items marked as such)
+- [x] Write integration tests for all controller actions
 
 ---
 

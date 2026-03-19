@@ -1,0 +1,42 @@
+﻿@model TeamWare.Web.ViewModels.SomedayMaybeViewModel
+@{
+    ViewData["Title"] = "Someday/Maybe";
+}
+
+<div class="mx-auto max-w-2xl">
+    <h1 class="mb-6 text-2xl font-bold text-gray-900 dark:text-white">Someday/Maybe</h1>
+    <p class="mb-6 text-sm text-gray-500 dark:text-gray-400">Tasks you might get to someday. Review periodically to promote or dismiss.</p>
+
+    @if (!Model.Tasks.Any())
+    {
+        <div class="rounded-lg border-2 border-dashed border-gray-300 p-12 text-center dark:border-gray-600">
+            <p class="text-sm text-gray-500 dark:text-gray-400">
+                No Someday/Maybe items. Mark tasks as "Someday/Maybe" to park them here.
+            </p>
+        </div>
+    }
+    else
+    {
+        <div class="space-y-2">
+            @foreach (var task in Model.Tasks)
+            {
+                <a asp-controller="Task" asp-action="Details" asp-route-id="@task.Id"
+                   class="block rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition hover:shadow-md dark:border-gray-700 dark:bg-gray-800 dark:hover:border-gray-600">
+                    <div class="flex items-center justify-between gap-3">
+                        <div class="min-w-0 flex-1">
+                            <h3 class="truncate text-sm font-medium text-gray-900 dark:text-white">@task.Title</h3>
+                            @if (!string.IsNullOrEmpty(task.Description))
+                            {
+                                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400 line-clamp-1">@task.Description</p>
+                            }
+                            <div class="mt-1 text-xs text-gray-400 dark:text-gray-500">
+                                <span class="text-indigo-600 dark:text-indigo-400">@task.ProjectName</span>
+                                <span class="ml-2">Updated @task.UpdatedAt.ToString("MMM d, yyyy")</span>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            }
+        </div>
+    }
+</div>

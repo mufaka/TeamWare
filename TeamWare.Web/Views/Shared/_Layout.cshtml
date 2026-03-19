@@ -59,6 +59,15 @@
                    class="flex items-center rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700">
                     What's Next
                 </a>
+                <a asp-controller="Inbox" asp-action="Index"
+                   class="flex items-center justify-between rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700">
+                    <span>Inbox</span>
+                    @await Component.InvokeAsync("InboxCount")
+                </a>
+                <a asp-controller="Inbox" asp-action="SomedayMaybe"
+                   class="flex items-center rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700">
+                    Someday/Maybe
+                </a>
                 <a asp-controller="Home" asp-action="Privacy"
                    class="flex items-center rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700">
                     Privacy
