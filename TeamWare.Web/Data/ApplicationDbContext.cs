@@ -19,6 +19,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 
     public DbSet<TaskAssignment> TaskAssignments => Set<TaskAssignment>();
 
+    public DbSet<InboxItem> InboxItems => Set<InboxItem>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -100,6 +102,27 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 
             entity.HasIndex(ta => new { ta.TaskItemId, ta.UserId }).IsUnique();
             entity.HasIndex(ta => ta.UserId);
+        });
+
+        builder.Entity<InboxItem>(entity =>
+        {
+            entity.HasKey(i => i.Id);
+            entity.Property(i => i.Title).IsRequired().HasMaxLength(300);
+            entity.Property(i => i.Description).HasMaxLength(4000);
+            entity.Property(i => i.Status).HasMaxLength(20);
+
+            entity.HasOne(i => i.User)
+                .WithMany()
+                .HasForeignKey(i => i.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(i => i.ConvertedToTask)
+                .WithMany()
+                .HasForeignKey(i => i.ConvertedToTaskId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasIndex(i => i.UserId);
+            entity.HasIndex(i => i.Status);
         });
     }
 }
