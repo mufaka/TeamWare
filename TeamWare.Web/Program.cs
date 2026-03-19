@@ -32,6 +32,7 @@ builder.Services.ConfigureApplicationCookie(options =>
 
 builder.Services.AddScoped<IProjectService, ProjectService>();
 builder.Services.AddScoped<IProjectMemberService, ProjectMemberService>();
+builder.Services.AddScoped<ITaskService, TaskService>();
 
 builder.Services.AddControllersWithViews(options =>
 {
