@@ -13,6 +13,7 @@ public class CommentServiceTests : IDisposable
     private readonly CommentService _commentService;
     private readonly ProjectService _projectService;
     private readonly ActivityLogService _activityLogService;
+    private readonly NotificationService _notificationService;
     private readonly TaskService _taskService;
 
     public CommentServiceTests()
@@ -27,9 +28,10 @@ public class CommentServiceTests : IDisposable
         _context = new ApplicationDbContext(options);
         _context.Database.EnsureCreated();
 
-        _commentService = new CommentService(_context);
+        _notificationService = new NotificationService(_context);
+        _commentService = new CommentService(_context, _notificationService);
         _activityLogService = new ActivityLogService(_context);
-        _taskService = new TaskService(_context, _activityLogService);
+        _taskService = new TaskService(_context, _activityLogService, _notificationService);
         _projectService = new ProjectService(_context);
     }
 

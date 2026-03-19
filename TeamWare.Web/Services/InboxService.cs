@@ -8,11 +8,14 @@ public class InboxService : IInboxService
 {
     private readonly ApplicationDbContext _context;
     private readonly ITaskService _taskService;
+    private readonly INotificationService _notificationService;
 
-    public InboxService(ApplicationDbContext context, ITaskService taskService)
+    public InboxService(ApplicationDbContext context, ITaskService taskService,
+        INotificationService notificationService)
     {
         _context = context;
         _taskService = taskService;
+        _notificationService = notificationService;
     }
 
     public async Task<ServiceResult<InboxItem>> AddItem(string title, string? description, string userId)
@@ -34,6 +37,14 @@ public class InboxService : IInboxService
 
         _context.InboxItems.Add(item);
         await _context.SaveChangesAsync();
+
+        // Check inbox threshold and notify if exceeded (NOTIF-05)
+        if (await _notificationService.GetInboxThresholdAlert(userId))
+        {
+            await _notificationService.CreateNotification(userId,
+                "Your inbox has 10 or more unprocessed items. Consider reviewing and processing them.",
+                NotificationType.InboxThreshold);
+        }
 
         return ServiceResult<InboxItem>.Success(item);
     }

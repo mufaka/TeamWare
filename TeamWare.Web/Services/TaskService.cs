@@ -8,11 +8,14 @@ public class TaskService : ITaskService
 {
     private readonly ApplicationDbContext _context;
     private readonly IActivityLogService _activityLog;
+    private readonly INotificationService _notificationService;
 
-    public TaskService(ApplicationDbContext context, IActivityLogService activityLog)
+    public TaskService(ApplicationDbContext context, IActivityLogService activityLog,
+        INotificationService notificationService)
     {
         _context = context;
         _activityLog = activityLog;
+        _notificationService = notificationService;
     }
 
     private async Task<bool> IsProjectMember(int projectId, string userId)
@@ -148,6 +151,19 @@ public class TaskService : ITaskService
         await _activityLog.LogChange(taskId, task.ProjectId, userId,
             Models.ActivityChangeType.StatusChanged, oldStatus.ToString(), newStatus.ToString());
 
+        // Notify assigned users of status change (NOTIF-03)
+        var assignedUserIds = await _context.TaskAssignments
+            .Where(ta => ta.TaskItemId == taskId && ta.UserId != userId)
+            .Select(ta => ta.UserId)
+            .ToListAsync();
+
+        foreach (var assignedUserId in assignedUserIds)
+        {
+            await _notificationService.CreateNotification(assignedUserId,
+                $"Task \"{task.Title}\" status changed from {oldStatus} to {newStatus}.",
+                NotificationType.StatusChanged, taskId);
+        }
+
         return ServiceResult<TaskItem>.Success(task);
     }
 
@@ -195,6 +211,14 @@ public class TaskService : ITaskService
             var displayName = user?.DisplayName ?? userId;
             await _activityLog.LogChange(taskId, task.ProjectId, assignedByUserId,
                 Models.ActivityChangeType.Assigned, newValue: displayName);
+
+            // Notify assigned user (NOTIF-01)
+            if (userId != assignedByUserId)
+            {
+                await _notificationService.CreateNotification(userId,
+                    $"You have been assigned to task \"{task.Title}\".",
+                    NotificationType.TaskAssigned, taskId);
+            }
         }
 
         return ServiceResult.Success();

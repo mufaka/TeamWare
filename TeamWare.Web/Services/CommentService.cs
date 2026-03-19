@@ -7,10 +7,12 @@ namespace TeamWare.Web.Services;
 public class CommentService : ICommentService
 {
     private readonly ApplicationDbContext _context;
+    private readonly INotificationService _notificationService;
 
-    public CommentService(ApplicationDbContext context)
+    public CommentService(ApplicationDbContext context, INotificationService notificationService)
     {
         _context = context;
+        _notificationService = notificationService;
     }
 
     private async Task<bool> IsProjectMember(int projectId, string userId)
@@ -51,6 +53,20 @@ public class CommentService : ICommentService
 
         // Reload with Author for display
         await _context.Entry(comment).Reference(c => c.Author).LoadAsync();
+
+        // Notify assigned users of new comment (NOTIF-04)
+        var assignedUserIds = await _context.TaskAssignments
+            .Where(ta => ta.TaskItemId == taskItemId && ta.UserId != authorId)
+            .Select(ta => ta.UserId)
+            .ToListAsync();
+
+        var authorName = comment.Author?.DisplayName ?? authorId;
+        foreach (var assignedUserId in assignedUserIds)
+        {
+            await _notificationService.CreateNotification(assignedUserId,
+                $"{authorName} commented on task \"{task.Title}\".",
+                NotificationType.CommentAdded, taskItemId);
+        }
 
         return ServiceResult<Comment>.Success(comment);
     }
