@@ -15,6 +15,10 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 
     public DbSet<ProjectMember> ProjectMembers => Set<ProjectMember>();
 
+    public DbSet<TaskItem> TaskItems => Set<TaskItem>();
+
+    public DbSet<TaskAssignment> TaskAssignments => Set<TaskAssignment>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -52,6 +56,50 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 
             entity.HasIndex(pm => new { pm.ProjectId, pm.UserId }).IsUnique();
             entity.HasIndex(pm => pm.UserId);
+        });
+
+        builder.Entity<TaskItem>(entity =>
+        {
+            entity.HasKey(t => t.Id);
+            entity.Property(t => t.Title).IsRequired().HasMaxLength(300);
+            entity.Property(t => t.Description).HasMaxLength(4000);
+            entity.Property(t => t.Status).HasConversion<string>().HasMaxLength(20);
+            entity.Property(t => t.Priority).HasConversion<string>().HasMaxLength(20);
+
+            entity.HasOne(t => t.Project)
+                .WithMany(p => p.Tasks)
+                .HasForeignKey(t => t.ProjectId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(t => t.CreatedBy)
+                .WithMany()
+                .HasForeignKey(t => t.CreatedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(t => t.ProjectId);
+            entity.HasIndex(t => t.Status);
+            entity.HasIndex(t => t.Priority);
+            entity.HasIndex(t => t.DueDate);
+            entity.HasIndex(t => t.IsNextAction);
+            entity.HasIndex(t => t.IsSomedayMaybe);
+        });
+
+        builder.Entity<TaskAssignment>(entity =>
+        {
+            entity.HasKey(ta => ta.Id);
+
+            entity.HasOne(ta => ta.TaskItem)
+                .WithMany(t => t.Assignments)
+                .HasForeignKey(ta => ta.TaskItemId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(ta => ta.User)
+                .WithMany()
+                .HasForeignKey(ta => ta.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(ta => new { ta.TaskItemId, ta.UserId }).IsUnique();
+            entity.HasIndex(ta => ta.UserId);
         });
     }
 }
