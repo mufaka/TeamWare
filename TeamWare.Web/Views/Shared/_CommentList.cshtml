@@ -1,0 +1,82 @@
+﻿@model List<TeamWare.Web.ViewModels.CommentViewModel>
+
+@if (Model.Any())
+{
+    <div class="space-y-4">
+        @foreach (var comment in Model)
+        {
+            <div class="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-600 dark:bg-gray-700/50" id="comment-@comment.Id"
+                 x-data="{ editing: false }">
+                <div class="flex items-start justify-between">
+                    <div class="flex items-center gap-2">
+                        <div class="flex h-7 w-7 items-center justify-center rounded-full bg-indigo-100 text-xs font-medium text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400">
+                            @comment.AuthorDisplayName.FirstOrDefault().ToString().ToUpper()
+                        </div>
+                        <div>
+                            <span class="text-sm font-medium text-gray-900 dark:text-white">@comment.AuthorDisplayName</span>
+                            <span class="ml-2 text-xs text-gray-500 dark:text-gray-400">@comment.CreatedAt.ToString("MMM d, yyyy h:mm tt")</span>
+                            @if (comment.IsEdited)
+                            {
+                                <span class="ml-1 text-xs text-gray-400 dark:text-gray-500">(edited)</span>
+                            }
+                        </div>
+                    </div>
+                    @if (comment.CanEditOrDelete)
+                    {
+                        <div class="flex items-center gap-1" x-show="!editing">
+                            <button @@click="editing = true"
+                                    class="rounded px-2 py-1 text-xs text-gray-500 hover:bg-gray-200 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-600 dark:hover:text-gray-200">
+                                Edit
+                            </button>
+                            <form asp-controller="Comment" asp-action="Delete" method="post"
+                                  hx-post="@Url.Action("Delete", "Comment")"
+                                  hx-target="#comments-section"
+                                  hx-swap="innerHTML">
+                                <input type="hidden" name="commentId" value="@comment.Id" />
+                                <input type="hidden" name="taskItemId" value="@comment.TaskItemId" />
+                                <button type="submit"
+                                        class="rounded px-2 py-1 text-xs text-red-500 hover:bg-red-100 hover:text-red-700 dark:hover:bg-red-900/20 dark:hover:text-red-300"
+                                        onclick="return confirm('Delete this comment?')">
+                                    Delete
+                                </button>
+                            </form>
+                        </div>
+                    }
+                </div>
+                <div x-show="!editing" class="mt-2">
+                    <p class="whitespace-pre-wrap text-sm text-gray-700 dark:text-gray-300">@comment.Content</p>
+                </div>
+                @if (comment.CanEditOrDelete)
+                {
+                    <div x-show="editing" x-cloak class="mt-2">
+                        <form asp-controller="Comment" asp-action="Edit" method="post"
+                              hx-post="@Url.Action("Edit", "Comment")"
+                              hx-target="#comments-section"
+                              hx-swap="innerHTML">
+                            <input type="hidden" name="CommentId" value="@comment.Id" />
+                            <input type="hidden" name="TaskItemId" value="@comment.TaskItemId" />
+                            <textarea name="Content"
+                                      rows="3"
+                                      class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-500"
+                                      >@comment.Content</textarea>
+                            <div class="mt-2 flex gap-2">
+                                <button type="submit"
+                                        class="inline-flex items-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700">
+                                    Save
+                                </button>
+                                <button type="button" @@click="editing = false"
+                                        class="inline-flex items-center rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
+                                    Cancel
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+}
+else
+{
+    <p class="text-sm text-gray-500 dark:text-gray-400">No comments yet. Be the first to comment.</p>
+}

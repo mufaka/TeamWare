@@ -39,6 +39,10 @@ public class TaskDetailViewModel
     public bool IsOverdue => DueDate.HasValue && DueDate.Value.Date < DateTime.UtcNow.Date && Status != TaskItemStatus.Done;
 
     public List<ActivityLogEntryViewModel> ActivityHistory { get; set; } = new();
+
+    public List<CommentViewModel> Comments { get; set; } = new();
+
+    public string CurrentUserId { get; set; } = string.Empty;
 }
 
 public class TaskAssigneeViewModel

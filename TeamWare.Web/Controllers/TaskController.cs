@@ -14,17 +14,20 @@ public class TaskController : Controller
     private readonly IProjectService _projectService;
     private readonly IProjectMemberService _memberService;
     private readonly IActivityLogService _activityLogService;
+    private readonly ICommentService _commentService;
 
     public TaskController(
         ITaskService taskService,
         IProjectService projectService,
         IProjectMemberService memberService,
-        IActivityLogService activityLogService)
+        IActivityLogService activityLogService,
+        ICommentService commentService)
     {
         _taskService = taskService;
         _projectService = projectService;
         _memberService = memberService;
         _activityLogService = activityLogService;
+        _commentService = commentService;
     }
 
     private string GetUserId() => User.FindFirstValue(ClaimTypes.NameIdentifier)!;
@@ -212,6 +215,7 @@ public class TaskController : Controller
         var membersResult = await _memberService.GetMembers(task.ProjectId, userId);
         var isOwnerOrAdmin = await IsOwnerOrAdmin(task.ProjectId, userId);
         var activityHistory = await _activityLogService.GetActivityForTask(id);
+        var commentsResult = await _commentService.GetCommentsForTask(id, userId);
 
         var viewModel = new TaskDetailViewModel
         {
@@ -229,6 +233,7 @@ public class TaskController : Controller
             CreatedAt = task.CreatedAt,
             UpdatedAt = task.UpdatedAt,
             CanDelete = isOwnerOrAdmin,
+            CurrentUserId = userId,
             ActivityHistory = activityHistory.Select(a => new ActivityLogEntryViewModel
             {
                 Id = a.Id,
@@ -240,6 +245,19 @@ public class TaskController : Controller
                 NewValue = a.NewValue,
                 CreatedAt = a.CreatedAt
             }).ToList(),
+            Comments = commentsResult.Succeeded
+                ? commentsResult.Data!.Select(c => new CommentViewModel
+                {
+                    Id = c.Id,
+                    TaskItemId = c.TaskItemId,
+                    AuthorId = c.AuthorId,
+                    AuthorDisplayName = c.Author.DisplayName,
+                    Content = c.Content,
+                    CreatedAt = c.CreatedAt,
+                    UpdatedAt = c.UpdatedAt,
+                    CanEditOrDelete = c.AuthorId == userId
+                }).ToList()
+                : new(),
             Assignees = task.Assignments.Select(a => new TaskAssigneeViewModel
             {
                 UserId = a.UserId,
