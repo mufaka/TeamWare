@@ -1,0 +1,453 @@
+﻿# TeamWare - Implementation Plan
+
+This document defines the phased implementation plan for TeamWare based on the [Formal Specification](Specification.md). Each phase builds on the previous one and is broken into work items suitable for GitHub Issues. Check off items as they are completed to track progress.
+
+---
+
+## Progress Summary
+
+| Phase | Description | Status |
+|-------|------------|--------|
+| 0 | Foundation and Infrastructure | Not Started |
+| 1 | Project Management | Not Started |
+| 2 | Task Management | Not Started |
+| 3 | Inbox and GTD Workflow | Not Started |
+| 4 | Progress Tracking and Activity Log | Not Started |
+| 5 | Comments and Communication | Not Started |
+| 6 | Notifications | Not Started |
+| 7 | Review Workflow | Not Started |
+| 8 | User Profile and Dashboard | Not Started |
+| 9 | Polish and Hardening | Not Started |
+
+---
+
+## Current State
+
+The workspace is a stock ASP.NET Core MVC project (.NET 10) with:
+
+- Default `HomeController` with Index, Privacy, and Error actions
+- Bootstrap 5, jQuery, and jQuery Validation in `wwwroot/lib`
+- No data layer, no authentication, no domain models
+- No test project
+
+The specification calls for replacing Bootstrap with Tailwind CSS 4, replacing jQuery with HTMX and Alpine.js, adding SQLite via EF Core, and adding Microsoft Identity for authentication.
+
+---
+
+## Guiding Principles
+
+1. **Vertical slices** - Each phase delivers end-to-end working functionality (model, data access, service, controller, view, tests).
+2. **Tests accompany every feature** - No phase is complete without its test project and test cases (MAINT-02, TEST-01 through TEST-04).
+3. **One type per file** - Enforced from the start (MAINT-01).
+4. **MVC only** - Controllers and Views, no Razor Pages (project guideline).
+5. **Incremental replacement** - Bootstrap/jQuery are removed only after Tailwind CSS 4, HTMX, and Alpine.js are fully in place.
+
+---
+
+## Phase 0: Foundation and Infrastructure
+
+Establish the project structure, tooling, data layer, and frontend stack before any feature work.
+
+### 0.1 Solution and Project Structure
+
+- [ ] Create the `TeamWare.Tests` xUnit test project and add it to the solution
+- [ ] Establish folder conventions in `TeamWare.Web`:
+  - [ ] `Models/` - Domain entities (one class per file)
+  - [ ] `Data/` - DbContext and EF Core configuration
+  - [ ] `Services/` - Business logic interfaces and implementations
+  - [ ] `Controllers/` - MVC controllers (already exists)
+  - [ ] `Views/` - Organized by controller name (already exists)
+  - [ ] `ViewModels/` - View-specific models
+- [ ] Add a `README.md` at the solution root with build and run instructions
+
+### 0.2 Data Layer (SQLite + EF Core)
+
+- [ ] Add NuGet packages: `Microsoft.EntityFrameworkCore.Sqlite`, `Microsoft.EntityFrameworkCore.Design`
+- [ ] Create `ApplicationDbContext` inheriting from `IdentityDbContext<ApplicationUser>`
+- [ ] Create the `ApplicationUser` entity extending `IdentityUser` with: `DisplayName`, `AvatarUrl`, `ThemePreference`
+- [ ] Configure the SQLite connection string in `appsettings.json`
+- [ ] Register the DbContext in `Program.cs`
+- [ ] Create and apply the initial EF Core migration
+- [ ] Write integration tests verifying DbContext creation and migration
+
+### 0.3 Authentication and Identity
+
+- [ ] Add NuGet package: `Microsoft.AspNetCore.Identity.EntityFrameworkCore`
+- [ ] Configure Microsoft Identity in `Program.cs` with default cookie authentication
+- [ ] Disable email confirmation by default (AUTH-06)
+- [ ] Create `AccountController` with actions: Register, Login, Logout (AUTH-01, AUTH-02, AUTH-03)
+- [ ] Create corresponding views for Register and Login
+- [ ] Create an admin-only password reset action (AUTH-04)
+- [ ] Seed an initial administrator account on first run
+- [ ] Write tests for registration, login, logout, and admin password reset
+
+### 0.4 Frontend Stack Replacement
+
+- [ ] Remove Bootstrap, jQuery, and jQuery Validation from `wwwroot/lib`
+- [ ] Install and configure Tailwind CSS 4 (via npm/standalone CLI, integrated into the build)
+- [ ] Add HTMX (via CDN or local copy in `wwwroot/lib`)
+- [ ] Add Alpine.js (via CDN or local copy in `wwwroot/lib`)
+- [ ] Rewrite `_Layout.cshtml` with Tailwind CSS 4 utility classes, HTMX script, and Alpine.js script
+- [ ] Implement light/dark theme toggle using Alpine.js, defaulting to the user's `ThemePreference` (UI-02, USER-03)
+- [ ] Implement a responsive navigation shell (sidebar on desktop, hamburger menu on mobile) (UI-01)
+- [ ] Update the Home/Index and Error views to use the new stack
+- [ ] Remove `_Layout.cshtml.css` (no longer needed with Tailwind)
+- [ ] Update `_ValidationScriptsPartial.cshtml` or replace with HTMX-based validation approach
+- [ ] Verify the build pipeline compiles Tailwind CSS correctly
+- [ ] Write smoke tests verifying the layout renders and theme toggle works
+
+### 0.5 Shared Infrastructure
+
+- [ ] Create a base `ServiceResult<T>` type for consistent service return values
+- [ ] Create a shared `_Notification.cshtml` partial for toast/alert messages
+- [ ] Configure global error handling and logging (REL-01, REL-02)
+- [ ] Configure HTTPS enforcement and anti-forgery tokens (SEC-02, SEC-03)
+- [ ] Write tests for error handling middleware
+
+---
+
+## Phase 1: Project Management
+
+Deliver the ability to create, view, edit, archive, and manage membership of projects.
+
+### 1.1 Domain Models
+
+- [ ] Create `Project` entity (PROJ-01)
+- [ ] Create `ProjectMember` entity with Role (Owner, Admin, Member)
+- [ ] Create EF Core configurations (relationships, constraints, indexes)
+- [ ] Add and apply the EF Core migration
+- [ ] Write unit tests for entity validation
+
+### 1.2 Services
+
+- [ ] Create `IProjectService` and `ProjectService`
+  - [ ] `CreateProject` (PROJ-01) - auto-assigns the creator as Owner
+  - [ ] `UpdateProject` (PROJ-02)
+  - [ ] `ArchiveProject` / `DeleteProject` (PROJ-03)
+  - [ ] `GetProjectsForUser` (PROJ-07)
+  - [ ] `GetProjectDashboard` (PROJ-08)
+- [ ] Write unit tests for all service methods including authorization rules
+
+### 1.3 Membership Services
+
+- [ ] Create `IProjectMemberService` and `ProjectMemberService`
+  - [ ] `InviteMember` (PROJ-04)
+  - [ ] `RemoveMember` (PROJ-05)
+  - [ ] `UpdateMemberRole` (PROJ-06)
+- [ ] Enforce that only Owners/Admins can invite and remove; only Owners can assign roles
+- [ ] Write unit tests for membership operations and authorization
+
+### 1.4 Controllers and Views
+
+- [ ] Create `ProjectController` with actions: Index (list), Create, Edit, Details (dashboard), Archive, Delete
+- [ ] Create `ProjectMemberController` (or actions within `ProjectController`) for Invite, Remove, UpdateRole
+- [ ] Build views using Tailwind CSS 4, with HTMX for form submissions and list updates
+- [ ] Implement the project dashboard showing task count placeholders (to be populated in Phase 2)
+- [ ] Write integration tests for all controller actions and authorization checks
+
+---
+
+## Phase 2: Task Management
+
+Deliver core task CRUD, assignment, filtering, and the GTD-inspired workflow (Next Action, Someday/Maybe, What's Next).
+
+### 2.1 Domain Models
+
+- [ ] Create `TaskItem` entity with GTD fields: `IsNextAction`, `IsSomedayMaybe` (TASK-02, TASK-11, TASK-12)
+- [ ] Create `TaskAssignment` entity
+- [ ] Create EF Core configurations
+- [ ] Add and apply the EF Core migration
+- [ ] Write unit tests for entity validation and status/priority constraints
+
+### 2.2 Services
+
+- [ ] Create `ITaskService` and `TaskService`
+  - [ ] `CreateTask` (TASK-01)
+  - [ ] `UpdateTask` (TASK-06)
+  - [ ] `DeleteTask` (TASK-08) - enforce Owner/Admin only
+  - [ ] `ChangeStatus` (TASK-07)
+  - [ ] `AssignMembers` / `UnassignMembers` (TASK-05)
+  - [ ] `MarkAsNextAction` / `ClearNextAction` (TASK-11)
+  - [ ] `MarkAsSomedayMaybe` / `ClearSomedayMaybe` (TASK-12)
+  - [ ] `GetTasksForProject` with filtering and sorting (TASK-09)
+  - [ ] `SearchTasks` (TASK-10)
+  - [ ] `GetWhatsNext` - returns the user's Next Action tasks across all projects, ordered by priority and due date, capped to a configurable limit (TASK-13, TASK-14)
+- [ ] Write unit tests for all service methods
+
+### 2.3 Controllers and Views
+
+- [ ] Create `TaskController` with actions: Index (list within project), Create, Edit, Details, Delete, ChangeStatus
+- [ ] Create a `WhatsNextController` (or action on `HomeController`) for the cross-project What's Next view
+- [ ] Build task list view with HTMX for inline status changes, filtering, and sorting
+- [ ] Build the What's Next view as a focused, minimal list
+- [ ] Use Alpine.js for filter dropdowns and priority selectors
+- [ ] Wire up the project dashboard (from Phase 1) to show actual task counts by status
+- [ ] Write integration tests for all controller actions and authorization checks
+
+---
+
+## Phase 3: Inbox and GTD Workflow
+
+Deliver the personal inbox capture/clarify workflow and the Someday/Maybe list.
+
+### 3.1 Domain Models
+
+- [ ] Create `InboxItem` entity (INBOX-01)
+- [ ] Create EF Core configuration
+- [ ] Add and apply the EF Core migration
+- [ ] Write unit tests for entity validation
+
+### 3.2 Services
+
+- [ ] Create `IInboxService` and `InboxService`
+  - [ ] `AddItem` (INBOX-02)
+  - [ ] `ClarifyItem` - assign to project, set priority, optionally flag as Next Action or Someday/Maybe (INBOX-03)
+  - [ ] `ConvertToTask` - creates a `TaskItem` from an inbox item and marks the inbox item as processed (INBOX-04)
+  - [ ] `DismissItem` (INBOX-05)
+  - [ ] `MoveToSomedayMaybe` (INBOX-07)
+  - [ ] `GetUnprocessedItems` / `GetUnprocessedCount` (INBOX-06)
+- [ ] Write unit tests for all service methods
+
+### 3.3 Controllers and Views
+
+- [ ] Create `InboxController` with actions: Index (list), Add, Clarify, Dismiss
+- [ ] Build the inbox view with HTMX for quick-add and inline clarification
+- [ ] Display the unprocessed item count in the navigation bar
+- [ ] Build a Someday/Maybe list view (filtered from tasks + inbox items marked as such)
+- [ ] Write integration tests for all controller actions
+
+---
+
+## Phase 4: Progress Tracking and Activity Log
+
+Deliver task completion statistics, activity timeline, and deadline visibility.
+
+### 4.1 Domain Models
+
+- [ ] Create `ActivityLogEntry` entity to record task state changes (PROG-02)
+- [ ] Create EF Core configuration
+- [ ] Add and apply the EF Core migration
+
+### 4.2 Services
+
+- [ ] Create `IActivityLogService` and `ActivityLogService`
+  - [ ] `LogChange` - called by `TaskService` when status, assignment, or priority changes
+  - [ ] `GetActivityForProject` - returns the timeline for a project
+  - [ ] `GetActivityForTask` - returns the timeline for a single task
+- [ ] Create `IProgressService` and `ProgressService`
+  - [ ] `GetProjectStatistics` - task counts by status, completion percentage (PROG-01)
+  - [ ] `GetOverdueTasks` (PROG-03)
+  - [ ] `GetUpcomingDeadlines` (PROG-04)
+- [ ] Write unit tests for all service methods
+
+### 4.3 Controllers and Views
+
+- [ ] Add a project activity timeline view/partial (HTMX lazy-loaded on the project dashboard)
+- [ ] Update the project dashboard to display completion statistics and upcoming deadlines
+- [ ] Highlight overdue tasks in task lists with visual styling
+- [ ] Add a task detail section showing its activity history
+- [ ] Write integration tests
+
+---
+
+## Phase 5: Comments and Communication
+
+Deliver task commenting with in-app notification on new comments.
+
+### 5.1 Domain Models
+
+- [ ] Create `Comment` entity (COMM-01, COMM-02)
+- [ ] Create EF Core configuration
+- [ ] Add and apply the EF Core migration
+
+### 5.2 Services
+
+- [ ] Create `ICommentService` and `CommentService`
+  - [ ] `AddComment` (COMM-01) - triggers notification to assigned users (COMM-04)
+  - [ ] `EditComment` (COMM-03) - only the author
+  - [ ] `DeleteComment` (COMM-03) - only the author
+  - [ ] `GetCommentsForTask`
+- [ ] Write unit tests for all service methods and authorization rules
+
+### 5.3 Controllers and Views
+
+- [ ] Create `CommentController` (or actions nested under `TaskController`) with actions: Add, Edit, Delete
+- [ ] Build a comments section on the task detail view, using HTMX for adding/editing comments without a full page reload
+- [ ] Write integration tests
+
+---
+
+## Phase 6: Notifications
+
+Deliver the in-app notification system for task assignments, deadlines, status changes, comments, and inbox/review prompts.
+
+### 6.1 Domain Models
+
+- [ ] Create `Notification` entity (NOTIF-01 through NOTIF-05)
+- [ ] Create EF Core configuration
+- [ ] Add and apply the EF Core migration
+
+### 6.2 Services
+
+- [ ] Create `INotificationService` and `NotificationService`
+  - [ ] `CreateNotification` - generic method used by other services
+  - [ ] `GetUnreadForUser`
+  - [ ] `MarkAsRead` / `DismissNotification` (NOTIF-04)
+  - [ ] `GetInboxThresholdAlert` (NOTIF-05)
+- [ ] Integrate notification triggers into:
+  - [ ] `TaskService` (assignment, status change)
+  - [ ] `CommentService` (new comment on assigned task)
+  - [ ] `InboxService` (unprocessed count threshold)
+- [ ] Write unit tests for all service methods and integration with triggering services
+
+### 6.3 Controllers and Views
+
+- [ ] Create `NotificationController` with actions: Index, MarkAsRead, Dismiss
+- [ ] Build a notification dropdown in the navigation bar (Alpine.js for toggle, HTMX for loading and dismissing)
+- [ ] Display unread notification count badge in the nav bar
+- [ ] Write integration tests
+
+---
+
+## Phase 7: Review Workflow
+
+Deliver the GTD periodic review feature.
+
+### 7.1 Domain Models
+
+- [ ] Create `UserReview` entity (REV-01 through REV-04)
+- [ ] Create EF Core configuration
+- [ ] Add and apply the EF Core migration
+
+### 7.2 Services
+
+- [ ] Create `IReviewService` and `ReviewService`
+  - [ ] `StartReview` - gathers inbox items, active tasks, Next Actions, and Someday/Maybe items for the user
+  - [ ] `CompleteReview` (REV-04)
+  - [ ] `GetLastReviewDate` (REV-04)
+  - [ ] `IsReviewDue` - checks against configurable schedule (REV-03)
+- [ ] Integrate with `NotificationService` to prompt reviews when due (REV-03)
+- [ ] Write unit tests for all service methods
+
+### 7.3 Controllers and Views
+
+- [ ] Create `ReviewController` with actions: Index (guided review page), Complete
+- [ ] Build a multi-step review view where the user walks through:
+  - [ ] Step 1: Unprocessed inbox items (process or dismiss)
+  - [ ] Step 2: Active tasks (re-prioritize, update status, flag as Next Action or Someday/Maybe)
+  - [ ] Step 3: Someday/Maybe items (promote to active, keep, or dismiss)
+- [ ] Use HTMX for step transitions and inline edits
+- [ ] Display last review date and review-due indicator on the user dashboard
+- [ ] Write integration tests
+
+---
+
+## Phase 8: User Profile and Dashboard
+
+Deliver user profile management and a personal dashboard that ties all features together.
+
+### 8.1 Services
+
+- [ ] Create `IUserProfileService` and `UserProfileService`
+  - [ ] `GetProfile` / `UpdateProfile` (USER-01)
+  - [ ] `ChangePassword` (USER-02)
+  - [ ] `UpdateThemePreference` (USER-03)
+- [ ] Write unit tests
+
+### 8.2 Controllers and Views
+
+- [ ] Create `ProfileController` with actions: Index, Edit, ChangePassword
+- [ ] Build a personal dashboard on `Home/Index` (post-login) showing:
+  - [ ] Inbox unprocessed count with link
+  - [ ] What's Next task list (top items)
+  - [ ] Projects summary with task counts
+  - [ ] Upcoming deadlines
+  - [ ] Last review date and review-due prompt
+  - [ ] Recent notifications
+- [ ] Use HTMX to lazy-load each dashboard section
+- [ ] Write integration tests
+
+---
+
+## Phase 9: Polish and Hardening
+
+Final pass on cross-cutting concerns, accessibility, and production readiness.
+
+### 9.1 Security Hardening
+
+- [ ] Audit all endpoints for authorization enforcement (SEC-05)
+- [ ] Review input validation and sanitization across all forms (SEC-04)
+- [ ] Verify CSRF tokens on all POST/PUT/DELETE actions (SEC-03)
+- [ ] Verify HTTPS enforcement (SEC-02)
+- [ ] Write security-focused integration tests
+
+### 9.2 Performance
+
+- [ ] Profile page load times and optimize slow queries (PERF-01)
+- [ ] Verify HTMX partial update response times (PERF-02)
+- [ ] Add database indexes where query analysis indicates a need
+- [ ] Test with simulated concurrent users (PERF-03)
+
+### 9.3 UI/UX Polish
+
+- [ ] Verify responsive behavior across breakpoints (UI-01)
+- [ ] Verify light/dark theme consistency across all views (UI-02)
+- [ ] Verify no emoticons or emojis in the UI (UI-07)
+- [ ] Review all views for clarity and consistency (UI-03)
+- [ ] Perform cross-browser testing (Chrome, Firefox, Edge, Safari)
+
+### 9.4 Documentation
+
+- [ ] Update `README.md` with setup, configuration, and deployment instructions
+- [ ] Document admin workflows (user management, password reset)
+- [ ] Document the GTD workflow (Inbox, What's Next, Review) for end users
+
+---
+
+## Phase Dependency Summary
+
+```
+Phase 0: Foundation
+  |
+  +---> Phase 1: Project Management
+  |       |
+  |       +---> Phase 2: Task Management
+  |               |
+  |               +---> Phase 3: Inbox and GTD
+  |               |
+  |               +---> Phase 4: Progress Tracking
+  |               |
+  |               +---> Phase 5: Comments
+  |                       |
+  |                       +---> Phase 6: Notifications
+  |                               |
+  |                               +---> Phase 7: Review Workflow
+  |
+  +---> Phase 8: User Profile and Dashboard (after Phases 1-7)
+  |
+  +---> Phase 9: Polish and Hardening (after Phase 8)
+```
+
+Phases 3, 4, and 5 can be worked in parallel after Phase 2 is complete. Phase 6 depends on Phase 5 (comment notifications). Phase 7 depends on Phase 6 (review reminders). Phase 8 ties all features into the dashboard. Phase 9 is a final pass.
+
+---
+
+## Requirement Traceability
+
+| Spec Requirement | Covered In |
+|-----------------|-----------|
+| AUTH-01 through AUTH-06 | Phase 0.3 |
+| USER-01 through USER-03 | Phase 8.1, 8.2 |
+| INBOX-01 through INBOX-07 | Phase 3 |
+| PROJ-01 through PROJ-08 | Phase 1 |
+| TASK-01 through TASK-14 | Phase 2 |
+| PROG-01 through PROG-04 | Phase 4 |
+| COMM-01 through COMM-04 | Phase 5 |
+| NOTIF-01 through NOTIF-05 | Phase 6 |
+| REV-01 through REV-04 | Phase 7 |
+| UI-01 through UI-07 | Phase 0.4, Phase 9.3 |
+| PERF-01 through PERF-03 | Phase 9.2 |
+| SEC-01 through SEC-05 | Phase 0.3, Phase 9.1 |
+| REL-01, REL-02 | Phase 0.5 |
+| MAINT-01 through MAINT-03 | All Phases (enforced throughout) |
+| TEST-01 through TEST-04 | All Phases (enforced throughout) |
