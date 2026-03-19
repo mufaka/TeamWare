@@ -29,7 +29,10 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.AccessDeniedPath = "/Account/AccessDenied";
 });
 
-builder.Services.AddControllersWithViews();
+builder.Services.AddControllersWithViews(options =>
+{
+    options.Filters.Add(new Microsoft.AspNetCore.Mvc.AutoValidateAntiforgeryTokenAttribute());
+});
 
 var app = builder.Build();
 
@@ -37,7 +40,11 @@ var app = builder.Build();
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
+    app.UseHsts();
 }
+
+app.UseStatusCodePagesWithReExecute("/Home/StatusCode/{0}");
+app.UseHttpsRedirection();
 app.UseRouting();
 
 app.UseAuthentication();
