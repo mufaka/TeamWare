@@ -1,0 +1,217 @@
+﻿@model TeamWare.Web.ViewModels.TaskDetailViewModel
+@{
+    ViewData["Title"] = Model.Title;
+    var priorityClass = Model.Priority switch
+    {
+        TeamWare.Web.Models.TaskItemPriority.Critical => "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300",
+        TeamWare.Web.Models.TaskItemPriority.High => "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300",
+        TeamWare.Web.Models.TaskItemPriority.Medium => "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
+        TeamWare.Web.Models.TaskItemPriority.Low => "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300",
+        _ => ""
+    };
+    var statusClass = Model.Status switch
+    {
+        TeamWare.Web.Models.TaskItemStatus.ToDo => "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300",
+        TeamWare.Web.Models.TaskItemStatus.InProgress => "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
+        TeamWare.Web.Models.TaskItemStatus.InReview => "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300",
+        TeamWare.Web.Models.TaskItemStatus.Done => "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300",
+        _ => ""
+    };
+    var statusText = Model.Status switch
+    {
+        TeamWare.Web.Models.TaskItemStatus.ToDo => "To Do",
+        TeamWare.Web.Models.TaskItemStatus.InProgress => "In Progress",
+        TeamWare.Web.Models.TaskItemStatus.InReview => "In Review",
+        TeamWare.Web.Models.TaskItemStatus.Done => "Done",
+        _ => ""
+    };
+}
+
+<div class="mb-2 text-sm text-gray-500 dark:text-gray-400">
+    <a asp-controller="Project" asp-action="Details" asp-route-id="@Model.ProjectId"
+       class="hover:text-indigo-600 dark:hover:text-indigo-400">@Model.ProjectName</a>
+    / <a asp-controller="Task" asp-action="Index" asp-route-projectId="@Model.ProjectId"
+         class="hover:text-indigo-600 dark:hover:text-indigo-400">Tasks</a>
+</div>
+
+<div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+    <div>
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white @(Model.IsOverdue ? "text-red-600 dark:text-red-400" : "")">@Model.Title</h1>
+        <div class="mt-2 flex flex-wrap items-center gap-2">
+            <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium @statusClass">@statusText</span>
+            <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium @priorityClass">@Model.Priority</span>
+            @if (Model.IsNextAction)
+            {
+                <span class="inline-flex items-center rounded-full bg-indigo-100 px-2.5 py-0.5 text-xs font-medium text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300">Next Action</span>
+            }
+            @if (Model.IsSomedayMaybe)
+            {
+                <span class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-600 dark:bg-gray-700 dark:text-gray-400">Someday/Maybe</span>
+            }
+        </div>
+    </div>
+    <div class="flex flex-wrap gap-2">
+        <a asp-action="Edit" asp-route-id="@Model.Id"
+           class="inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
+            Edit
+        </a>
+        @if (Model.CanDelete)
+        {
+            <form asp-action="Delete" method="post">
+                <input type="hidden" name="id" value="@Model.Id" />
+                <button type="submit"
+                        class="inline-flex items-center rounded-md border border-red-300 bg-white px-3 py-2 text-sm font-medium text-red-700 shadow-sm hover:bg-red-50 dark:border-red-700 dark:bg-gray-700 dark:text-red-400 dark:hover:bg-red-900/20"
+                        onclick="return confirm('Delete this task?')">
+                    Delete
+                </button>
+            </form>
+        }
+    </div>
+</div>
+
+<div class="grid gap-6 lg:grid-cols-3">
+    <!-- Main content -->
+    <div class="lg:col-span-2 space-y-6">
+        @if (!string.IsNullOrEmpty(Model.Description))
+        {
+            <div class="rounded-lg border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-800">
+                <h2 class="mb-3 text-sm font-semibold text-gray-900 dark:text-white">Description</h2>
+                <p class="whitespace-pre-wrap text-sm text-gray-700 dark:text-gray-300">@Model.Description</p>
+            </div>
+        }
+
+        <!-- Status Change -->
+        <div class="rounded-lg border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-800">
+            <h2 class="mb-3 text-sm font-semibold text-gray-900 dark:text-white">Change Status</h2>
+            <div class="flex flex-wrap gap-2">
+                @foreach (var s in Enum.GetValues<TeamWare.Web.Models.TaskItemStatus>())
+                {
+                    var isActive = s == Model.Status;
+                    <form asp-action="ChangeStatus" method="post">
+                        <input type="hidden" name="id" value="@Model.Id" />
+                        <input type="hidden" name="status" value="@s" />
+                        <button type="submit"
+                                class="rounded-md px-3 py-1.5 text-sm font-medium @(isActive ? "bg-indigo-600 text-white" : "border border-gray-300 text-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700")"
+                                @(isActive ? "disabled" : "")>
+                            @(s switch { TeamWare.Web.Models.TaskItemStatus.ToDo => "To Do", TeamWare.Web.Models.TaskItemStatus.InProgress => "In Progress", TeamWare.Web.Models.TaskItemStatus.InReview => "In Review", TeamWare.Web.Models.TaskItemStatus.Done => "Done", _ => s.ToString() })
+                        </button>
+                    </form>
+                }
+            </div>
+        </div>
+
+        <!-- GTD Actions -->
+        <div class="rounded-lg border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-800">
+            <h2 class="mb-3 text-sm font-semibold text-gray-900 dark:text-white">GTD Actions</h2>
+            <div class="flex flex-wrap gap-2">
+                <form asp-action="ToggleNextAction" method="post">
+                    <input type="hidden" name="id" value="@Model.Id" />
+                    <button type="submit"
+                            class="rounded-md px-3 py-1.5 text-sm font-medium @(Model.IsNextAction ? "bg-indigo-600 text-white" : "border border-gray-300 text-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700")">
+                        @(Model.IsNextAction ? "Remove from Next Actions" : "Mark as Next Action")
+                    </button>
+                </form>
+                <form asp-action="ToggleSomedayMaybe" method="post">
+                    <input type="hidden" name="id" value="@Model.Id" />
+                    <button type="submit"
+                            class="rounded-md px-3 py-1.5 text-sm font-medium @(Model.IsSomedayMaybe ? "bg-gray-600 text-white" : "border border-gray-300 text-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700")">
+                        @(Model.IsSomedayMaybe ? "Remove from Someday/Maybe" : "Mark as Someday/Maybe")
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="space-y-6">
+        <!-- Details -->
+        <div class="rounded-lg border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-800">
+            <h2 class="mb-3 text-sm font-semibold text-gray-900 dark:text-white">Details</h2>
+            <dl class="space-y-3 text-sm">
+                @if (Model.DueDate.HasValue)
+                {
+                    <div>
+                        <dt class="text-gray-500 dark:text-gray-400">Due Date</dt>
+                        <dd class="font-medium @(Model.IsOverdue ? "text-red-600 dark:text-red-400" : "text-gray-900 dark:text-white")">
+                            @Model.DueDate.Value.ToString("MMM d, yyyy")
+                            @if (Model.IsOverdue) { <span class="text-xs">(Overdue)</span> }
+                        </dd>
+                    </div>
+                }
+                <div>
+                    <dt class="text-gray-500 dark:text-gray-400">Created by</dt>
+                    <dd class="font-medium text-gray-900 dark:text-white">@Model.CreatedByName</dd>
+                </div>
+                <div>
+                    <dt class="text-gray-500 dark:text-gray-400">Created</dt>
+                    <dd class="text-gray-900 dark:text-white">@Model.CreatedAt.ToString("MMM d, yyyy h:mm tt")</dd>
+                </div>
+                <div>
+                    <dt class="text-gray-500 dark:text-gray-400">Updated</dt>
+                    <dd class="text-gray-900 dark:text-white">@Model.UpdatedAt.ToString("MMM d, yyyy h:mm tt")</dd>
+                </div>
+            </dl>
+        </div>
+
+        <!-- Assignees -->
+        <div class="rounded-lg border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-800">
+            <h2 class="mb-3 text-sm font-semibold text-gray-900 dark:text-white">Assignees</h2>
+            @if (Model.Assignees.Any())
+            {
+                <div class="space-y-2">
+                    @foreach (var assignee in Model.Assignees)
+                    {
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <div class="flex h-6 w-6 items-center justify-center rounded-full bg-indigo-100 text-xs font-medium text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400">
+                                    @assignee.DisplayName.FirstOrDefault().ToString().ToUpper()
+                                </div>
+                                <span class="text-sm text-gray-900 dark:text-white">@assignee.DisplayName</span>
+                            </div>
+                            <form asp-action="Unassign" method="post">
+                                <input type="hidden" name="id" value="@Model.Id" />
+                                <input type="hidden" name="userId" value="@assignee.UserId" />
+                                <button type="submit" class="text-xs text-red-500 hover:text-red-700 dark:hover:text-red-300">Remove</button>
+                            </form>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <p class="text-sm text-gray-500 dark:text-gray-400">No one assigned.</p>
+            }
+
+            @{
+                var unassigned = Model.ProjectMembers
+                    .Where(m => !Model.Assignees.Any(a => a.UserId == m.UserId))
+                    .ToList();
+            }
+            @if (unassigned.Any())
+            {
+                <div x-data="{ open: false }" class="mt-3">
+                    <button @@click="open = !open"
+                            class="text-sm text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300">
+                        Assign member...
+                    </button>
+                    <div x-show="open" x-cloak class="mt-2 space-y-1">
+                        @foreach (var member in unassigned)
+                        {
+                            <form asp-action="Assign" method="post" class="flex items-center gap-2">
+                                <input type="hidden" name="id" value="@Model.Id" />
+                                <input type="hidden" name="userId" value="@member.UserId" />
+                                <button type="submit"
+                                        class="flex items-center gap-2 rounded-md px-2 py-1 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700">
+                                    <div class="flex h-5 w-5 items-center justify-center rounded-full bg-gray-200 text-xs dark:bg-gray-600">
+                                        @member.DisplayName.FirstOrDefault().ToString().ToUpper()
+                                    </div>
+                                    @member.DisplayName
+                                </button>
+                            </form>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>

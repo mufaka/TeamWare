@@ -10,7 +10,7 @@ This document defines the phased implementation plan for TeamWare based on the [
 |-------|------------|--------|
 | 0 | Foundation and Infrastructure | Complete |
 | 1 | Project Management | Complete |
-| 2 | Task Management | Not Started |
+| 2 | Task Management | Complete |
 | 3 | Inbox and GTD Workflow | Not Started |
 | 4 | Progress Tracking and Activity Log | Not Started |
 | 5 | Comments and Communication | Not Started |
@@ -155,36 +155,36 @@ Deliver core task CRUD, assignment, filtering, and the GTD-inspired workflow (Ne
 
 ### 2.1 Domain Models
 
-- [ ] Create `TaskItem` entity with GTD fields: `IsNextAction`, `IsSomedayMaybe` (TASK-02, TASK-11, TASK-12)
-- [ ] Create `TaskAssignment` entity
-- [ ] Create EF Core configurations
-- [ ] Add and apply the EF Core migration
-- [ ] Write unit tests for entity validation and status/priority constraints
+- [x] Create `TaskItem` entity with GTD fields: `IsNextAction`, `IsSomedayMaybe` (TASK-02, TASK-11, TASK-12)
+- [x] Create `TaskAssignment` entity
+- [x] Create EF Core configurations
+- [x] Add and apply the EF Core migration
+- [x] Write unit tests for entity validation and status/priority constraints
 
 ### 2.2 Services
 
-- [ ] Create `ITaskService` and `TaskService`
-  - [ ] `CreateTask` (TASK-01)
-  - [ ] `UpdateTask` (TASK-06)
-  - [ ] `DeleteTask` (TASK-08) - enforce Owner/Admin only
-  - [ ] `ChangeStatus` (TASK-07)
-  - [ ] `AssignMembers` / `UnassignMembers` (TASK-05)
-  - [ ] `MarkAsNextAction` / `ClearNextAction` (TASK-11)
-  - [ ] `MarkAsSomedayMaybe` / `ClearSomedayMaybe` (TASK-12)
-  - [ ] `GetTasksForProject` with filtering and sorting (TASK-09)
-  - [ ] `SearchTasks` (TASK-10)
-  - [ ] `GetWhatsNext` - returns the user's Next Action tasks across all projects, ordered by priority and due date, capped to a configurable limit (TASK-13, TASK-14)
-- [ ] Write unit tests for all service methods
+- [x] Create `ITaskService` and `TaskService`
+  - [x] `CreateTask` (TASK-01)
+  - [x] `UpdateTask` (TASK-06)
+  - [x] `DeleteTask` (TASK-08) - enforce Owner/Admin only
+  - [x] `ChangeStatus` (TASK-07)
+  - [x] `AssignMembers` / `UnassignMembers` (TASK-05)
+  - [x] `MarkAsNextAction` / `ClearNextAction` (TASK-11)
+  - [x] `MarkAsSomedayMaybe` / `ClearSomedayMaybe` (TASK-12)
+  - [x] `GetTasksForProject` with filtering and sorting (TASK-09)
+  - [x] `SearchTasks` (TASK-10)
+  - [x] `GetWhatsNext` - returns the user's Next Action tasks across all projects, ordered by priority and due date, capped to a configurable limit (TASK-13, TASK-14)
+- [x] Write unit tests for all service methods
 
 ### 2.3 Controllers and Views
 
-- [ ] Create `TaskController` with actions: Index (list within project), Create, Edit, Details, Delete, ChangeStatus
-- [ ] Create a `WhatsNextController` (or action on `HomeController`) for the cross-project What's Next view
-- [ ] Build task list view with HTMX for inline status changes, filtering, and sorting
-- [ ] Build the What's Next view as a focused, minimal list
-- [ ] Use Alpine.js for filter dropdowns and priority selectors
-- [ ] Wire up the project dashboard (from Phase 1) to show actual task counts by status
-- [ ] Write integration tests for all controller actions and authorization checks
+- [x] Create `TaskController` with actions: Index (list within project), Create, Edit, Details, Delete, ChangeStatus
+- [x] Create a `WhatsNextController` (or action on `HomeController`) for the cross-project What's Next view
+- [x] Build task list view with HTMX for inline status changes, filtering, and sorting
+- [x] Build the What's Next view as a focused, minimal list
+- [x] Use Alpine.js for filter dropdowns and priority selectors
+- [x] Wire up the project dashboard (from Phase 1) to show actual task counts by status
+- [x] Write integration tests for all controller actions and authorization checks
 
 ---
 

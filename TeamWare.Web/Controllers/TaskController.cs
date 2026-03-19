@@ -1,0 +1,382 @@
+﻿using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using TeamWare.Web.Models;
+using TeamWare.Web.Services;
+using TeamWare.Web.ViewModels;
+
+namespace TeamWare.Web.Controllers;
+
+[Authorize]
+public class TaskController : Controller
+{
+    private readonly ITaskService _taskService;
+    private readonly IProjectService _projectService;
+    private readonly IProjectMemberService _memberService;
+
+    public TaskController(
+        ITaskService taskService,
+        IProjectService projectService,
+        IProjectMemberService memberService)
+    {
+        _taskService = taskService;
+        _projectService = projectService;
+        _memberService = memberService;
+    }
+
+    private string GetUserId() => User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+
+    [HttpGet]
+    public async Task<IActionResult> Index(int projectId, TaskItemStatus? status, TaskItemPriority? priority,
+        string? assignee, string? sortBy, bool sortDesc = false, string? q = null)
+    {
+        var userId = GetUserId();
+
+        var dashResult = await _projectService.GetProjectDashboard(projectId, userId);
+        if (!dashResult.Succeeded)
+        {
+            TempData["ErrorMessage"] = dashResult.Errors.FirstOrDefault();
+            return RedirectToAction("Index", "Project");
+        }
+
+        var membersResult = await _memberService.GetMembers(projectId, userId);
+
+        ServiceResult<List<TaskItem>> tasksResult;
+        if (!string.IsNullOrWhiteSpace(q))
+        {
+            tasksResult = await _taskService.SearchTasks(projectId, q, userId);
+        }
+        else
+        {
+            tasksResult = await _taskService.GetTasksForProject(projectId, userId,
+                status, priority, assignee, sortBy, sortDesc);
+        }
+
+        if (!tasksResult.Succeeded)
+        {
+            TempData["ErrorMessage"] = tasksResult.Errors.FirstOrDefault();
+            return RedirectToAction("Details", "Project", new { id = projectId });
+        }
+
+        var isOwnerOrAdmin = dashResult.Data!.Project.Members
+            .Any(m => m.UserId == userId && (m.Role == ProjectRole.Owner || m.Role == ProjectRole.Admin));
+
+        var viewModel = new TaskListViewModel
+        {
+            ProjectId = projectId,
+            ProjectName = dashResult.Data.Project.Name,
+            StatusFilter = status,
+            PriorityFilter = priority,
+            AssigneeFilter = assignee,
+            SortBy = sortBy,
+            SortDescending = sortDesc,
+            SearchQuery = q,
+            CanDeleteTasks = isOwnerOrAdmin,
+            ProjectMembers = membersResult.Succeeded
+                ? membersResult.Data!.Select(m => new ProjectMemberViewModel
+                {
+                    UserId = m.UserId,
+                    DisplayName = m.User.DisplayName,
+                    Email = m.User.Email ?? string.Empty,
+                    Role = m.Role
+                }).ToList()
+                : new(),
+            Tasks = tasksResult.Data!.Select(t => new TaskListItemViewModel
+            {
+                Id = t.Id,
+                Title = t.Title,
+                Description = t.Description,
+                Status = t.Status,
+                Priority = t.Priority,
+                DueDate = t.DueDate,
+                IsNextAction = t.IsNextAction,
+                IsSomedayMaybe = t.IsSomedayMaybe,
+                AssigneeNames = t.Assignments.Select(a => a.User.DisplayName).ToList()
+            }).ToList()
+        };
+
+        return View(viewModel);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> Create(int projectId)
+    {
+        var userId = GetUserId();
+        var dashResult = await _projectService.GetProjectDashboard(projectId, userId);
+        if (!dashResult.Succeeded)
+        {
+            TempData["ErrorMessage"] = dashResult.Errors.FirstOrDefault();
+            return RedirectToAction("Index", "Project");
+        }
+
+        var viewModel = new CreateTaskViewModel
+        {
+            ProjectId = projectId,
+            ProjectName = dashResult.Data!.Project.Name
+        };
+
+        return View(viewModel);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Create(CreateTaskViewModel model)
+    {
+        if (!ModelState.IsValid)
+        {
+            return View(model);
+        }
+
+        var result = await _taskService.CreateTask(model.ProjectId, model.Title, model.Description,
+            model.Priority, model.DueDate, GetUserId());
+
+        if (!result.Succeeded)
+        {
+            foreach (var error in result.Errors)
+            {
+                ModelState.AddModelError(string.Empty, error);
+            }
+            return View(model);
+        }
+
+        TempData["SuccessMessage"] = "Task created successfully.";
+        return RedirectToAction(nameof(Details), new { id = result.Data!.Id });
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> Edit(int id)
+    {
+        var userId = GetUserId();
+        var result = await _taskService.GetTask(id, userId);
+        if (!result.Succeeded)
+        {
+            TempData["ErrorMessage"] = result.Errors.FirstOrDefault();
+            return RedirectToAction("Index", "Project");
+        }
+
+        var task = result.Data!;
+        var viewModel = new EditTaskViewModel
+        {
+            Id = task.Id,
+            ProjectId = task.ProjectId,
+            ProjectName = task.Project.Name,
+            Title = task.Title,
+            Description = task.Description,
+            Priority = task.Priority,
+            DueDate = task.DueDate
+        };
+
+        return View(viewModel);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Edit(EditTaskViewModel model)
+    {
+        if (!ModelState.IsValid)
+        {
+            return View(model);
+        }
+
+        var result = await _taskService.UpdateTask(model.Id, model.Title, model.Description,
+            model.Priority, model.DueDate, GetUserId());
+
+        if (!result.Succeeded)
+        {
+            foreach (var error in result.Errors)
+            {
+                ModelState.AddModelError(string.Empty, error);
+            }
+            return View(model);
+        }
+
+        TempData["SuccessMessage"] = "Task updated successfully.";
+        return RedirectToAction(nameof(Details), new { id = model.Id });
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> Details(int id)
+    {
+        var userId = GetUserId();
+        var result = await _taskService.GetTask(id, userId);
+        if (!result.Succeeded)
+        {
+            TempData["ErrorMessage"] = result.Errors.FirstOrDefault();
+            return RedirectToAction("Index", "Project");
+        }
+
+        var task = result.Data!;
+        var membersResult = await _memberService.GetMembers(task.ProjectId, userId);
+        var isOwnerOrAdmin = await IsOwnerOrAdmin(task.ProjectId, userId);
+
+        var viewModel = new TaskDetailViewModel
+        {
+            Id = task.Id,
+            ProjectId = task.ProjectId,
+            ProjectName = task.Project.Name,
+            Title = task.Title,
+            Description = task.Description,
+            Status = task.Status,
+            Priority = task.Priority,
+            DueDate = task.DueDate,
+            IsNextAction = task.IsNextAction,
+            IsSomedayMaybe = task.IsSomedayMaybe,
+            CreatedByName = task.CreatedBy.DisplayName,
+            CreatedAt = task.CreatedAt,
+            UpdatedAt = task.UpdatedAt,
+            CanDelete = isOwnerOrAdmin,
+            Assignees = task.Assignments.Select(a => new TaskAssigneeViewModel
+            {
+                UserId = a.UserId,
+                DisplayName = a.User.DisplayName
+            }).ToList(),
+            ProjectMembers = membersResult.Succeeded
+                ? membersResult.Data!.Select(m => new ProjectMemberViewModel
+                {
+                    UserId = m.UserId,
+                    DisplayName = m.User.DisplayName,
+                    Email = m.User.Email ?? string.Empty,
+                    Role = m.Role
+                }).ToList()
+                : new()
+        };
+
+        return View(viewModel);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Delete(int id)
+    {
+        var task = await _taskService.GetTask(id, GetUserId());
+        var projectId = task.Data?.ProjectId ?? 0;
+
+        var result = await _taskService.DeleteTask(id, GetUserId());
+
+        if (!result.Succeeded)
+        {
+            TempData["ErrorMessage"] = result.Errors.FirstOrDefault();
+        }
+        else
+        {
+            TempData["SuccessMessage"] = "Task deleted successfully.";
+        }
+
+        return RedirectToAction(nameof(Index), new { projectId });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ChangeStatus(int id, TaskItemStatus status)
+    {
+        var result = await _taskService.ChangeStatus(id, status, GetUserId());
+
+        if (Request.Headers["HX-Request"] == "true")
+        {
+            if (!result.Succeeded)
+            {
+                Response.Headers["HX-Reswap"] = "none";
+                return BadRequest();
+            }
+
+            return PartialView("_TaskStatusBadge", result.Data!);
+        }
+
+        if (!result.Succeeded)
+        {
+            TempData["ErrorMessage"] = result.Errors.FirstOrDefault();
+        }
+
+        return RedirectToAction(nameof(Details), new { id });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ToggleNextAction(int id)
+    {
+        var task = await _taskService.GetTask(id, GetUserId());
+        if (!task.Succeeded)
+        {
+            TempData["ErrorMessage"] = task.Errors.FirstOrDefault();
+            return RedirectToAction("Index", "Project");
+        }
+
+        var result = task.Data!.IsNextAction
+            ? await _taskService.ClearNextAction(id, GetUserId())
+            : await _taskService.MarkAsNextAction(id, GetUserId());
+
+        if (!result.Succeeded)
+        {
+            TempData["ErrorMessage"] = result.Errors.FirstOrDefault();
+        }
+
+        return RedirectToAction(nameof(Details), new { id });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ToggleSomedayMaybe(int id)
+    {
+        var task = await _taskService.GetTask(id, GetUserId());
+        if (!task.Succeeded)
+        {
+            TempData["ErrorMessage"] = task.Errors.FirstOrDefault();
+            return RedirectToAction("Index", "Project");
+        }
+
+        var result = task.Data!.IsSomedayMaybe
+            ? await _taskService.ClearSomedayMaybe(id, GetUserId())
+            : await _taskService.MarkAsSomedayMaybe(id, GetUserId());
+
+        if (!result.Succeeded)
+        {
+            TempData["ErrorMessage"] = result.Errors.FirstOrDefault();
+        }
+
+        return RedirectToAction(nameof(Details), new { id });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Assign(int id, string userId)
+    {
+        var result = await _taskService.AssignMembers(id, [userId], GetUserId());
+
+        if (!result.Succeeded)
+        {
+            TempData["ErrorMessage"] = result.Errors.FirstOrDefault();
+        }
+        else
+        {
+            TempData["SuccessMessage"] = "Member assigned.";
+        }
+
+        return RedirectToAction(nameof(Details), new { id });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Unassign(int id, string userId)
+    {
+        var result = await _taskService.UnassignMembers(id, [userId], GetUserId());
+
+        if (!result.Succeeded)
+        {
+            TempData["ErrorMessage"] = result.Errors.FirstOrDefault();
+        }
+        else
+        {
+            TempData["SuccessMessage"] = "Member unassigned.";
+        }
+
+        return RedirectToAction(nameof(Details), new { id });
+    }
+
+    private async Task<bool> IsOwnerOrAdmin(int projectId, string userId)
+    {
+        var dashResult = await _projectService.GetProjectDashboard(projectId, userId);
+        if (!dashResult.Succeeded) return false;
+        return dashResult.Data!.Project.Members
+            .Any(m => m.UserId == userId && (m.Role == ProjectRole.Owner || m.Role == ProjectRole.Admin));
+    }
+}

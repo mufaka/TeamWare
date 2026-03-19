@@ -157,11 +157,10 @@ public class ProjectService : IProjectService
         {
             Project = project,
             TotalMembers = project.Members.Count,
-            // Task counts will be populated in Phase 2 when TaskItem is implemented
-            TaskCountToDo = 0,
-            TaskCountInProgress = 0,
-            TaskCountInReview = 0,
-            TaskCountDone = 0
+            TaskCountToDo = await _context.TaskItems.CountAsync(t => t.ProjectId == projectId && t.Status == TaskItemStatus.ToDo),
+            TaskCountInProgress = await _context.TaskItems.CountAsync(t => t.ProjectId == projectId && t.Status == TaskItemStatus.InProgress),
+            TaskCountInReview = await _context.TaskItems.CountAsync(t => t.ProjectId == projectId && t.Status == TaskItemStatus.InReview),
+            TaskCountDone = await _context.TaskItems.CountAsync(t => t.ProjectId == projectId && t.Status == TaskItemStatus.Done)
         };
 
         return ServiceResult<ProjectDashboard>.Success(dashboard);
