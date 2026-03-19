@@ -60,7 +60,23 @@
         View all tasks
     </a>
 </div>
-<div class="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+
+@if (Model.TotalTasks > 0)
+{
+    <!-- Completion Progress Bar -->
+    <div class="mb-4 rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
+        <div class="mb-1 flex items-center justify-between text-sm">
+            <span class="font-medium text-gray-700 dark:text-gray-300">Completion</span>
+            <span class="font-semibold text-gray-900 dark:text-white">@Model.CompletionPercentage%</span>
+        </div>
+        <div class="h-2.5 w-full rounded-full bg-gray-200 dark:bg-gray-700">
+            <div class="h-2.5 rounded-full bg-green-500 transition-all duration-300" style="width: @Model.CompletionPercentage%"></div>
+        </div>
+        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">@Model.TaskCountDone of @Model.TotalTasks tasks completed</p>
+    </div>
+}
+
+<div class="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
     <div class="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
         <p class="text-sm font-medium text-gray-500 dark:text-gray-400">To Do</p>
         <p class="mt-1 text-2xl font-bold text-gray-900 dark:text-white">@Model.TaskCountToDo</p>
@@ -76,6 +92,58 @@
     <div class="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
         <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Done</p>
         <p class="mt-1 text-2xl font-bold text-green-600 dark:text-green-400">@Model.TaskCountDone</p>
+    </div>
+    @if (Model.OverdueTaskCount > 0)
+    {
+        <div class="rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-700 dark:bg-red-900/20">
+            <p class="text-sm font-medium text-red-600 dark:text-red-400">Overdue</p>
+            <p class="mt-1 text-2xl font-bold text-red-700 dark:text-red-300">@Model.OverdueTaskCount</p>
+        </div>
+    }
+</div>
+
+<!-- Upcoming Deadlines -->
+@if (Model.UpcomingDeadlines.Any())
+{
+    <div class="mb-8 rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
+        <div class="border-b border-gray-200 px-5 py-4 dark:border-gray-700">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Upcoming Deadlines</h2>
+        </div>
+        <div class="divide-y divide-gray-200 dark:divide-gray-700">
+            @foreach (var deadline in Model.UpcomingDeadlines)
+            {
+                var daysText = deadline.DaysUntilDue switch
+                {
+                    0 => "Due today",
+                    1 => "Due tomorrow",
+                    _ => $"Due in {deadline.DaysUntilDue} days"
+                };
+                var urgencyClass = deadline.DaysUntilDue <= 1
+                    ? "text-red-600 dark:text-red-400"
+                    : "text-yellow-600 dark:text-yellow-400";
+                <a asp-controller="Task" asp-action="Details" asp-route-id="@deadline.Id"
+                   class="flex items-center justify-between px-5 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                    <div>
+                        <p class="text-sm font-medium text-gray-900 dark:text-white">@deadline.Title</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">@deadline.DueDate.ToString("MMM d, yyyy")</p>
+                    </div>
+                    <span class="text-xs font-medium @urgencyClass">@daysText</span>
+                </a>
+            }
+        </div>
+    </div>
+}
+
+<!-- Activity Timeline -->
+<div class="mb-8 rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
+    <div class="border-b border-gray-200 px-5 py-4 dark:border-gray-700">
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Recent Activity</h2>
+    </div>
+    <div class="p-5"
+         hx-get="@Url.Action("ActivityTimeline", "Project", new { id = Model.Id })"
+         hx-trigger="revealed"
+         hx-swap="innerHTML">
+        @await Html.PartialAsync("_ActivityTimeline", Model.RecentActivity)
     </div>
 </div>
 

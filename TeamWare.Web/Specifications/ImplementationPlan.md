@@ -12,7 +12,7 @@ This document defines the phased implementation plan for TeamWare based on the [
 | 1 | Project Management | Complete |
 | 2 | Task Management | Complete |
 | 3 | Inbox and GTD Workflow | Complete |
-| 4 | Progress Tracking and Activity Log | Not Started |
+| 4 | Progress Tracking and Activity Log | Complete |
 | 5 | Comments and Communication | Not Started |
 | 6 | Notifications | Not Started |
 | 7 | Review Workflow | Not Started |
@@ -226,29 +226,29 @@ Deliver task completion statistics, activity timeline, and deadline visibility.
 
 ### 4.1 Domain Models
 
-- [ ] Create `ActivityLogEntry` entity to record task state changes (PROG-02)
-- [ ] Create EF Core configuration
-- [ ] Add and apply the EF Core migration
+- [x] Create `ActivityLogEntry` entity to record task state changes (PROG-02)
+- [x] Create EF Core configuration
+- [x] Add and apply the EF Core migration
 
 ### 4.2 Services
 
-- [ ] Create `IActivityLogService` and `ActivityLogService`
-  - [ ] `LogChange` - called by `TaskService` when status, assignment, or priority changes
-  - [ ] `GetActivityForProject` - returns the timeline for a project
-  - [ ] `GetActivityForTask` - returns the timeline for a single task
-- [ ] Create `IProgressService` and `ProgressService`
-  - [ ] `GetProjectStatistics` - task counts by status, completion percentage (PROG-01)
-  - [ ] `GetOverdueTasks` (PROG-03)
-  - [ ] `GetUpcomingDeadlines` (PROG-04)
-- [ ] Write unit tests for all service methods
+- [x] Create `IActivityLogService` and `ActivityLogService`
+  - [x] `LogChange` - called by `TaskService` when status, assignment, or priority changes
+  - [x] `GetActivityForProject` - returns the timeline for a project
+  - [x] `GetActivityForTask` - returns the timeline for a single task
+- [x] Create `IProgressService` and `ProgressService`
+  - [x] `GetProjectStatistics` - task counts by status, completion percentage (PROG-01)
+  - [x] `GetOverdueTasks` (PROG-03)
+  - [x] `GetUpcomingDeadlines` (PROG-04)
+- [x] Write unit tests for all service methods
 
 ### 4.3 Controllers and Views
 
-- [ ] Add a project activity timeline view/partial (HTMX lazy-loaded on the project dashboard)
-- [ ] Update the project dashboard to display completion statistics and upcoming deadlines
-- [ ] Highlight overdue tasks in task lists with visual styling
-- [ ] Add a task detail section showing its activity history
-- [ ] Write integration tests
+- [x] Add a project activity timeline view/partial (HTMX lazy-loaded on the project dashboard)
+- [x] Update the project dashboard to display completion statistics and upcoming deadlines
+- [x] Highlight overdue tasks in task lists with visual styling
+- [x] Add a task detail section showing its activity history
+- [x] Write integration tests
 
 ---
 

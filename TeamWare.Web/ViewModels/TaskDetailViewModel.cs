@@ -37,6 +37,8 @@ public class TaskDetailViewModel
     public bool CanDelete { get; set; }
 
     public bool IsOverdue => DueDate.HasValue && DueDate.Value.Date < DateTime.UtcNow.Date && Status != TaskItemStatus.Done;
+
+    public List<ActivityLogEntryViewModel> ActivityHistory { get; set; } = new();
 }
 
 public class TaskAssigneeViewModel
