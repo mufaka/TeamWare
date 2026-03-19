@@ -36,6 +36,7 @@ builder.Services.AddScoped<IActivityLogService, ActivityLogService>();
 builder.Services.AddScoped<ITaskService, TaskService>();
 builder.Services.AddScoped<IInboxService, InboxService>();
 builder.Services.AddScoped<IProgressService, ProgressService>();
+builder.Services.AddScoped<ICommentService, CommentService>();
 
 builder.Services.AddControllersWithViews(options =>
 {

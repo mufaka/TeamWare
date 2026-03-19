@@ -13,7 +13,7 @@ This document defines the phased implementation plan for TeamWare based on the [
 | 2 | Task Management | Complete |
 | 3 | Inbox and GTD Workflow | Complete |
 | 4 | Progress Tracking and Activity Log | Complete |
-| 5 | Comments and Communication | Not Started |
+| 5 | Comments and Communication | Complete |
 | 6 | Notifications | Not Started |
 | 7 | Review Workflow | Not Started |
 | 8 | User Profile and Dashboard | Not Started |
@@ -258,24 +258,24 @@ Deliver task commenting with in-app notification on new comments.
 
 ### 5.1 Domain Models
 
-- [ ] Create `Comment` entity (COMM-01, COMM-02)
-- [ ] Create EF Core configuration
-- [ ] Add and apply the EF Core migration
+- [x] Create `Comment` entity (COMM-01, COMM-02)
+- [x] Create EF Core configuration
+- [x] Add and apply the EF Core migration
 
 ### 5.2 Services
 
-- [ ] Create `ICommentService` and `CommentService`
-  - [ ] `AddComment` (COMM-01) - triggers notification to assigned users (COMM-04)
-  - [ ] `EditComment` (COMM-03) - only the author
-  - [ ] `DeleteComment` (COMM-03) - only the author
-  - [ ] `GetCommentsForTask`
-- [ ] Write unit tests for all service methods and authorization rules
+- [x] Create `ICommentService` and `CommentService`
+  - [x] `AddComment` (COMM-01) - triggers notification to assigned users (COMM-04)
+  - [x] `EditComment` (COMM-03) - only the author
+  - [x] `DeleteComment` (COMM-03) - only the author
+  - [x] `GetCommentsForTask`
+- [x] Write unit tests for all service methods and authorization rules
 
 ### 5.3 Controllers and Views
 
-- [ ] Create `CommentController` (or actions nested under `TaskController`) with actions: Add, Edit, Delete
-- [ ] Build a comments section on the task detail view, using HTMX for adding/editing comments without a full page reload
-- [ ] Write integration tests
+- [x] Create `CommentController` (or actions nested under `TaskController`) with actions: Add, Edit, Delete
+- [x] Build a comments section on the task detail view, using HTMX for adding/editing comments without a full page reload
+- [x] Write integration tests
 
 ---
 

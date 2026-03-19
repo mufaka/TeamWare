@@ -36,4 +36,6 @@ public class TaskItem
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
     public ICollection<TaskAssignment> Assignments { get; set; } = new List<TaskAssignment>();
+
+    public ICollection<Comment> Comments { get; set; } = new List<Comment>();
 }
