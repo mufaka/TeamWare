@@ -9,7 +9,7 @@ This document defines the phased implementation plan for TeamWare based on the [
 | Phase | Description | Status |
 |-------|------------|--------|
 | 0 | Foundation and Infrastructure | Complete |
-| 1 | Project Management | Not Started |
+| 1 | Project Management | Complete |
 | 2 | Task Management | Not Started |
 | 3 | Inbox and GTD Workflow | Not Started |
 | 4 | Progress Tracking and Activity Log | Not Started |
@@ -114,38 +114,38 @@ Deliver the ability to create, view, edit, archive, and manage membership of pro
 
 ### 1.1 Domain Models
 
-- [ ] Create `Project` entity (PROJ-01)
-- [ ] Create `ProjectMember` entity with Role (Owner, Admin, Member)
-- [ ] Create EF Core configurations (relationships, constraints, indexes)
-- [ ] Add and apply the EF Core migration
-- [ ] Write unit tests for entity validation
+- [x] Create `Project` entity (PROJ-01)
+- [x] Create `ProjectMember` entity with Role (Owner, Admin, Member)
+- [x] Create EF Core configurations (relationships, constraints, indexes)
+- [x] Add and apply the EF Core migration
+- [x] Write unit tests for entity validation
 
 ### 1.2 Services
 
-- [ ] Create `IProjectService` and `ProjectService`
-  - [ ] `CreateProject` (PROJ-01) - auto-assigns the creator as Owner
-  - [ ] `UpdateProject` (PROJ-02)
-  - [ ] `ArchiveProject` / `DeleteProject` (PROJ-03)
-  - [ ] `GetProjectsForUser` (PROJ-07)
-  - [ ] `GetProjectDashboard` (PROJ-08)
-- [ ] Write unit tests for all service methods including authorization rules
+- [x] Create `IProjectService` and `ProjectService`
+  - [x] `CreateProject` (PROJ-01) - auto-assigns the creator as Owner
+  - [x] `UpdateProject` (PROJ-02)
+  - [x] `ArchiveProject` / `DeleteProject` (PROJ-03)
+  - [x] `GetProjectsForUser` (PROJ-07)
+  - [x] `GetProjectDashboard` (PROJ-08)
+- [x] Write unit tests for all service methods including authorization rules
 
 ### 1.3 Membership Services
 
-- [ ] Create `IProjectMemberService` and `ProjectMemberService`
-  - [ ] `InviteMember` (PROJ-04)
-  - [ ] `RemoveMember` (PROJ-05)
-  - [ ] `UpdateMemberRole` (PROJ-06)
-- [ ] Enforce that only Owners/Admins can invite and remove; only Owners can assign roles
-- [ ] Write unit tests for membership operations and authorization
+- [x] Create `IProjectMemberService` and `ProjectMemberService`
+  - [x] `InviteMember` (PROJ-04)
+  - [x] `RemoveMember` (PROJ-05)
+  - [x] `UpdateMemberRole` (PROJ-06)
+- [x] Enforce that only Owners/Admins can invite and remove; only Owners can assign roles
+- [x] Write unit tests for membership operations and authorization
 
 ### 1.4 Controllers and Views
 
-- [ ] Create `ProjectController` with actions: Index (list), Create, Edit, Details (dashboard), Archive, Delete
-- [ ] Create `ProjectMemberController` (or actions within `ProjectController`) for Invite, Remove, UpdateRole
-- [ ] Build views using Tailwind CSS 4, with HTMX for form submissions and list updates
-- [ ] Implement the project dashboard showing task count placeholders (to be populated in Phase 2)
-- [ ] Write integration tests for all controller actions and authorization checks
+- [x] Create `ProjectController` with actions: Index (list), Create, Edit, Details (dashboard), Archive, Delete
+- [x] Create `ProjectMemberController` (or actions within `ProjectController`) for Invite, Remove, UpdateRole
+- [x] Build views using Tailwind CSS 4, with HTMX for form submissions and list updates
+- [x] Implement the project dashboard showing task count placeholders (to be populated in Phase 2)
+- [x] Write integration tests for all controller actions and authorization checks
 
 ---
 
