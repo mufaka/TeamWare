@@ -327,7 +327,7 @@ The ASP.NET Core backend shall follow a layered architecture:
 
 | Layer | Responsibility |
 |-------|---------------|
-| Pages / Endpoints | Razor Pages or Minimal API endpoints handling HTTP requests and rendering views |
+| Controllers / Views | MVC controllers handling HTTP requests and returning views |
 | Services | Business logic, validation, and orchestration |
 | Data Access | Entity Framework Core with SQLite provider |
 | Identity | Microsoft Identity for user management, authentication, and authorization |
@@ -336,7 +336,7 @@ The ASP.NET Core backend shall follow a layered architecture:
 
 | Concern | Technology | Usage |
 |---------|-----------|-------|
-| Server Rendering | Razor Pages / Partial Views | Primary HTML generation |
+| Server Rendering | MVC Views / Partial Views | Primary HTML generation |
 | Dynamic Updates | HTMX | Partial page updates, form submissions, lazy loading |
 | Client Behavior | Alpine.js | Dropdowns, modals, theme toggling, local UI state |
 | Styling | Tailwind CSS 4 | All visual styling via utility classes |
