@@ -1,0 +1,14 @@
+{
+  "name": "teamware.web",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "css:build": "npx @tailwindcss/cli -i ./wwwroot/css/site.css -o ./wwwroot/css/site.min.css --minify",
+    "css:watch": "npx @tailwindcss/cli -i ./wwwroot/css/site.css -o ./wwwroot/css/site.min.css --watch"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.2.2",
+    "aspnet-client-validation": "^0.11.1",
+    "tailwindcss": "^4.2.2"
+  }
+}

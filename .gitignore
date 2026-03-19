@@ -11,6 +11,12 @@
 *.db-shm
 *.db-wal
 
+# Node.js (Tailwind CSS build)
+TeamWare.Web/node_modules/
+
+# Generated Tailwind CSS output
+TeamWare.Web/wwwroot/css/site.min.css
+
 # User-specific files
 *.rsuser
 *.suo

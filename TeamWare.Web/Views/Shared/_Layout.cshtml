@@ -1,49 +1,118 @@
 ﻿<!DOCTYPE html>
-<html lang="en">
+<html lang="en" x-data="{ darkMode: localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches) }"
+      x-init="$watch('darkMode', val => { localStorage.setItem('theme', val ? 'dark' : 'light') })"
+      :class="{ 'dark': darkMode }">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - TeamWare.Web</title>
-    <script type="importmap"></script>
-    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
-    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/TeamWare.Web.styles.css" asp-append-version="true" />
+    <title>@ViewData["Title"] - TeamWare</title>
+    <link rel="stylesheet" href="~/css/site.min.css" asp-append-version="true" />
+    <script src="~/lib/alpinejs/alpine.min.js" defer></script>
+    <script src="~/lib/htmx/htmx.min.js"></script>
 </head>
-<body>
-    <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
-            <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">TeamWare.Web</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-        </nav>
+<body class="min-h-screen bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100"
+      x-data="{ sidebarOpen: false }">
+
+    <!-- Mobile header -->
+    <header class="sticky top-0 z-30 flex items-center justify-between bg-white px-4 py-3 shadow-sm dark:bg-gray-800 md:hidden">
+        <button @@click="sidebarOpen = !sidebarOpen" class="text-gray-600 hover:text-gray-900 focus:outline-none dark:text-gray-300 dark:hover:text-white" aria-label="Toggle navigation">
+            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+        </button>
+        <a asp-controller="Home" asp-action="Index" class="text-lg font-bold text-gray-900 dark:text-white">TeamWare</a>
+        <div class="w-6"></div>
     </header>
-    <div class="container">
-        <main role="main" class="pb-3">
-            @RenderBody()
-        </main>
+
+    <div class="flex">
+        <!-- Sidebar overlay (mobile) -->
+        <div x-show="sidebarOpen" @@click="sidebarOpen = false"
+             class="fixed inset-0 z-40 bg-black/50 md:hidden" x-transition:enter="transition-opacity duration-300"
+             x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+             x-transition:leave="transition-opacity duration-300" x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0" x-cloak></div>
+
+        <!-- Sidebar -->
+        <aside :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'"
+               class="fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-white shadow-lg transition-transform duration-300 ease-in-out dark:bg-gray-800 md:static md:z-auto md:translate-x-0 md:shadow-none md:border-r md:border-gray-200 md:dark:border-gray-700">
+            <!-- Sidebar header -->
+            <div class="flex items-center justify-between px-4 py-4 border-b border-gray-200 dark:border-gray-700">
+                <a asp-controller="Home" asp-action="Index" class="text-xl font-bold text-gray-900 dark:text-white">TeamWare</a>
+                <button @@click="sidebarOpen = false" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 md:hidden" aria-label="Close sidebar">
+                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Navigation links -->
+            <nav class="flex-1 overflow-y-auto px-3 py-4 space-y-1">
+                <a asp-controller="Home" asp-action="Index"
+                   class="flex items-center rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700">
+                    Home
+                </a>
+                <a asp-controller="Home" asp-action="Privacy"
+                   class="flex items-center rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700">
+                    Privacy
+                </a>
+            </nav>
+
+            <!-- Sidebar footer: auth + theme toggle -->
+            <div class="border-t border-gray-200 px-3 py-4 space-y-2 dark:border-gray-700">
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    <span class="block truncate px-3 py-1 text-xs text-gray-500 dark:text-gray-400">@User.Identity.Name</span>
+                    <form asp-controller="Account" asp-action="Logout" method="post">
+                        <button type="submit"
+                                class="w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700">
+                            Log out
+                        </button>
+                    </form>
+                }
+                else
+                {
+                    <a asp-controller="Account" asp-action="Login"
+                       class="flex items-center rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700">
+                        Log in
+                    </a>
+                    <a asp-controller="Account" asp-action="Register"
+                       class="flex items-center rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700">
+                        Register
+                    </a>
+                }
+
+                <!-- Theme toggle -->
+                <button @@click="darkMode = !darkMode"
+                        class="flex w-full items-center rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+                        aria-label="Toggle dark mode"
+                        data-testid="theme-toggle">
+                    <template x-if="darkMode">
+                        <svg class="mr-2 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                        </svg>
+                    </template>
+                    <template x-if="!darkMode">
+                        <svg class="mr-2 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                        </svg>
+                    </template>
+                    <span x-text="darkMode ? 'Light mode' : 'Dark mode'"></span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main content -->
+        <div class="flex min-h-screen flex-1 flex-col">
+            <main class="flex-1 p-4 md:p-8">
+                @RenderBody()
+            </main>
+
+            <footer class="border-t border-gray-200 px-4 py-4 text-center text-sm text-gray-500 dark:border-gray-700 dark:text-gray-400">
+                &copy; @DateTime.Now.Year - TeamWare
+            </footer>
+        </div>
     </div>
 
-    <footer class="border-top footer text-muted">
-        <div class="container">
-            &copy; 2026 - TeamWare.Web - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-        </div>
-    </footer>
-    <script src="~/lib/jquery/dist/jquery.min.js"></script>
-    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
