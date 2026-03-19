@@ -8,7 +8,7 @@ This document defines the phased implementation plan for TeamWare based on the [
 
 | Phase | Description | Status |
 |-------|------------|--------|
-| 0 | Foundation and Infrastructure | Not Started |
+| 0 | Foundation and Infrastructure | Complete |
 | 1 | Project Management | Not Started |
 | 2 | Task Management | Not Started |
 | 3 | Inbox and GTD Workflow | Not Started |
@@ -23,14 +23,16 @@ This document defines the phased implementation plan for TeamWare based on the [
 
 ## Current State
 
-The workspace is a stock ASP.NET Core MVC project (.NET 10) with:
+The workspace is an ASP.NET Core MVC project (.NET 10) with Phase 0 complete:
 
-- Default `HomeController` with Index, Privacy, and Error actions
-- Bootstrap 5, jQuery, and jQuery Validation in `wwwroot/lib`
-- No data layer, no authentication, no domain models
-- No test project
-
-The specification calls for replacing Bootstrap with Tailwind CSS 4, replacing jQuery with HTMX and Alpine.js, adding SQLite via EF Core, and adding Microsoft Identity for authentication.
+- `TeamWare.Tests` xUnit project with 31 passing tests
+- SQLite database via EF Core 10 with `ApplicationDbContext` and initial migration
+- Microsoft Identity authentication with cookie auth, admin seed account
+- Tailwind CSS 4.2.2 (via `@tailwindcss/cli`), HTMX 2.0.4, Alpine.js 3.14.9
+- Responsive sidebar layout with light/dark theme toggle
+- `aspnet-client-validation` for jQuery-free form validation
+- `ServiceResult<T>` base type, `_Notification.cshtml` partial, global error handling
+- HTTPS enforcement, anti-forgery tokens, status code pages
 
 ---
 
@@ -50,59 +52,59 @@ Establish the project structure, tooling, data layer, and frontend stack before 
 
 ### 0.1 Solution and Project Structure
 
-- [ ] Create the `TeamWare.Tests` xUnit test project and add it to the solution
-- [ ] Establish folder conventions in `TeamWare.Web`:
-  - [ ] `Models/` - Domain entities (one class per file)
-  - [ ] `Data/` - DbContext and EF Core configuration
-  - [ ] `Services/` - Business logic interfaces and implementations
-  - [ ] `Controllers/` - MVC controllers (already exists)
-  - [ ] `Views/` - Organized by controller name (already exists)
-  - [ ] `ViewModels/` - View-specific models
-- [ ] Add a `README.md` at the solution root with build and run instructions
+- [x] Create the `TeamWare.Tests` xUnit test project and add it to the solution
+- [x] Establish folder conventions in `TeamWare.Web`:
+  - [x] `Models/` - Domain entities (one class per file)
+  - [x] `Data/` - DbContext and EF Core configuration
+  - [x] `Services/` - Business logic interfaces and implementations
+  - [x] `Controllers/` - MVC controllers (already exists)
+  - [x] `Views/` - Organized by controller name (already exists)
+  - [x] `ViewModels/` - View-specific models
+- [x] Add a `README.md` at the solution root with build and run instructions
 
 ### 0.2 Data Layer (SQLite + EF Core)
 
-- [ ] Add NuGet packages: `Microsoft.EntityFrameworkCore.Sqlite`, `Microsoft.EntityFrameworkCore.Design`
-- [ ] Create `ApplicationDbContext` inheriting from `IdentityDbContext<ApplicationUser>`
-- [ ] Create the `ApplicationUser` entity extending `IdentityUser` with: `DisplayName`, `AvatarUrl`, `ThemePreference`
-- [ ] Configure the SQLite connection string in `appsettings.json`
-- [ ] Register the DbContext in `Program.cs`
-- [ ] Create and apply the initial EF Core migration
-- [ ] Write integration tests verifying DbContext creation and migration
+- [x] Add NuGet packages: `Microsoft.EntityFrameworkCore.Sqlite`, `Microsoft.EntityFrameworkCore.Design`
+- [x] Create `ApplicationDbContext` inheriting from `IdentityDbContext<ApplicationUser>`
+- [x] Create the `ApplicationUser` entity extending `IdentityUser` with: `DisplayName`, `AvatarUrl`, `ThemePreference`
+- [x] Configure the SQLite connection string in `appsettings.json`
+- [x] Register the DbContext in `Program.cs`
+- [x] Create and apply the initial EF Core migration
+- [x] Write integration tests verifying DbContext creation and migration
 
 ### 0.3 Authentication and Identity
 
-- [ ] Add NuGet package: `Microsoft.AspNetCore.Identity.EntityFrameworkCore`
-- [ ] Configure Microsoft Identity in `Program.cs` with default cookie authentication
-- [ ] Disable email confirmation by default (AUTH-06)
-- [ ] Create `AccountController` with actions: Register, Login, Logout (AUTH-01, AUTH-02, AUTH-03)
-- [ ] Create corresponding views for Register and Login
-- [ ] Create an admin-only password reset action (AUTH-04)
-- [ ] Seed an initial administrator account on first run
-- [ ] Write tests for registration, login, logout, and admin password reset
+- [x] Add NuGet package: `Microsoft.AspNetCore.Identity.EntityFrameworkCore`
+- [x] Configure Microsoft Identity in `Program.cs` with default cookie authentication
+- [x] Disable email confirmation by default (AUTH-06)
+- [x] Create `AccountController` with actions: Register, Login, Logout (AUTH-01, AUTH-02, AUTH-03)
+- [x] Create corresponding views for Register and Login
+- [x] Create an admin-only password reset action (AUTH-04)
+- [x] Seed an initial administrator account on first run
+- [x] Write tests for registration, login, logout, and admin password reset
 
 ### 0.4 Frontend Stack Replacement
 
-- [ ] Remove Bootstrap, jQuery, and jQuery Validation from `wwwroot/lib`
-- [ ] Install and configure Tailwind CSS 4 (via npm/standalone CLI, integrated into the build)
-- [ ] Add HTMX (via CDN or local copy in `wwwroot/lib`)
-- [ ] Add Alpine.js (via CDN or local copy in `wwwroot/lib`)
-- [ ] Rewrite `_Layout.cshtml` with Tailwind CSS 4 utility classes, HTMX script, and Alpine.js script
-- [ ] Implement light/dark theme toggle using Alpine.js, defaulting to the user's `ThemePreference` (UI-02, USER-03)
-- [ ] Implement a responsive navigation shell (sidebar on desktop, hamburger menu on mobile) (UI-01)
-- [ ] Update the Home/Index and Error views to use the new stack
-- [ ] Remove `_Layout.cshtml.css` (no longer needed with Tailwind)
-- [ ] Update `_ValidationScriptsPartial.cshtml` or replace with HTMX-based validation approach
-- [ ] Verify the build pipeline compiles Tailwind CSS correctly
-- [ ] Write smoke tests verifying the layout renders and theme toggle works
+- [x] Remove Bootstrap, jQuery, and jQuery Validation from `wwwroot/lib`
+- [x] Install and configure Tailwind CSS 4 (via npm/standalone CLI, integrated into the build)
+- [x] Add HTMX (via CDN or local copy in `wwwroot/lib`)
+- [x] Add Alpine.js (via CDN or local copy in `wwwroot/lib`)
+- [x] Rewrite `_Layout.cshtml` with Tailwind CSS 4 utility classes, HTMX script, and Alpine.js script
+- [x] Implement light/dark theme toggle using Alpine.js, defaulting to the user's `ThemePreference` (UI-02, USER-03)
+- [x] Implement a responsive navigation shell (sidebar on desktop, hamburger menu on mobile) (UI-01)
+- [x] Update the Home/Index and Error views to use the new stack
+- [x] Remove `_Layout.cshtml.css` (no longer needed with Tailwind)
+- [x] Update `_ValidationScriptsPartial.cshtml` or replace with HTMX-based validation approach
+- [x] Verify the build pipeline compiles Tailwind CSS correctly
+- [x] Write smoke tests verifying the layout renders and theme toggle works
 
 ### 0.5 Shared Infrastructure
 
-- [ ] Create a base `ServiceResult<T>` type for consistent service return values
-- [ ] Create a shared `_Notification.cshtml` partial for toast/alert messages
-- [ ] Configure global error handling and logging (REL-01, REL-02)
-- [ ] Configure HTTPS enforcement and anti-forgery tokens (SEC-02, SEC-03)
-- [ ] Write tests for error handling middleware
+- [x] Create a base `ServiceResult<T>` type for consistent service return values
+- [x] Create a shared `_Notification.cshtml` partial for toast/alert messages
+- [x] Configure global error handling and logging (REL-01, REL-02)
+- [x] Configure HTTPS enforcement and anti-forgery tokens (SEC-02, SEC-03)
+- [x] Write tests for error handling middleware
 
 ---
 
