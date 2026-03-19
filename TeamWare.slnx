@@ -1,4 +1,6 @@
 <Solution>
-  <Project Path="TeamWare.Tests/TeamWare.Tests.csproj" />
+  <Project Path="TeamWare.Tests/TeamWare.Tests.csproj">
+    <Build Solution="Debug|*" Project="false" />
+  </Project>
   <Project Path="TeamWare.Web/TeamWare.Web.csproj" />
 </Solution>
