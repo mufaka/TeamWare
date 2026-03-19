@@ -35,4 +35,6 @@ public interface ITaskService
     Task<ServiceResult<TaskItem>> GetTask(int taskId, string userId);
 
     Task<ServiceResult<List<TaskItem>>> GetWhatsNext(string userId, int limit = 10);
+
+    Task<ServiceResult<List<TaskItem>>> GetSomedayMaybe(string userId);
 }

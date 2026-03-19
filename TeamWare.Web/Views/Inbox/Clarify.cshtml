@@ -1,0 +1,94 @@
+﻿@model TeamWare.Web.ViewModels.InboxClarifyViewModel
+@{
+    ViewData["Title"] = "Clarify Inbox Item";
+}
+
+<div class="mx-auto max-w-lg">
+    <div class="mb-2 text-sm text-gray-500 dark:text-gray-400">
+        <a asp-action="Index" class="hover:text-indigo-600 dark:hover:text-indigo-400">Inbox</a>
+    </div>
+    <h1 class="mb-6 text-2xl font-bold text-gray-900 dark:text-white">Clarify Inbox Item</h1>
+
+    <div class="mb-6 rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/50">
+        <h2 class="text-sm font-medium text-gray-900 dark:text-white">@Model.Title</h2>
+        @if (!string.IsNullOrEmpty(Model.Description))
+        {
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">@Model.Description</p>
+        }
+    </div>
+
+    <form asp-action="Clarify" method="post" class="space-y-6">
+        <input type="hidden" asp-for="InboxItemId" />
+        <input type="hidden" asp-for="Title" />
+        <input type="hidden" asp-for="Description" />
+
+        <div>
+            <label asp-for="ProjectId" class="block text-sm font-medium text-gray-700 dark:text-gray-300"></label>
+            @if (Model.AvailableProjects.Any())
+            {
+                <select asp-for="ProjectId" class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+                    <option value="">Select a project...</option>
+                    @foreach (var project in Model.AvailableProjects)
+                    {
+                        <option value="@project.Id">@project.Name</option>
+                    }
+                </select>
+            }
+            else
+            {
+                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                    No projects available. <a asp-controller="Project" asp-action="Create" class="text-indigo-600 hover:text-indigo-700 dark:text-indigo-400">Create a project</a> first.
+                </p>
+            }
+            <span asp-validation-for="ProjectId" class="mt-1 text-sm text-red-600 dark:text-red-400"></span>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+            <div>
+                <label asp-for="Priority" class="block text-sm font-medium text-gray-700 dark:text-gray-300"></label>
+                <select asp-for="Priority" asp-items="Html.GetEnumSelectList<TeamWare.Web.Models.TaskItemPriority>()"
+                        class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+                </select>
+            </div>
+            <div>
+                <label asp-for="DueDate" class="block text-sm font-medium text-gray-700 dark:text-gray-300"></label>
+                <input asp-for="DueDate" type="date" class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white" />
+            </div>
+        </div>
+
+        <div class="space-y-3" x-data="{ isNextAction: false, isSomedayMaybe: false }">
+            <div class="flex items-center">
+                <input asp-for="IsNextAction" type="checkbox" x-model="isNextAction"
+                       x-on:change="if(isNextAction) isSomedayMaybe = false"
+                       class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700" />
+                <label asp-for="IsNextAction" class="ml-2 text-sm text-gray-700 dark:text-gray-300"></label>
+            </div>
+            <div class="flex items-center">
+                <input asp-for="IsSomedayMaybe" type="checkbox" x-model="isSomedayMaybe"
+                       x-on:change="if(isSomedayMaybe) isNextAction = false"
+                       class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700" />
+                <label asp-for="IsSomedayMaybe" class="ml-2 text-sm text-gray-700 dark:text-gray-300"></label>
+            </div>
+        </div>
+
+        <div asp-validation-summary="ModelOnly" class="text-sm text-red-600 dark:text-red-400"></div>
+
+        <div class="flex items-center justify-between">
+            <form asp-action="Dismiss" method="post" class="inline">
+                <input type="hidden" name="id" value="@Model.InboxItemId" />
+                <button type="submit"
+                        class="rounded-md px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20">
+                    Dismiss
+                </button>
+            </form>
+            <div class="flex items-center gap-3">
+                <a asp-action="Index" class="rounded-md px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700">Cancel</a>
+                <button type="submit" class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900">Convert to Task</button>
+            </div>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

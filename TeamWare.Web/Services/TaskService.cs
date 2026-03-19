@@ -405,4 +405,22 @@ public class TaskService : ITaskService
 
         return ServiceResult<List<TaskItem>>.Success(tasks);
     }
+
+    public async Task<ServiceResult<List<TaskItem>>> GetSomedayMaybe(string userId)
+    {
+        var userProjectIds = await _context.ProjectMembers
+            .Where(pm => pm.UserId == userId)
+            .Select(pm => pm.ProjectId)
+            .ToListAsync();
+
+        var tasks = await _context.TaskItems
+            .Where(t => userProjectIds.Contains(t.ProjectId)
+                && t.IsSomedayMaybe
+                && t.Status != TaskItemStatus.Done)
+            .Include(t => t.Project)
+            .OrderByDescending(t => t.UpdatedAt)
+            .ToListAsync();
+
+        return ServiceResult<List<TaskItem>>.Success(tasks);
+    }
 }
