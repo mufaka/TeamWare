@@ -6,6 +6,11 @@
 # MCP tool configuration
 .mcp.json
 
+# SQLite databases
+*.db
+*.db-shm
+*.db-wal
+
 # User-specific files
 *.rsuser
 *.suo
