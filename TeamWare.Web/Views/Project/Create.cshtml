@@ -15,7 +15,8 @@
 
         <div>
             <label asp-for="Description" class="block text-sm font-medium text-gray-700 dark:text-gray-300"></label>
-            <textarea asp-for="Description" rows="4" class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-indigo-400 dark:focus:ring-indigo-400"></textarea>
+            @{ var editorModel = new MarkdownEditorViewModel { FieldName = "Description", Value = Model.Description }; }
+            <partial name="_MarkdownEditor" model="editorModel" />
             <span asp-validation-for="Description" class="mt-1 text-sm text-red-600 dark:text-red-400"></span>
         </div>
 

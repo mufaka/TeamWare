@@ -10,7 +10,7 @@
         <h1 class="text-2xl font-bold text-gray-900 dark:text-white">@Model.Name</h1>
         @if (!string.IsNullOrEmpty(Model.Description))
         {
-            <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">@Model.Description</p>
+            <div class="mt-1 text-sm text-gray-600 dark:text-gray-400 markdown-body">@MarkdownHelper.RenderMarkdown(Model.Description)</div>
         }
         @if (Model.Status == TeamWare.Web.Models.ProjectStatus.Archived)
         {

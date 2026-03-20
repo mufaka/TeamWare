@@ -1,0 +1,71 @@
+﻿@model TeamWare.Web.ViewModels.MarkdownEditorViewModel
+
+<div x-data="markdownEditor()" class="mt-1">
+    <script type="application/json" x-ref="initialValue">@Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Value ?? ""))</script>
+
+    <!-- Tabs -->
+    <div class="flex border-b border-gray-300 dark:border-gray-600">
+        <button type="button" @@click="tab = 'write'"
+                :class="tab === 'write' ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'"
+                class="-mb-px border-b-2 px-3 py-1.5 text-sm font-medium focus:outline-none">
+            Write
+        </button>
+        <button type="button" @@click="tab = 'preview'"
+                :class="tab === 'preview' ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'"
+                class="-mb-px border-b-2 px-3 py-1.5 text-sm font-medium focus:outline-none">
+            Preview
+        </button>
+    </div>
+
+    <!-- Toolbar (write mode only) -->
+    <div x-show="tab === 'write'" class="flex flex-wrap gap-0.5 border-x border-gray-300 bg-gray-50 px-1 py-1 dark:border-gray-600 dark:bg-gray-800">
+        <button type="button" @@click="bold()" title="Bold (Ctrl+B)"
+                class="rounded px-2 py-1 text-sm font-bold text-gray-600 hover:bg-gray-200 dark:text-gray-300 dark:hover:bg-gray-700">
+            B
+        </button>
+        <button type="button" @@click="italic()" title="Italic (Ctrl+I)"
+                class="rounded px-2 py-1 text-sm italic text-gray-600 hover:bg-gray-200 dark:text-gray-300 dark:hover:bg-gray-700">
+            I
+        </button>
+        <span class="mx-0.5 w-px self-stretch bg-gray-300 dark:bg-gray-600"></span>
+        <button type="button" @@click="heading()" title="Heading"
+                class="rounded px-2 py-1 text-sm font-semibold text-gray-600 hover:bg-gray-200 dark:text-gray-300 dark:hover:bg-gray-700">
+            H
+        </button>
+        <span class="mx-0.5 w-px self-stretch bg-gray-300 dark:bg-gray-600"></span>
+        <button type="button" @@click="link()" title="Link"
+                class="rounded px-2 py-1 text-sm text-gray-600 hover:bg-gray-200 dark:text-gray-300 dark:hover:bg-gray-700">
+            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+            </svg>
+        </button>
+        <button type="button" @@click="bulletList()" title="Bullet list"
+                class="rounded px-2 py-1 text-sm text-gray-600 hover:bg-gray-200 dark:text-gray-300 dark:hover:bg-gray-700">
+            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+        </button>
+        <button type="button" @@click="code()" title="Inline code"
+                class="rounded px-2 py-1 text-sm font-mono text-gray-600 hover:bg-gray-200 dark:text-gray-300 dark:hover:bg-gray-700">
+            &lt;/&gt;
+        </button>
+    </div>
+
+    <!-- Write tab -->
+    <div x-show="tab === 'write'">
+        <textarea x-ref="textarea"
+                  x-model="value"
+                  @@keydown.ctrl.b.prevent="bold()"
+                  @@keydown.ctrl.i.prevent="italic()"
+                  name="@Model.FieldName"
+                  id="@Model.FieldName"
+                  rows="6"
+                  class="block w-full rounded-b-md border border-t-0 border-gray-300 bg-white px-3 py-2 text-sm font-mono shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-indigo-400 dark:focus:ring-indigo-400"></textarea>
+    </div>
+
+    <!-- Preview tab -->
+    <div x-show="tab === 'preview'"
+         x-html="renderPreview()"
+         class="markdown-body min-h-[152px] rounded-b-md border border-t-0 border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300">
+    </div>
+</div>
