@@ -10,6 +10,7 @@ public class EditProfileViewModel
     public string DisplayName { get; set; } = string.Empty;
 
     [StringLength(500)]
+    [Url]
     [Display(Name = "Avatar URL")]
     public string? AvatarUrl { get; set; }
 }

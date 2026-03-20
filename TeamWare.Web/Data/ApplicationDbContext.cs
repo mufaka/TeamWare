@@ -92,6 +92,9 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             entity.HasIndex(t => t.DueDate);
             entity.HasIndex(t => t.IsNextAction);
             entity.HasIndex(t => t.IsSomedayMaybe);
+
+            // Composite index for common query: tasks per project filtered by status
+            entity.HasIndex(t => new { t.ProjectId, t.Status });
         });
 
         builder.Entity<TaskAssignment>(entity =>
@@ -131,6 +134,9 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 
             entity.HasIndex(i => i.UserId);
             entity.HasIndex(i => i.Status);
+
+            // Composite index for common query: unprocessed inbox items per user
+            entity.HasIndex(i => new { i.UserId, i.Status });
         });
 
         builder.Entity<ActivityLogEntry>(entity =>
@@ -158,6 +164,9 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             entity.HasIndex(a => a.TaskItemId);
             entity.HasIndex(a => a.ProjectId);
             entity.HasIndex(a => a.CreatedAt);
+
+            // Composite index for common query: activity log per project sorted by date
+            entity.HasIndex(a => new { a.ProjectId, a.CreatedAt });
         });
 
         builder.Entity<Comment>(entity =>
@@ -194,6 +203,9 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             entity.HasIndex(n => n.UserId);
             entity.HasIndex(n => n.IsRead);
             entity.HasIndex(n => n.CreatedAt);
+
+            // Composite index for common query: unread notifications per user
+            entity.HasIndex(n => new { n.UserId, n.IsRead });
         });
 
         builder.Entity<UserReview>(entity =>

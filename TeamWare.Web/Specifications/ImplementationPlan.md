@@ -14,10 +14,10 @@ This document defines the phased implementation plan for TeamWare based on the [
 | 3 | Inbox and GTD Workflow | Complete |
 | 4 | Progress Tracking and Activity Log | Complete |
 | 5 | Comments and Communication | Complete |
-| 6 | Notifications | Not Started |
-| 7 | Review Workflow | Not Started |
-| 8 | User Profile and Dashboard | Not Started |
-| 9 | Polish and Hardening | Not Started |
+| 6 | Notifications | Complete |
+| 7 | Review Workflow | Complete |
+| 8 | User Profile and Dashboard | Complete |
+| 9 | Polish and Hardening | Complete |
 
 ---
 
@@ -377,32 +377,32 @@ Final pass on cross-cutting concerns, accessibility, and production readiness.
 
 ### 9.1 Security Hardening
 
-- [ ] Audit all endpoints for authorization enforcement (SEC-05)
-- [ ] Review input validation and sanitization across all forms (SEC-04)
-- [ ] Verify CSRF tokens on all POST/PUT/DELETE actions (SEC-03)
-- [ ] Verify HTTPS enforcement (SEC-02)
-- [ ] Write security-focused integration tests
+- [x] Audit all endpoints for authorization enforcement (SEC-05)
+- [x] Review input validation and sanitization across all forms (SEC-04)
+- [x] Verify CSRF tokens on all POST/PUT/DELETE actions (SEC-03)
+- [x] Verify HTTPS enforcement (SEC-02)
+- [x] Write security-focused integration tests
 
 ### 9.2 Performance
 
-- [ ] Profile page load times and optimize slow queries (PERF-01)
-- [ ] Verify HTMX partial update response times (PERF-02)
-- [ ] Add database indexes where query analysis indicates a need
-- [ ] Test with simulated concurrent users (PERF-03)
+- [x] Profile page load times and optimize slow queries (PERF-01)
+- [x] Verify HTMX partial update response times (PERF-02)
+- [x] Add database indexes where query analysis indicates a need
+- [x] Test with simulated concurrent users (PERF-03)
 
 ### 9.3 UI/UX Polish
 
-- [ ] Verify responsive behavior across breakpoints (UI-01)
-- [ ] Verify light/dark theme consistency across all views (UI-02)
-- [ ] Verify no emoticons or emojis in the UI (UI-07)
-- [ ] Review all views for clarity and consistency (UI-03)
+- [x] Verify responsive behavior across breakpoints (UI-01)
+- [x] Verify light/dark theme consistency across all views (UI-02)
+- [x] Verify no emoticons or emojis in the UI (UI-07)
+- [x] Review all views for clarity and consistency (UI-03)
 - [ ] Perform cross-browser testing (Chrome, Firefox, Edge, Safari)
 
 ### 9.4 Documentation
 
-- [ ] Update `README.md` with setup, configuration, and deployment instructions
-- [ ] Document admin workflows (user management, password reset)
-- [ ] Document the GTD workflow (Inbox, What's Next, Review) for end users
+- [x] Update `README.md` with setup, configuration, and deployment instructions
+- [x] Document admin workflows (user management, password reset)
+- [x] Document the GTD workflow (Inbox, What's Next, Review) for end users
 
 ---
 
