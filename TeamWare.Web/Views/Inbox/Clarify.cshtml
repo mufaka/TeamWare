@@ -23,6 +23,14 @@
         <input type="hidden" asp-for="Description" />
 
         <div>
+            <label asp-for="TaskDescription" class="block text-sm font-medium text-gray-700 dark:text-gray-300"></label>
+            <textarea asp-for="TaskDescription" rows="4"
+                      placeholder="Add a detailed description for the task..."
+                      class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"></textarea>
+            <span asp-validation-for="TaskDescription" class="mt-1 text-sm text-red-600 dark:text-red-400"></span>
+        </div>
+
+        <div>
             <label asp-for="ProjectId" class="block text-sm font-medium text-gray-700 dark:text-gray-300"></label>
             @if (Model.AvailableProjects.Any())
             {

@@ -10,7 +10,7 @@ public interface IInboxService
         bool isNextAction, bool isSomedayMaybe, string userId);
 
     Task<ServiceResult<TaskItem>> ConvertToTask(int inboxItemId, int projectId, TaskItemPriority priority,
-        DateTime? dueDate, bool isNextAction, bool isSomedayMaybe, string userId);
+        DateTime? dueDate, bool isNextAction, bool isSomedayMaybe, string userId, string? description = null);
 
     Task<ServiceResult> DismissItem(int inboxItemId, string userId);
 

@@ -128,6 +128,7 @@ public class InboxController : Controller
             InboxItemId = item.Id,
             Title = item.Title,
             Description = item.Description,
+            TaskDescription = item.Description,
             AvailableProjects = projectsResult.Succeeded
                 ? projectsResult.Data!.Select(p => new ProjectOptionViewModel
                 {
@@ -160,7 +161,7 @@ public class InboxController : Controller
 
         var userId = GetUserId();
         var result = await _inboxService.ConvertToTask(model.InboxItemId, model.ProjectId,
-            model.Priority, model.DueDate, model.IsNextAction, model.IsSomedayMaybe, userId);
+            model.Priority, model.DueDate, model.IsNextAction, model.IsSomedayMaybe, userId, model.TaskDescription);
 
         if (!result.Succeeded)
         {

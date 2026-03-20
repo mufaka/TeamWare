@@ -185,6 +185,34 @@ public class InboxServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task ConvertToTask_WithDescriptionOverride_UsesProvidedDescription()
+    {
+        var (project, owner) = await CreateProjectWithOwner();
+        var addResult = await _inboxService.AddItem("Convert me", "Original description", owner.Id);
+
+        var result = await _inboxService.ConvertToTask(addResult.Data!.Id, project.Id,
+            TaskItemPriority.Medium, null, false, false, owner.Id, "Detailed task description");
+
+        Assert.True(result.Succeeded);
+        Assert.NotNull(result.Data);
+        Assert.Equal("Detailed task description", result.Data.Description);
+    }
+
+    [Fact]
+    public async Task ConvertToTask_WithNullDescription_UsesInboxItemDescription()
+    {
+        var (project, owner) = await CreateProjectWithOwner();
+        var addResult = await _inboxService.AddItem("Convert me", "Original description", owner.Id);
+
+        var result = await _inboxService.ConvertToTask(addResult.Data!.Id, project.Id,
+            TaskItemPriority.Medium, null, false, false, owner.Id);
+
+        Assert.True(result.Succeeded);
+        Assert.NotNull(result.Data);
+        Assert.Equal("Original description", result.Data.Description);
+    }
+
+    [Fact]
     public async Task ConvertToTask_AsNextAction_Success()
     {
         var (project, owner) = await CreateProjectWithOwner();

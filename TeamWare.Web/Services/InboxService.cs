@@ -108,7 +108,7 @@ public class InboxService : IInboxService
     }
 
     public async Task<ServiceResult<TaskItem>> ConvertToTask(int inboxItemId, int projectId, TaskItemPriority priority,
-        DateTime? dueDate, bool isNextAction, bool isSomedayMaybe, string userId)
+        DateTime? dueDate, bool isNextAction, bool isSomedayMaybe, string userId, string? description = null)
     {
         var item = await _context.InboxItems
             .FirstOrDefaultAsync(i => i.Id == inboxItemId && i.UserId == userId);
@@ -128,7 +128,7 @@ public class InboxService : IInboxService
             return ServiceResult<TaskItem>.Failure("A task cannot be both a Next Action and Someday/Maybe.");
         }
 
-        var taskResult = await _taskService.CreateTask(projectId, item.Title, item.Description,
+        var taskResult = await _taskService.CreateTask(projectId, item.Title, description ?? item.Description,
             priority, dueDate, userId);
 
         if (!taskResult.Succeeded)

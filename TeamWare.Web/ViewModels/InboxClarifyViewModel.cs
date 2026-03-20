@@ -11,6 +11,10 @@ public class InboxClarifyViewModel
 
     public string? Description { get; set; }
 
+    [Display(Name = "Description")]
+    [StringLength(2000, ErrorMessage = "Description must be at most 2000 characters.")]
+    public string? TaskDescription { get; set; }
+
     [Required]
     [Display(Name = "Project")]
     public int ProjectId { get; set; }
