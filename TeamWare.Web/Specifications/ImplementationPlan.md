@@ -317,30 +317,30 @@ Deliver the GTD periodic review feature.
 
 ### 7.1 Domain Models
 
-- [ ] Create `UserReview` entity (REV-01 through REV-04)
-- [ ] Create EF Core configuration
-- [ ] Add and apply the EF Core migration
+- [x] Create `UserReview` entity (REV-01 through REV-04)
+- [x] Create EF Core configuration
+- [x] Add and apply the EF Core migration
 
 ### 7.2 Services
 
-- [ ] Create `IReviewService` and `ReviewService`
-  - [ ] `StartReview` - gathers inbox items, active tasks, Next Actions, and Someday/Maybe items for the user
-  - [ ] `CompleteReview` (REV-04)
-  - [ ] `GetLastReviewDate` (REV-04)
-  - [ ] `IsReviewDue` - checks against configurable schedule (REV-03)
-- [ ] Integrate with `NotificationService` to prompt reviews when due (REV-03)
-- [ ] Write unit tests for all service methods
+- [x] Create `IReviewService` and `ReviewService`
+  - [x] `StartReview` - gathers inbox items, active tasks, Next Actions, and Someday/Maybe items for the user
+  - [x] `CompleteReview` (REV-04)
+  - [x] `GetLastReviewDate` (REV-04)
+  - [x] `IsReviewDue` - checks against configurable schedule (REV-03)
+- [x] Integrate with `NotificationService` to prompt reviews when due (REV-03)
+- [x] Write unit tests for all service methods
 
 ### 7.3 Controllers and Views
 
-- [ ] Create `ReviewController` with actions: Index (guided review page), Complete
-- [ ] Build a multi-step review view where the user walks through:
-  - [ ] Step 1: Unprocessed inbox items (process or dismiss)
-  - [ ] Step 2: Active tasks (re-prioritize, update status, flag as Next Action or Someday/Maybe)
-  - [ ] Step 3: Someday/Maybe items (promote to active, keep, or dismiss)
-- [ ] Use HTMX for step transitions and inline edits
-- [ ] Display last review date and review-due indicator on the user dashboard
-- [ ] Write integration tests
+- [x] Create `ReviewController` with actions: Index (guided review page), Complete
+- [x] Build a multi-step review view where the user walks through:
+  - [x] Step 1: Unprocessed inbox items (process or dismiss)
+  - [x] Step 2: Active tasks (re-prioritize, update status, flag as Next Action or Someday/Maybe)
+  - [x] Step 3: Someday/Maybe items (promote to active, keep, or dismiss)
+- [x] Use HTMX for step transitions and inline edits
+- [x] Display last review date and review-due indicator on the user dashboard
+- [x] Write integration tests
 
 ---
 
