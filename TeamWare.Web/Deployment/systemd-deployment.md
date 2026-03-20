@@ -2,6 +2,8 @@
 
 This guide covers publishing the TeamWare application and running it as a systemd service on a Linux host.
 
+The application uses the `Microsoft.Extensions.Hosting.Systemd` integration, which enables the `Type=notify` sd_notify protocol. This means systemd knows exactly when the app has finished starting and can cleanly shut it down on `systemctl stop`.
+
 ---
 
 ## Prerequisites
