@@ -1,0 +1,19 @@
+﻿@model int
+
+<div class="flex items-center justify-between">
+    <div>
+        @if (Model > 0)
+        {
+            <p class="text-3xl font-bold text-indigo-600 dark:text-indigo-400">@Model</p>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">unprocessed item@(Model != 1 ? "s" : "")</p>
+        }
+        else
+        {
+            <p class="text-sm text-gray-500 dark:text-gray-400">Inbox is clear!</p>
+        }
+    </div>
+    <a asp-controller="Inbox" asp-action="Index"
+       class="inline-flex items-center rounded-md bg-indigo-50 px-3 py-2 text-sm font-medium text-indigo-700 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-300 dark:hover:bg-indigo-900/50">
+        Go to Inbox &rarr;
+    </a>
+</div>

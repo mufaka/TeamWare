@@ -217,7 +217,7 @@ public class ReviewControllerTests : IClassFixture<TeamWareWebApplicationFactory
     }
 
     [Fact]
-    public async Task Home_ShowsReviewStatusComponent()
+    public async Task Home_ShowsReviewDashboardSection()
     {
         var loginCookie = await CreateAndLoginUser();
 
@@ -227,7 +227,23 @@ public class ReviewControllerTests : IClassFixture<TeamWareWebApplicationFactory
         var response = await _client.SendAsync(request);
         var html = await response.Content.ReadAsStringAsync();
 
-        // Should show review due indicator (no reviews completed yet)
+        // Dashboard loads review status via HTMX lazy-load
+        Assert.Contains("DashboardReview", html);
+        Assert.Contains("Weekly Review", html);
+    }
+
+    [Fact]
+    public async Task DashboardReview_ShowsReviewDueIndicator()
+    {
+        var loginCookie = await CreateAndLoginUser();
+
+        var request = new HttpRequestMessage(HttpMethod.Get, "/Home/DashboardReview");
+        request.Headers.Add("Cookie", loginCookie);
+
+        var response = await _client.SendAsync(request);
+        var html = await response.Content.ReadAsStringAsync();
+
+        // No reviews completed yet so review is due
         Assert.Contains("Review due", html);
     }
 
