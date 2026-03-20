@@ -81,6 +81,12 @@ public class InboxController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> QuickAdd(string title)
     {
+        if (string.IsNullOrWhiteSpace(title) || title.Length > 300)
+        {
+            TempData["ErrorMessage"] = "Title is required and must be at most 300 characters.";
+            return RedirectToAction(nameof(Index));
+        }
+
         var userId = GetUserId();
         var result = await _inboxService.AddItem(title, null, userId);
 

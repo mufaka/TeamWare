@@ -14,10 +14,10 @@ This document defines the phased implementation plan for TeamWare based on the [
 | 3 | Inbox and GTD Workflow | Complete |
 | 4 | Progress Tracking and Activity Log | Complete |
 | 5 | Comments and Communication | Complete |
-| 6 | Notifications | Not Started |
-| 7 | Review Workflow | Not Started |
-| 8 | User Profile and Dashboard | Not Started |
-| 9 | Polish and Hardening | Not Started |
+| 6 | Notifications | Complete |
+| 7 | Review Workflow | Complete |
+| 8 | User Profile and Dashboard | Complete |
+| 9 | Polish and Hardening | In Progress |
 
 ---
 
@@ -377,11 +377,11 @@ Final pass on cross-cutting concerns, accessibility, and production readiness.
 
 ### 9.1 Security Hardening
 
-- [ ] Audit all endpoints for authorization enforcement (SEC-05)
-- [ ] Review input validation and sanitization across all forms (SEC-04)
-- [ ] Verify CSRF tokens on all POST/PUT/DELETE actions (SEC-03)
-- [ ] Verify HTTPS enforcement (SEC-02)
-- [ ] Write security-focused integration tests
+- [x] Audit all endpoints for authorization enforcement (SEC-05)
+- [x] Review input validation and sanitization across all forms (SEC-04)
+- [x] Verify CSRF tokens on all POST/PUT/DELETE actions (SEC-03)
+- [x] Verify HTTPS enforcement (SEC-02)
+- [x] Write security-focused integration tests
 
 ### 9.2 Performance
 
