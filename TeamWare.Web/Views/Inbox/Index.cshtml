@@ -50,7 +50,7 @@
                                 <p class="mt-1 text-sm text-gray-500 dark:text-gray-400 line-clamp-2">@item.Description</p>
                             }
                             <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">
-                                Added @item.CreatedAt.ToString("MMM d, yyyy h:mm tt")
+                                Added @Html.LocalTime(item.CreatedAt)
                             </p>
                         </div>
                         <div class="flex items-center gap-1">

@@ -27,7 +27,7 @@
                 {
                     var isOverdue = Model.DueDate.Value < DateTime.UtcNow;
                     <span class="@(isOverdue ? "text-red-600 dark:text-red-400" : "text-gray-500 dark:text-gray-400")">
-                        Due @Model.DueDate.Value.ToString("MMM d, yyyy")
+                        Due @Html.LocalTime(Model.DueDate.Value, "date")
                     </span>
                 }
                 @if (Model.IsNextAction)

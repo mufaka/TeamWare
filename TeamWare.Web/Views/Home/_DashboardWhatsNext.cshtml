@@ -30,7 +30,7 @@ else
                             @if (task.DueDate.HasValue)
                             {
                                 <span class="@(task.IsOverdue ? "text-red-600 font-medium dark:text-red-400" : "")">
-                                    Due @task.DueDate.Value.ToString("MMM d")
+                                    Due @Html.LocalTime(task.DueDate.Value, "short-date")
                                 </span>
                             }
                         </div>

@@ -27,7 +27,7 @@ else
                 </div>
                 <div class="min-w-0 flex-1">
                     <p class="text-sm text-gray-700 dark:text-gray-300">@notification.Message</p>
-                    <p class="mt-0.5 text-xs text-gray-400">@notification.CreatedAt.ToString("MMM d, h:mm tt")</p>
+                    <p class="mt-0.5 text-xs text-gray-400">@Html.LocalTime(notification.CreatedAt, "short-datetime")</p>
                 </div>
             </div>
         }

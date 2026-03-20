@@ -31,7 +31,7 @@
                             }
                             <div class="mt-1 text-xs text-gray-400 dark:text-gray-500">
                                 <span class="text-indigo-600 dark:text-indigo-400">@task.ProjectName</span>
-                                <span class="ml-2">Updated @task.UpdatedAt.ToString("MMM d, yyyy")</span>
+                                <span class="ml-2">Updated @Html.LocalTime(task.UpdatedAt, "date")</span>
                             </div>
                         </div>
                     </div>

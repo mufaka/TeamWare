@@ -12,7 +12,7 @@
             @if (Model.LastReviewDate.HasValue)
             {
                 <span class="ml-1 text-yellow-600 dark:text-yellow-400">
-                    — last reviewed @Model.LastReviewDate.Value.ToString("MMM d, yyyy")
+                    — last reviewed @Html.LocalTime(Model.LastReviewDate.Value, "date")
                 </span>
             }
             else
@@ -30,6 +30,6 @@ else if (Model.LastReviewDate.HasValue)
         <svg class="h-4 w-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
         </svg>
-        Last reviewed @Model.LastReviewDate.Value.ToString("MMM d, yyyy")
+        Last reviewed @Html.LocalTime(Model.LastReviewDate.Value, "date")
     </div>
 }

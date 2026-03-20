@@ -1,6 +1,25 @@
 ﻿// Please see documentation at https://learn.microsoft.com/aspnet/core/client-side/bundling-and-minification
 // for details on configuring this project to bundle and minify static web assets.
 
+// --- Local time conversion ---
+function convertTimeElements(root) {
+    (root || document).querySelectorAll('time[datetime]').forEach(function (el) {
+        var date = new Date(el.getAttribute('datetime'));
+        if (isNaN(date)) return;
+        var fmt = el.dataset.format || 'datetime';
+        var opts = { month: 'short', day: 'numeric' };
+        if (fmt === 'date' || fmt === 'datetime') opts.year = 'numeric';
+        if (fmt === 'datetime' || fmt === 'short-datetime') {
+            opts.hour = 'numeric';
+            opts.minute = '2-digit';
+        }
+        el.textContent = date.toLocaleString(undefined, opts);
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function () { convertTimeElements(); });
+document.addEventListener('htmx:afterSwap', function (evt) { convertTimeElements(evt.detail.target); });
+
 document.addEventListener('alpine:init', () => {
     Alpine.data('markdownEditor', () => ({
         tab: 'write',

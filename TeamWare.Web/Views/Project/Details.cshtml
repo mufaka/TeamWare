@@ -125,7 +125,7 @@
                    class="flex items-center justify-between px-5 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50">
                     <div>
                         <p class="text-sm font-medium text-gray-900 dark:text-white">@deadline.Title</p>
-                        <p class="text-xs text-gray-500 dark:text-gray-400">@deadline.DueDate.ToString("MMM d, yyyy")</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">@Html.LocalTime(deadline.DueDate, "date")</p>
                     </div>
                     <span class="text-xs font-medium @urgencyClass">@daysText</span>
                 </a>

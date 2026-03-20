@@ -34,7 +34,7 @@ else
                         }
                         else
                         {
-                            <span class="text-gray-500 dark:text-gray-400">@deadline.DueDate.ToString("MMM d")</span>
+                            <span class="text-gray-500 dark:text-gray-400">@Html.LocalTime(deadline.DueDate, "short-date")</span>
                         }
                     </div>
                 </div>

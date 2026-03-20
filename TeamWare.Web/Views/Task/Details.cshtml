@@ -182,7 +182,7 @@
                                     <div class="min-w-0 flex-1">
                                         <p class="text-sm text-gray-700 dark:text-gray-300">@entry.Description</p>
                                         <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-                                            @entry.CreatedAt.ToString("MMM d, yyyy h:mm tt")
+                                            @Html.LocalTime(entry.CreatedAt)
                                         </p>
                                     </div>
                                 </div>
@@ -209,7 +209,7 @@
                     <div>
                         <dt class="text-gray-500 dark:text-gray-400">Due Date</dt>
                         <dd class="font-medium @(Model.IsOverdue ? "text-red-600 dark:text-red-400" : "text-gray-900 dark:text-white")">
-                            @Model.DueDate.Value.ToString("MMM d, yyyy")
+                            @Html.LocalTime(Model.DueDate.Value, "date")
                             @if (Model.IsOverdue) { <span class="text-xs">(Overdue)</span> }
                         </dd>
                     </div>
@@ -220,11 +220,11 @@
                 </div>
                 <div>
                     <dt class="text-gray-500 dark:text-gray-400">Created</dt>
-                    <dd class="text-gray-900 dark:text-white">@Model.CreatedAt.ToString("MMM d, yyyy h:mm tt")</dd>
+                    <dd class="text-gray-900 dark:text-white">@Html.LocalTime(Model.CreatedAt)</dd>
                 </div>
                 <div>
                     <dt class="text-gray-500 dark:text-gray-400">Updated</dt>
-                    <dd class="text-gray-900 dark:text-white">@Model.UpdatedAt.ToString("MMM d, yyyy h:mm tt")</dd>
+                    <dd class="text-gray-900 dark:text-white">@Html.LocalTime(Model.UpdatedAt)</dd>
                 </div>
             </dl>
         </div>

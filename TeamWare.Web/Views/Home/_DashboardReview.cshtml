@@ -8,7 +8,7 @@
         @if (lastReviewDate.HasValue)
         {
             <p class="text-sm text-gray-500 dark:text-gray-400">
-                Last review: <span class="font-medium text-gray-700 dark:text-gray-300">@lastReviewDate.Value.ToString("MMM d, yyyy")</span>
+                Last review: <span class="font-medium text-gray-700 dark:text-gray-300">@Html.LocalTime(lastReviewDate.Value, "date")</span>
             </p>
         }
         else

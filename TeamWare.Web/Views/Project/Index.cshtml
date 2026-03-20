@@ -44,7 +44,7 @@ else
                 <div class="mt-4 flex items-center text-xs text-gray-500 dark:text-gray-400">
                     <span>@project.MemberCount member@(project.MemberCount != 1 ? "s" : "")</span>
                     <span class="mx-2">|</span>
-                    <span>Updated @project.UpdatedAt.ToString("MMM d, yyyy")</span>
+                    <span>Updated @Html.LocalTime(project.UpdatedAt, "date")</span>
                 </div>
             </a>
         }
