@@ -1,0 +1,54 @@
+﻿@model List<TeamWare.Web.ViewModels.NotificationViewModel>
+
+@if (Model.Count == 0)
+{
+    <p class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">No unread notifications.</p>
+}
+else
+{
+    <ul class="max-h-80 divide-y divide-gray-100 overflow-y-auto dark:divide-gray-700">
+        @foreach (var notification in Model)
+        {
+            <li class="flex items-start gap-3 px-4 py-3">
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm text-gray-900 dark:text-gray-100">@notification.Message</p>
+                    <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                        @notification.CreatedAt.ToString("MMM d, yyyy h:mm tt")
+                    </p>
+                </div>
+                <div class="flex items-center gap-1 shrink-0">
+                    <form hx-post="@Url.Action("MarkAsRead", "Notification", new { id = notification.Id })"
+                          hx-target="#notification-dropdown-content"
+                          hx-swap="innerHTML">
+                        @Html.AntiForgeryToken()
+                        <button type="submit"
+                                class="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-green-600 dark:hover:bg-gray-700 dark:hover:text-green-400"
+                                title="Mark as read">
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                            </svg>
+                        </button>
+                    </form>
+                    <form hx-post="@Url.Action("Dismiss", "Notification", new { id = notification.Id })"
+                          hx-target="#notification-dropdown-content"
+                          hx-swap="innerHTML">
+                        @Html.AntiForgeryToken()
+                        <button type="submit"
+                                class="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-red-600 dark:hover:bg-gray-700 dark:hover:text-red-400"
+                                title="Dismiss">
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </form>
+                </div>
+            </li>
+        }
+    </ul>
+    <div class="border-t border-gray-100 dark:border-gray-700">
+        <a asp-controller="Notification" asp-action="Index"
+           class="block px-4 py-2 text-center text-sm font-medium text-indigo-600 hover:bg-gray-50 dark:text-indigo-400 dark:hover:bg-gray-700">
+            View all notifications
+        </a>
+    </div>
+}
