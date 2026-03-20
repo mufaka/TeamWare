@@ -156,12 +156,20 @@ public class ProjectService : IProjectService
         var dashboard = new ProjectDashboard
         {
             Project = project,
-            TotalMembers = project.Members.Count,
-            TaskCountToDo = await _context.TaskItems.CountAsync(t => t.ProjectId == projectId && t.Status == TaskItemStatus.ToDo),
-            TaskCountInProgress = await _context.TaskItems.CountAsync(t => t.ProjectId == projectId && t.Status == TaskItemStatus.InProgress),
-            TaskCountInReview = await _context.TaskItems.CountAsync(t => t.ProjectId == projectId && t.Status == TaskItemStatus.InReview),
-            TaskCountDone = await _context.TaskItems.CountAsync(t => t.ProjectId == projectId && t.Status == TaskItemStatus.Done)
+            TotalMembers = project.Members.Count
         };
+
+        // Single grouped query instead of 4 separate COUNT queries
+        var taskCounts = await _context.TaskItems
+            .Where(t => t.ProjectId == projectId)
+            .GroupBy(t => t.Status)
+            .Select(g => new { Status = g.Key, Count = g.Count() })
+            .ToListAsync();
+
+        dashboard.TaskCountToDo = taskCounts.FirstOrDefault(t => t.Status == TaskItemStatus.ToDo)?.Count ?? 0;
+        dashboard.TaskCountInProgress = taskCounts.FirstOrDefault(t => t.Status == TaskItemStatus.InProgress)?.Count ?? 0;
+        dashboard.TaskCountInReview = taskCounts.FirstOrDefault(t => t.Status == TaskItemStatus.InReview)?.Count ?? 0;
+        dashboard.TaskCountDone = taskCounts.FirstOrDefault(t => t.Status == TaskItemStatus.Done)?.Count ?? 0;
 
         return ServiceResult<ProjectDashboard>.Success(dashboard);
     }

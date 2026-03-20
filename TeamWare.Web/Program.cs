@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using TeamWare.Web.Data;
 using TeamWare.Web.Models;
@@ -46,6 +47,12 @@ builder.Services.AddControllersWithViews(options =>
     options.Filters.Add(new Microsoft.AspNetCore.Mvc.AutoValidateAntiforgeryTokenAttribute());
 });
 
+builder.Services.AddResponseCompression(options =>
+{
+    options.EnableForHttps = true;
+    options.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(["text/html"]);
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -57,6 +64,7 @@ if (!app.Environment.IsDevelopment())
 
 app.UseStatusCodePagesWithReExecute("/Home/StatusCode/{0}");
 app.UseHttpsRedirection();
+app.UseResponseCompression();
 app.UseRouting();
 
 app.UseAuthentication();

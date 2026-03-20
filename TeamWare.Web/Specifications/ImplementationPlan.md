@@ -17,7 +17,7 @@ This document defines the phased implementation plan for TeamWare based on the [
 | 6 | Notifications | Complete |
 | 7 | Review Workflow | Complete |
 | 8 | User Profile and Dashboard | Complete |
-| 9 | Polish and Hardening | In Progress |
+| 9 | Polish and Hardening | Complete |
 
 ---
 
@@ -385,10 +385,10 @@ Final pass on cross-cutting concerns, accessibility, and production readiness.
 
 ### 9.2 Performance
 
-- [ ] Profile page load times and optimize slow queries (PERF-01)
-- [ ] Verify HTMX partial update response times (PERF-02)
-- [ ] Add database indexes where query analysis indicates a need
-- [ ] Test with simulated concurrent users (PERF-03)
+- [x] Profile page load times and optimize slow queries (PERF-01)
+- [x] Verify HTMX partial update response times (PERF-02)
+- [x] Add database indexes where query analysis indicates a need
+- [x] Test with simulated concurrent users (PERF-03)
 
 ### 9.3 UI/UX Polish
 
