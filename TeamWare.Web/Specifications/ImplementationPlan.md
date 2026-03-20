@@ -400,9 +400,9 @@ Final pass on cross-cutting concerns, accessibility, and production readiness.
 
 ### 9.4 Documentation
 
-- [ ] Update `README.md` with setup, configuration, and deployment instructions
-- [ ] Document admin workflows (user management, password reset)
-- [ ] Document the GTD workflow (Inbox, What's Next, Review) for end users
+- [x] Update `README.md` with setup, configuration, and deployment instructions
+- [x] Document admin workflows (user management, password reset)
+- [x] Document the GTD workflow (Inbox, What's Next, Review) for end users
 
 ---
 
