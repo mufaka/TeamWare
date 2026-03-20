@@ -1,0 +1,35 @@
+﻿@model TeamWare.Web.ViewComponents.ReviewStatusModel
+
+@if (Model.IsReviewDue)
+{
+    <a asp-controller="Review" asp-action="Index"
+       class="flex items-center gap-2 rounded-lg border border-yellow-300 bg-yellow-50 px-4 py-3 text-sm hover:bg-yellow-100 dark:border-yellow-700 dark:bg-yellow-900/20 dark:hover:bg-yellow-900/30">
+        <svg class="h-5 w-5 text-yellow-600 dark:text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <div>
+            <span class="font-medium text-yellow-800 dark:text-yellow-200">Review due</span>
+            @if (Model.LastReviewDate.HasValue)
+            {
+                <span class="ml-1 text-yellow-600 dark:text-yellow-400">
+                    — last reviewed @Model.LastReviewDate.Value.ToString("MMM d, yyyy")
+                </span>
+            }
+            else
+            {
+                <span class="ml-1 text-yellow-600 dark:text-yellow-400">
+                    — you haven't reviewed yet
+                </span>
+            }
+        </div>
+    </a>
+}
+else if (Model.LastReviewDate.HasValue)
+{
+    <div class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+        <svg class="h-4 w-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+        </svg>
+        Last reviewed @Model.LastReviewDate.Value.ToString("MMM d, yyyy")
+    </div>
+}

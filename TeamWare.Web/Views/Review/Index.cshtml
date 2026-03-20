@@ -1,0 +1,88 @@
+﻿@model TeamWare.Web.ViewModels.ReviewViewModel
+@{
+    ViewData["Title"] = "Weekly Review";
+}
+
+<div class="mx-auto max-w-4xl">
+    <div class="mb-6">
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Weekly Review</h1>
+        @if (Model.LastReviewDate.HasValue)
+        {
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                Last reviewed: @Model.LastReviewDate.Value.ToString("MMM d, yyyy h:mm tt")
+            </p>
+        }
+        else
+        {
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                You haven't completed a review yet.
+            </p>
+        }
+    </div>
+
+    <!-- Step indicator -->
+    <nav class="mb-8">
+        <ol class="flex items-center gap-2">
+            @for (int i = 1; i <= 3; i++)
+            {
+                var stepLabel = i switch
+                {
+                    1 => "Inbox",
+                    2 => "Active Tasks",
+                    3 => "Someday/Maybe",
+                    _ => ""
+                };
+                var isActive = i == Model.CurrentStep;
+                var isCompleted = i < Model.CurrentStep;
+
+                <li class="flex items-center">
+                    @if (i > 1)
+                    {
+                        <div class="mx-2 h-0.5 w-8 @(isCompleted || isActive ? "bg-indigo-500" : "bg-gray-300 dark:bg-gray-600")"></div>
+                    }
+                    <a hx-get="@Url.Action("Index", "Review", new { step = i })"
+                       hx-target="#review-step-content"
+                       hx-swap="innerHTML"
+                       hx-push-url="@Url.Action("Index", "Review", new { step = i })"
+                       class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium cursor-pointer
+                              @(isActive ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300" :
+                                isCompleted ? "text-indigo-600 hover:bg-indigo-50 dark:text-indigo-400 dark:hover:bg-indigo-900/20" :
+                                "text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700")">
+                        <span class="flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold
+                                     @(isActive ? "bg-indigo-600 text-white" :
+                                       isCompleted ? "bg-indigo-500 text-white" :
+                                       "bg-gray-300 text-gray-600 dark:bg-gray-600 dark:text-gray-300")">
+                            @if (isCompleted)
+                            {
+                                <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                </svg>
+                            }
+                            else
+                            {
+                                @i
+                            }
+                        </span>
+                        @stepLabel
+                    </a>
+                </li>
+            }
+        </ol>
+    </nav>
+
+    <!-- Step content -->
+    <div id="review-step-content">
+        @if (Model.CurrentStep == 1)
+        {
+            @await Html.PartialAsync("_ReviewStep1", Model)
+        }
+        else if (Model.CurrentStep == 2)
+        {
+            @await Html.PartialAsync("_ReviewStep2", Model)
+        }
+        else
+        {
+            @await Html.PartialAsync("_ReviewStep3", Model)
+        }
+    </div>
+</div>
