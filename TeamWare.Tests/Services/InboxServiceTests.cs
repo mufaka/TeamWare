@@ -14,6 +14,7 @@ public class InboxServiceTests : IDisposable
     private readonly TaskService _taskService;
     private readonly ProjectService _projectService;
     private readonly ActivityLogService _activityLogService;
+    private readonly NotificationService _notificationService;
 
     public InboxServiceTests()
     {
@@ -28,9 +29,10 @@ public class InboxServiceTests : IDisposable
         _context.Database.EnsureCreated();
 
         _activityLogService = new ActivityLogService(_context);
-        _taskService = new TaskService(_context, _activityLogService);
+        _notificationService = new NotificationService(_context);
+        _taskService = new TaskService(_context, _activityLogService, _notificationService);
         _projectService = new ProjectService(_context);
-        _inboxService = new InboxService(_context, _taskService);
+        _inboxService = new InboxService(_context, _taskService, _notificationService);
     }
 
     private ApplicationUser CreateUser(string email, string displayName)

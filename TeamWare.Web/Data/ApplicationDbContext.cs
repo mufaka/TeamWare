@@ -25,6 +25,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 
     public DbSet<Comment> Comments => Set<Comment>();
 
+    public DbSet<Notification> Notifications => Set<Notification>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -174,6 +176,22 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             entity.HasIndex(c => c.TaskItemId);
             entity.HasIndex(c => c.AuthorId);
             entity.HasIndex(c => c.CreatedAt);
+        });
+
+        builder.Entity<Notification>(entity =>
+        {
+            entity.HasKey(n => n.Id);
+            entity.Property(n => n.Message).IsRequired().HasMaxLength(500);
+            entity.Property(n => n.Type).HasConversion<string>().HasMaxLength(30);
+
+            entity.HasOne(n => n.User)
+                .WithMany()
+                .HasForeignKey(n => n.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(n => n.UserId);
+            entity.HasIndex(n => n.IsRead);
+            entity.HasIndex(n => n.CreatedAt);
         });
     }
 }

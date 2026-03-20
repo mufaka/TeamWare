@@ -285,29 +285,29 @@ Deliver the in-app notification system for task assignments, deadlines, status c
 
 ### 6.1 Domain Models
 
-- [ ] Create `Notification` entity (NOTIF-01 through NOTIF-05)
-- [ ] Create EF Core configuration
-- [ ] Add and apply the EF Core migration
+- [x] Create `Notification` entity (NOTIF-01 through NOTIF-05)
+- [x] Create EF Core configuration
+- [x] Add and apply the EF Core migration
 
 ### 6.2 Services
 
-- [ ] Create `INotificationService` and `NotificationService`
-  - [ ] `CreateNotification` - generic method used by other services
-  - [ ] `GetUnreadForUser`
-  - [ ] `MarkAsRead` / `DismissNotification` (NOTIF-04)
-  - [ ] `GetInboxThresholdAlert` (NOTIF-05)
-- [ ] Integrate notification triggers into:
-  - [ ] `TaskService` (assignment, status change)
-  - [ ] `CommentService` (new comment on assigned task)
-  - [ ] `InboxService` (unprocessed count threshold)
-- [ ] Write unit tests for all service methods and integration with triggering services
+- [x] Create `INotificationService` and `NotificationService`
+  - [x] `CreateNotification` - generic method used by other services
+  - [x] `GetUnreadForUser`
+  - [x] `MarkAsRead` / `DismissNotification` (NOTIF-04)
+  - [x] `GetInboxThresholdAlert` (NOTIF-05)
+- [x] Integrate notification triggers into:
+  - [x] `TaskService` (assignment, status change)
+  - [x] `CommentService` (new comment on assigned task)
+  - [x] `InboxService` (unprocessed count threshold)
+- [x] Write unit tests for all service methods and integration with triggering services
 
 ### 6.3 Controllers and Views
 
-- [ ] Create `NotificationController` with actions: Index, MarkAsRead, Dismiss
-- [ ] Build a notification dropdown in the navigation bar (Alpine.js for toggle, HTMX for loading and dismissing)
-- [ ] Display unread notification count badge in the nav bar
-- [ ] Write integration tests
+- [x] Create `NotificationController` with actions: Index, MarkAsRead, Dismiss
+- [x] Build a notification dropdown in the navigation bar (Alpine.js for toggle, HTMX for loading and dismissing)
+- [x] Display unread notification count badge in the nav bar
+- [x] Write integration tests
 
 ---
 

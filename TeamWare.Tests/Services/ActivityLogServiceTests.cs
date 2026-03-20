@@ -13,6 +13,7 @@ public class ActivityLogServiceTests : IDisposable
     private readonly ActivityLogService _activityLogService;
     private readonly ProjectService _projectService;
     private readonly TaskService _taskService;
+    private readonly NotificationService _notificationService;
 
     public ActivityLogServiceTests()
     {
@@ -27,7 +28,8 @@ public class ActivityLogServiceTests : IDisposable
         _context.Database.EnsureCreated();
 
         _activityLogService = new ActivityLogService(_context);
-        _taskService = new TaskService(_context, _activityLogService);
+        _notificationService = new NotificationService(_context);
+        _taskService = new TaskService(_context, _activityLogService, _notificationService);
         _projectService = new ProjectService(_context);
     }
 

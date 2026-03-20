@@ -64,6 +64,11 @@
                     <span>Inbox</span>
                     @await Component.InvokeAsync("InboxCount")
                 </a>
+                <a asp-controller="Notification" asp-action="Index"
+                   class="flex items-center justify-between rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700">
+                    <span>Notifications</span>
+                    @await Component.InvokeAsync("NotificationCount")
+                </a>
                 <a asp-controller="Inbox" asp-action="SomedayMaybe"
                    class="flex items-center rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700">
                     Someday/Maybe
