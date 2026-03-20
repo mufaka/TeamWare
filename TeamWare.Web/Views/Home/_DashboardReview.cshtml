@@ -1,0 +1,32 @@
+﻿@{
+    var lastReviewDate = ViewBag.LastReviewDate as DateTime?;
+    var isReviewDue = (bool)ViewBag.IsReviewDue;
+}
+
+<div class="flex items-center justify-between">
+    <div>
+        @if (lastReviewDate.HasValue)
+        {
+            <p class="text-sm text-gray-500 dark:text-gray-400">
+                Last review: <span class="font-medium text-gray-700 dark:text-gray-300">@lastReviewDate.Value.ToString("MMM d, yyyy")</span>
+            </p>
+        }
+        else
+        {
+            <p class="text-sm text-gray-500 dark:text-gray-400">No reviews completed yet.</p>
+        }
+
+        @if (isReviewDue)
+        {
+            <p class="mt-1 text-sm font-medium text-amber-600 dark:text-amber-400">Review due</p>
+        }
+        else
+        {
+            <p class="mt-1 text-sm text-green-600 dark:text-green-400">Up to date</p>
+        }
+    </div>
+    <a asp-controller="Review" asp-action="Index"
+       class="inline-flex items-center rounded-md bg-indigo-50 px-3 py-2 text-sm font-medium text-indigo-700 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-300 dark:hover:bg-indigo-900/50">
+        Start Review &rarr;
+    </a>
+</div>

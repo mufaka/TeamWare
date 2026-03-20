@@ -1,0 +1,37 @@
+﻿@model List<TeamWare.Web.ViewModels.DashboardProjectViewModel>
+
+@if (!Model.Any())
+{
+    <p class="text-sm text-gray-500 dark:text-gray-400">
+        No projects yet.
+        <a asp-controller="Project" asp-action="Create" class="text-indigo-600 hover:underline dark:text-indigo-400">Create one</a>
+    </p>
+}
+else
+{
+    <div class="space-y-3">
+        @foreach (var project in Model)
+        {
+            var percentage = project.TotalTasks > 0
+                ? Math.Round((double)project.CompletedTasks / project.TotalTasks * 100)
+                : 0;
+
+            <a asp-controller="Project" asp-action="Dashboard" asp-route-id="@project.Id"
+               class="block rounded-lg bg-gray-50 p-3 transition hover:bg-gray-100 dark:bg-gray-800/50 dark:hover:bg-gray-700/50">
+                <div class="flex items-center justify-between">
+                    <span class="text-sm font-medium text-gray-900 dark:text-white">@project.Name</span>
+                    <span class="text-xs text-gray-500 dark:text-gray-400">@project.CompletedTasks / @project.TotalTasks tasks</span>
+                </div>
+                <div class="mt-2 h-1.5 w-full rounded-full bg-gray-200 dark:bg-gray-700">
+                    <div class="h-1.5 rounded-full bg-indigo-600 dark:bg-indigo-400" style="width: @(percentage)%"></div>
+                </div>
+            </a>
+        }
+    </div>
+    <div class="mt-3 text-right">
+        <a asp-controller="Project" asp-action="Index"
+           class="text-sm font-medium text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300">
+            View all &rarr;
+        </a>
+    </div>
+}

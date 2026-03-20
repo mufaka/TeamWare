@@ -350,24 +350,24 @@ Deliver user profile management and a personal dashboard that ties all features 
 
 ### 8.1 Services
 
-- [ ] Create `IUserProfileService` and `UserProfileService`
-  - [ ] `GetProfile` / `UpdateProfile` (USER-01)
-  - [ ] `ChangePassword` (USER-02)
-  - [ ] `UpdateThemePreference` (USER-03)
-- [ ] Write unit tests
+- [x] Create `IUserProfileService` and `UserProfileService`
+  - [x] `GetProfile` / `UpdateProfile` (USER-01)
+  - [x] `ChangePassword` (USER-02)
+  - [x] `UpdateThemePreference` (USER-03)
+- [x] Write unit tests
 
 ### 8.2 Controllers and Views
 
-- [ ] Create `ProfileController` with actions: Index, Edit, ChangePassword
-- [ ] Build a personal dashboard on `Home/Index` (post-login) showing:
-  - [ ] Inbox unprocessed count with link
-  - [ ] What's Next task list (top items)
-  - [ ] Projects summary with task counts
-  - [ ] Upcoming deadlines
-  - [ ] Last review date and review-due prompt
-  - [ ] Recent notifications
-- [ ] Use HTMX to lazy-load each dashboard section
-- [ ] Write integration tests
+- [x] Create `ProfileController` with actions: Index, Edit, ChangePassword
+- [x] Build a personal dashboard on `Home/Index` (post-login) showing:
+  - [x] Inbox unprocessed count with link
+  - [x] What's Next task list (top items)
+  - [x] Projects summary with task counts
+  - [x] Upcoming deadlines
+  - [x] Last review date and review-due prompt
+  - [x] Recent notifications
+- [x] Use HTMX to lazy-load each dashboard section
+- [x] Write integration tests
 
 ---
 
