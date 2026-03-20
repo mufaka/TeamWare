@@ -1,0 +1,247 @@
+﻿using System.Net;
+using System.Text.RegularExpressions;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using TeamWare.Web.Data;
+using TeamWare.Web.Models;
+
+namespace TeamWare.Tests.Views;
+
+public class UiConsistencyTests : IClassFixture<TeamWareWebApplicationFactory>, IDisposable
+{
+    private readonly TeamWareWebApplicationFactory _factory;
+    private readonly HttpClient _client;
+
+    public UiConsistencyTests(TeamWareWebApplicationFactory factory)
+    {
+        _factory = factory;
+        _client = _factory.CreateClient(new Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions
+        {
+            AllowAutoRedirect = false
+        });
+    }
+
+    private async Task<string> GetLoginCookie(string email)
+    {
+        using var scope = _factory.Services.CreateScope();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        await context.Database.EnsureCreatedAsync();
+
+        var existing = await userManager.FindByEmailAsync(email);
+        if (existing == null)
+        {
+            var user = new ApplicationUser
+            {
+                UserName = email,
+                Email = email,
+                DisplayName = "UI Test User"
+            };
+            await userManager.CreateAsync(user, "TestPass1!");
+        }
+
+        var getResponse = await _client.GetAsync("/Account/Login");
+        var getContent = await getResponse.Content.ReadAsStringAsync();
+        var token = ExtractAntiForgeryToken(getContent);
+        var cookies = getResponse.Headers.GetValues("Set-Cookie");
+
+        var request = new HttpRequestMessage(HttpMethod.Post, "/Account/Login");
+        request.Headers.Add("Cookie", string.Join("; ", cookies));
+        request.Content = new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["Email"] = email,
+            ["Password"] = "TestPass1!",
+            ["__RequestVerificationToken"] = token
+        });
+
+        var loginResponse = await _client.SendAsync(request);
+        var loginCookies = loginResponse.Headers.GetValues("Set-Cookie");
+        return string.Join("; ", loginCookies);
+    }
+
+    private static string ExtractAntiForgeryToken(string html)
+    {
+        var tokenStart = html.IndexOf("name=\"__RequestVerificationToken\"", StringComparison.Ordinal);
+        if (tokenStart == -1) return string.Empty;
+        var valueStart = html.IndexOf("value=\"", tokenStart, StringComparison.Ordinal) + 7;
+        var valueEnd = html.IndexOf("\"", valueStart, StringComparison.Ordinal);
+        return html[valueStart..valueEnd];
+    }
+
+    // ---------------------------------------------------------------
+    // UI-01: Responsive layout is present
+    // ---------------------------------------------------------------
+
+    [Fact]
+    public async Task Layout_ContainsViewportMetaTag()
+    {
+        var response = await _client.GetAsync("/");
+        var html = await response.Content.ReadAsStringAsync();
+
+        Assert.Contains("viewport", html, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("width=device-width", html, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task Layout_ContainsMobileMenuToggle()
+    {
+        var response = await _client.GetAsync("/");
+        var html = await response.Content.ReadAsStringAsync();
+
+        Assert.Contains("sidebarOpen", html);
+        Assert.Contains("md:hidden", html);
+    }
+
+    // ---------------------------------------------------------------
+    // UI-02: Dark mode toggle is present and functional
+    // ---------------------------------------------------------------
+
+    [Fact]
+    public async Task Layout_ContainsDarkModeToggle()
+    {
+        var response = await _client.GetAsync("/");
+        var html = await response.Content.ReadAsStringAsync();
+
+        Assert.Contains("darkMode", html);
+        Assert.Contains("theme-toggle", html);
+    }
+
+    [Fact]
+    public async Task Layout_HtmlUsesAlpineJsDarkClass()
+    {
+        var response = await _client.GetAsync("/");
+        var html = await response.Content.ReadAsStringAsync();
+
+        Assert.Contains(":class=\"{ 'dark': darkMode }\"", html);
+    }
+
+    // ---------------------------------------------------------------
+    // UI-02: Dark mode classes on all pages
+    // ---------------------------------------------------------------
+
+    [Theory]
+    [InlineData("/")]
+    [InlineData("/Account/Login")]
+    [InlineData("/Account/Register")]
+    [InlineData("/Home/Privacy")]
+    [InlineData("/Account/AccessDenied")]
+    public async Task PublicPage_ContainsDarkModeClasses(string url)
+    {
+        var response = await _client.GetAsync(url);
+        var html = await response.Content.ReadAsStringAsync();
+
+        Assert.Contains("dark:", html, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("/Project")]
+    [InlineData("/Project/Create")]
+    [InlineData("/Inbox")]
+    [InlineData("/Inbox/Add")]
+    [InlineData("/Notification")]
+    [InlineData("/Profile")]
+    [InlineData("/Profile/ChangePassword")]
+    public async Task AuthenticatedPage_ContainsDarkModeClasses(string url)
+    {
+        var cookie = await GetLoginCookie("ui-dark@test.com");
+
+        var request = new HttpRequestMessage(HttpMethod.Get, url);
+        request.Headers.Add("Cookie", cookie);
+
+        var response = await _client.SendAsync(request);
+        var html = await response.Content.ReadAsStringAsync();
+
+        Assert.Contains("dark:", html, StringComparison.Ordinal);
+    }
+
+    // ---------------------------------------------------------------
+    // UI-07: No emoji or emoticon characters in rendered HTML
+    // ---------------------------------------------------------------
+
+    [Theory]
+    [InlineData("/")]
+    [InlineData("/Account/Login")]
+    [InlineData("/Account/Register")]
+    public async Task PublicPage_NoEmojiCharacters(string url)
+    {
+        var response = await _client.GetAsync(url);
+        var html = await response.Content.ReadAsStringAsync();
+
+        AssertNoEmojis(html, url);
+    }
+
+    [Theory]
+    [InlineData("/Project")]
+    [InlineData("/Inbox")]
+    [InlineData("/Profile")]
+    public async Task AuthenticatedPage_NoEmojiCharacters(string url)
+    {
+        var cookie = await GetLoginCookie("ui-emoji@test.com");
+
+        var request = new HttpRequestMessage(HttpMethod.Get, url);
+        request.Headers.Add("Cookie", cookie);
+
+        var response = await _client.SendAsync(request);
+        var html = await response.Content.ReadAsStringAsync();
+
+        AssertNoEmojis(html, url);
+    }
+
+    // ---------------------------------------------------------------
+    // UI-03: Key pages render without errors
+    // ---------------------------------------------------------------
+
+    [Theory]
+    [InlineData("/Project")]
+    [InlineData("/Inbox")]
+    [InlineData("/Inbox/Add")]
+    [InlineData("/Home/WhatsNext")]
+    [InlineData("/Notification")]
+    [InlineData("/Review")]
+    [InlineData("/Profile")]
+    [InlineData("/Profile/Edit")]
+    [InlineData("/Profile/ChangePassword")]
+    public async Task AuthenticatedPage_ReturnsSuccess(string url)
+    {
+        var cookie = await GetLoginCookie("ui-render@test.com");
+
+        var request = new HttpRequestMessage(HttpMethod.Get, url);
+        request.Headers.Add("Cookie", cookie);
+
+        var response = await _client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    private static void AssertNoEmojis(string html, string url)
+    {
+        // Check for common emoji Unicode ranges
+        foreach (var c in html)
+        {
+            var codePoint = (int)c;
+
+            // Emoticons (1F600-1F64F), Misc Symbols (1F300-1F5FF),
+            // Transport/Map (1F680-1F6FF), Supplemental (1F900-1F9FF)
+            // These are in the supplementary plane so they appear as surrogate pairs in C#.
+            // We check for Dingbats (2700-27BF) and Misc Symbols (2600-26FF) which are in BMP.
+            if (codePoint >= 0x2600 && codePoint <= 0x26FF)
+            {
+                Assert.Fail($"Emoji character found in {url}: U+{codePoint:X4}");
+            }
+            if (codePoint >= 0x2700 && codePoint <= 0x27BF)
+            {
+                Assert.Fail($"Dingbat/emoji character found in {url}: U+{codePoint:X4}");
+            }
+        }
+
+        // Also check for high surrogates that might indicate supplementary emoji planes
+        var emojiPattern = @"[\uD83C-\uD83F][\uDC00-\uDFFF]";
+        Assert.False(Regex.IsMatch(html, emojiPattern), $"Supplementary emoji character found in {url}");
+    }
+
+    public void Dispose()
+    {
+        _client.Dispose();
+    }
+}
