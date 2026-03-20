@@ -609,7 +609,7 @@ public class PerformanceTests : IClassFixture<TeamWareWebApplicationFactory>, ID
         await SeedTestData(userId);
 
         var authenticatedEndpoints = new[] { "/", "/Project", "/Inbox", "/Notification", "/Home/WhatsNext" };
-        var publicEndpoints = new[] { "/Account/Login", "/Account/Register", "/Home/Privacy" };
+        var publicEndpoints = new[] { "/Account/Login", "/Account/Register" };
 
         // Execute sequentially to avoid SQLite in-memory concurrency limitations in test
         var responses = new List<HttpResponseMessage>();

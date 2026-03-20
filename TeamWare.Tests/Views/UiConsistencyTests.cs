@@ -124,7 +124,6 @@ public class UiConsistencyTests : IClassFixture<TeamWareWebApplicationFactory>, 
     [InlineData("/")]
     [InlineData("/Account/Login")]
     [InlineData("/Account/Register")]
-    [InlineData("/Home/Privacy")]
     [InlineData("/Account/AccessDenied")]
     public async Task PublicPage_ContainsDarkModeClasses(string url)
     {
@@ -212,6 +211,100 @@ public class UiConsistencyTests : IClassFixture<TeamWareWebApplicationFactory>, 
         var response = await _client.SendAsync(request);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    // ---------------------------------------------------------------
+    // UI-08: Sidebar navigation structure and grouping
+    // ---------------------------------------------------------------
+
+    [Fact]
+    public async Task Sidebar_ContainsExpectedNavItems()
+    {
+        var cookie = await GetLoginCookie("ui-nav@test.com");
+
+        var request = new HttpRequestMessage(HttpMethod.Get, "/");
+        request.Headers.Add("Cookie", cookie);
+
+        var response = await _client.SendAsync(request);
+        var html = await response.Content.ReadAsStringAsync();
+
+        Assert.Contains(">Home</a>", html, StringComparison.Ordinal);
+        Assert.Contains(">Notifications</span>", html, StringComparison.Ordinal);
+        Assert.Contains(">Projects</a>", html, StringComparison.Ordinal);
+        Assert.Contains(">Inbox</span>", html, StringComparison.Ordinal);
+        Assert.Contains(">What\u0027s Next</a>", html, StringComparison.Ordinal);
+        Assert.Contains(">Someday/Maybe</a>", html, StringComparison.Ordinal);
+        Assert.Contains(">Weekly Review</a>", html, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Sidebar_DoesNotContainPrivacyLink()
+    {
+        var response = await _client.GetAsync("/");
+        var html = await response.Content.ReadAsStringAsync();
+
+        Assert.DoesNotContain("Privacy", html, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Sidebar_ProjectSubItems_AreIndented()
+    {
+        var cookie = await GetLoginCookie("ui-nav-indent@test.com");
+
+        var request = new HttpRequestMessage(HttpMethod.Get, "/");
+        request.Headers.Add("Cookie", cookie);
+
+        var response = await _client.SendAsync(request);
+        var html = await response.Content.ReadAsStringAsync();
+
+        // Sub-items under Projects use pl-7 for visual indentation
+        var inboxIndex = html.IndexOf(">Inbox</span>", StringComparison.Ordinal);
+        var whatsNextIndex = html.IndexOf(">What\u0027s Next</a>", StringComparison.Ordinal);
+        var somedayIndex = html.IndexOf(">Someday/Maybe</a>", StringComparison.Ordinal);
+        var reviewIndex = html.IndexOf(">Weekly Review</a>", StringComparison.Ordinal);
+
+        Assert.True(inboxIndex > 0, "Inbox nav item not found");
+        Assert.True(whatsNextIndex > 0, "What's Next nav item not found");
+        Assert.True(somedayIndex > 0, "Someday/Maybe nav item not found");
+        Assert.True(reviewIndex > 0, "Weekly Review nav item not found");
+
+        // Verify each sub-item's containing anchor uses pl-7
+        var inboxAnchorStart = html.LastIndexOf("<a ", inboxIndex, StringComparison.Ordinal);
+        var whatsNextAnchorStart = html.LastIndexOf("<a ", whatsNextIndex, StringComparison.Ordinal);
+        var somedayAnchorStart = html.LastIndexOf("<a ", somedayIndex, StringComparison.Ordinal);
+        var reviewAnchorStart = html.LastIndexOf("<a ", reviewIndex, StringComparison.Ordinal);
+
+        Assert.Contains("pl-7", html[inboxAnchorStart..inboxIndex]);
+        Assert.Contains("pl-7", html[whatsNextAnchorStart..whatsNextIndex]);
+        Assert.Contains("pl-7", html[somedayAnchorStart..somedayIndex]);
+        Assert.Contains("pl-7", html[reviewAnchorStart..reviewIndex]);
+    }
+
+    [Fact]
+    public async Task Sidebar_NavOrder_HomeNotificationsProjectsThenSubItems()
+    {
+        var cookie = await GetLoginCookie("ui-nav-order@test.com");
+
+        var request = new HttpRequestMessage(HttpMethod.Get, "/");
+        request.Headers.Add("Cookie", cookie);
+
+        var response = await _client.SendAsync(request);
+        var html = await response.Content.ReadAsStringAsync();
+
+        var homeIndex = html.IndexOf(">Home</a>", StringComparison.Ordinal);
+        var notifIndex = html.IndexOf(">Notifications</span>", StringComparison.Ordinal);
+        var projectsIndex = html.IndexOf(">Projects</a>", StringComparison.Ordinal);
+        var inboxIndex = html.IndexOf(">Inbox</span>", StringComparison.Ordinal);
+        var whatsNextIndex = html.IndexOf(">What\u0027s Next</a>", StringComparison.Ordinal);
+        var somedayIndex = html.IndexOf(">Someday/Maybe</a>", StringComparison.Ordinal);
+        var reviewIndex = html.IndexOf(">Weekly Review</a>", StringComparison.Ordinal);
+
+        Assert.True(homeIndex < notifIndex, "Home should appear before Notifications");
+        Assert.True(notifIndex < projectsIndex, "Notifications should appear before Projects");
+        Assert.True(projectsIndex < inboxIndex, "Projects should appear before Inbox");
+        Assert.True(inboxIndex < whatsNextIndex, "Inbox should appear before What's Next");
+        Assert.True(whatsNextIndex < somedayIndex, "What's Next should appear before Someday/Maybe");
+        Assert.True(somedayIndex < reviewIndex, "Someday/Maybe should appear before Weekly Review");
     }
 
     private static void AssertNoEmojis(string html, string url)

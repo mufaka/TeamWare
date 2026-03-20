@@ -218,11 +218,6 @@ namespace TeamWare.Web.Controllers
             return View(viewModel);
         }
 
-        public IActionResult Privacy()
-        {
-            return View();
-        }
-
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()
         {

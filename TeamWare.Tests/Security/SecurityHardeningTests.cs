@@ -179,7 +179,6 @@ public class SecurityHardeningTests : IClassFixture<TeamWareWebApplicationFactor
     [InlineData("/Account/Login")]
     [InlineData("/Account/Register")]
     [InlineData("/Account/AccessDenied")]
-    [InlineData("/Home/Privacy")]
     public async Task PublicEndpoint_Unauthenticated_ReturnsSuccess(string url)
     {
         var response = await _client.GetAsync(url);
