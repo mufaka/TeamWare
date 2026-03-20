@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using TeamWare.Web.Data;
@@ -43,6 +44,11 @@ builder.Services.AddScoped<IProgressService, ProgressService>();
 builder.Services.AddScoped<ICommentService, CommentService>();
 builder.Services.AddScoped<IReviewService, ReviewService>();
 builder.Services.AddScoped<IUserProfileService, UserProfileService>();
+
+builder.Services.AddDataProtection()
+    .PersistKeysToFileSystem(new DirectoryInfo(
+        Path.Combine(Environment.GetEnvironmentVariable("STATE_DIRECTORY")
+            ?? builder.Environment.ContentRootPath, "keys")));
 
 builder.Services.AddControllersWithViews(options =>
 {

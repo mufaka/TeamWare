@@ -28,11 +28,12 @@ dotnet publish TeamWare.Web/TeamWare.Web.csproj \
 
 > **Tip:** Add `--self-contained` and `-r linux-x64` if the target host will not have the .NET runtime installed.
 
-Create the target directory on the remote host and copy the published files:
+Create the target directories on the remote host and copy the published files:
 
 ```bash
 ssh user@host 'sudo mkdir -p /opt/teamware'
-scp -r ./publish/* user@host:/opt/teamware
+scp -r ./publish/* user@host:/tmp/teamware-deploy
+ssh user@host 'sudo cp -rf /tmp/teamware-deploy/* /opt/teamware/ && rm -rf /tmp/teamware-deploy'
 ```
 
 ---
@@ -75,18 +76,22 @@ SyslogIdentifier=teamware
 Environment=ASPNETCORE_ENVIRONMENT=Production
 Environment=ASPNETCORE_URLS=http://+:5000
 Environment=DOTNET_PRINT_TELEMETRY_MESSAGE=false
+Environment="ConnectionStrings__DefaultConnection=Data Source=/var/lib/teamware/TeamWare.db"
+
+# State — systemd creates /var/lib/teamware owned by User=/Group= above
+StateDirectory=teamware
 
 # Hardening
 NoNewPrivileges=true
 ProtectSystem=strict
 ProtectHome=true
-ReadWritePaths=/opt/teamware
+PrivateTmp=true
 
 [Install]
 WantedBy=multi-user.target
 ```
 
-> **Note:** The `ReadWritePaths` directive allows the app to write its SQLite database and any log files within `/opt/teamware`. Adjust the path if you store data elsewhere.
+> **Note:** The `StateDirectory=teamware` directive tells systemd to create `/var/lib/teamware`, set it owned by the service user, and make it writable — all before the process starts. It also sets the `STATE_DIRECTORY` environment variable automatically, which the application reads to persist Data Protection keys. Application binaries in `/opt/teamware` remain read-only under `ProtectSystem=strict`.
 
 If you published as a **framework-dependent** deployment (no `--self-contained`), change `ExecStart` to:
 
@@ -186,9 +191,18 @@ sudo certbot --nginx -d your-domain.com
 
 ## Updating the Application
 
+Because `/opt/teamware` is owned by the `teamware` service account, copy new files to a staging location first, then move them into place with `sudo`:
+
 ```bash
-sudo systemctl stop teamware
-# Copy new published files to /opt/teamware
-sudo chown -R teamware:teamware /opt/teamware
-sudo systemctl start teamware
+# 1. Copy published files to a temporary directory on the remote host
+scp -r ./publish/* user@host:/tmp/teamware-update
+
+# 2. On the remote host, stop the service and update the binaries
+ssh user@host 'sudo systemctl stop teamware && \
+  sudo cp -rf /tmp/teamware-update/* /opt/teamware/ && \
+  sudo chown -R teamware:teamware /opt/teamware && \
+  rm -rf /tmp/teamware-update && \
+  sudo systemctl start teamware'
 ```
+
+> **Note:** The database in `/var/lib/teamware` is not touched during updates.
