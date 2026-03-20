@@ -27,6 +27,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 
     public DbSet<Notification> Notifications => Set<Notification>();
 
+    public DbSet<UserReview> UserReviews => Set<UserReview>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -192,6 +194,20 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             entity.HasIndex(n => n.UserId);
             entity.HasIndex(n => n.IsRead);
             entity.HasIndex(n => n.CreatedAt);
+        });
+
+        builder.Entity<UserReview>(entity =>
+        {
+            entity.HasKey(r => r.Id);
+            entity.Property(r => r.Notes).HasMaxLength(2000);
+
+            entity.HasOne(r => r.User)
+                .WithMany()
+                .HasForeignKey(r => r.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(r => r.UserId);
+            entity.HasIndex(r => r.CompletedAt);
         });
     }
 }

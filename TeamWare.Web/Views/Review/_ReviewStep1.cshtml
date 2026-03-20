@@ -1,0 +1,70 @@
+﻿@model TeamWare.Web.ViewModels.ReviewViewModel
+
+<div class="space-y-4">
+    <div class="flex items-center justify-between">
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Step 1: Unprocessed Inbox Items</h2>
+        <span class="inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300">
+            @Model.UnprocessedInboxItems.Count items
+        </span>
+    </div>
+
+    <p class="text-sm text-gray-600 dark:text-gray-400">
+        Review each inbox item below. Process or dismiss them using the Inbox page, then return here to continue.
+    </p>
+
+    @if (Model.UnprocessedInboxItems.Count == 0)
+    {
+        <div class="rounded-lg border border-green-200 bg-green-50 p-6 text-center dark:border-green-800 dark:bg-green-900/20">
+            <svg class="mx-auto h-10 w-10 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+            <p class="mt-2 font-medium text-green-700 dark:text-green-300">Inbox is clear!</p>
+        </div>
+    }
+    else
+    {
+        <div class="space-y-2">
+            @foreach (var item in Model.UnprocessedInboxItems)
+            {
+                <div class="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
+                    <div class="flex items-start justify-between gap-4">
+                        <div class="min-w-0 flex-1">
+                            <p class="font-medium text-gray-900 dark:text-gray-100">@item.Title</p>
+                            @if (!string.IsNullOrEmpty(item.Description))
+                            {
+                                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">@item.Description</p>
+                            }
+                            <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">
+                                Added @item.CreatedAt.ToString("MMM d, yyyy")
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <div class="mt-4">
+            <a asp-controller="Inbox" asp-action="Index"
+               class="inline-flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600">
+                Go to Inbox to process items
+                <svg class="ml-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                </svg>
+            </a>
+        </div>
+    }
+
+    <!-- Navigation -->
+    <div class="mt-8 flex justify-end border-t border-gray-200 pt-4 dark:border-gray-700">
+        <a hx-get="@Url.Action("Index", "Review", new { step = 2 })"
+           hx-target="#review-step-content"
+           hx-swap="innerHTML"
+           hx-push-url="@Url.Action("Index", "Review", new { step = 2 })"
+           class="inline-flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 cursor-pointer">
+            Next: Active Tasks
+            <svg class="ml-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+            </svg>
+        </a>
+    </div>
+</div>

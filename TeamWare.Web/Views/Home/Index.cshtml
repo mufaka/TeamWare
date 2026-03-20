@@ -8,3 +8,10 @@
         A lightweight project and task management application.
     </p>
 </div>
+
+@if (User.Identity?.IsAuthenticated == true)
+{
+    <div class="mx-auto mt-8 max-w-2xl">
+        @await Component.InvokeAsync("ReviewStatus")
+    </div>
+}

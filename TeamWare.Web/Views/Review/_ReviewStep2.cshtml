@@ -1,0 +1,79 @@
+﻿@model TeamWare.Web.ViewModels.ReviewViewModel
+
+<div class="space-y-6">
+    <div>
+        <div class="flex items-center justify-between">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Step 2: Active Tasks</h2>
+            <span class="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
+                @(Model.ActiveTasks.Count + Model.NextActions.Count) tasks
+            </span>
+        </div>
+        <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
+            Review your active tasks and Next Actions. Update statuses, re-prioritize, or flag items using the task detail pages.
+        </p>
+    </div>
+
+    <!-- Next Actions -->
+    <div>
+        <h3 class="mb-3 text-sm font-semibold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+            Next Actions (@Model.NextActions.Count)
+        </h3>
+        @if (Model.NextActions.Count == 0)
+        {
+            <p class="text-sm text-gray-500 dark:text-gray-400">No Next Actions defined. Consider flagging important tasks.</p>
+        }
+        else
+        {
+            <div class="space-y-2">
+                @foreach (var task in Model.NextActions)
+                {
+                    @await Html.PartialAsync("_ReviewTaskCard", task)
+                }
+            </div>
+        }
+    </div>
+
+    <!-- Active Tasks -->
+    <div>
+        <h3 class="mb-3 text-sm font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-400">
+            Other Active Tasks (@Model.ActiveTasks.Count)
+        </h3>
+        @if (Model.ActiveTasks.Count == 0)
+        {
+            <p class="text-sm text-gray-500 dark:text-gray-400">No other active tasks.</p>
+        }
+        else
+        {
+            <div class="space-y-2">
+                @foreach (var task in Model.ActiveTasks)
+                {
+                    @await Html.PartialAsync("_ReviewTaskCard", task)
+                }
+            </div>
+        }
+    </div>
+
+    <!-- Navigation -->
+    <div class="flex justify-between border-t border-gray-200 pt-4 dark:border-gray-700">
+        <a hx-get="@Url.Action("Index", "Review", new { step = 1 })"
+           hx-target="#review-step-content"
+           hx-swap="innerHTML"
+           hx-push-url="@Url.Action("Index", "Review", new { step = 1 })"
+           class="inline-flex items-center rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700 cursor-pointer">
+            <svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+            </svg>
+            Back: Inbox
+        </a>
+        <a hx-get="@Url.Action("Index", "Review", new { step = 3 })"
+           hx-target="#review-step-content"
+           hx-swap="innerHTML"
+           hx-push-url="@Url.Action("Index", "Review", new { step = 3 })"
+           class="inline-flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 cursor-pointer">
+            Next: Someday/Maybe
+            <svg class="ml-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+            </svg>
+        </a>
+    </div>
+</div>
