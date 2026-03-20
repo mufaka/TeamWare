@@ -1,11 +1,19 @@
 ﻿<!DOCTYPE html>
-<html lang="en" x-data="{ darkMode: localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches) }"
-      x-init="$watch('darkMode', val => { localStorage.setItem('theme', val ? 'dark' : 'light') })"
+<html lang="en" x-data="{ darkMode: document.documentElement.classList.contains('dark') }"
+      x-init="$watch('darkMode', val => { localStorage.setItem('theme', val ? 'dark' : 'light'); val ? document.documentElement.classList.add('dark') : document.documentElement.classList.remove('dark') })"
       :class="{ 'dark': darkMode }">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - TeamWare</title>
+    <script>
+        (function() {
+            var theme = localStorage.getItem('theme');
+            if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+            }
+        })();
+    </script>
     <link rel="stylesheet" href="~/css/site.min.css" asp-append-version="true" />
     <script src="~/lib/alpinejs/alpine.min.js" defer></script>
     <script src="~/lib/htmx/htmx.min.js"></script>
