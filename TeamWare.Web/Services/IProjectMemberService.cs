@@ -11,4 +11,6 @@ public interface IProjectMemberService
     Task<ServiceResult> UpdateMemberRole(int projectId, string targetUserId, ProjectRole newRole, string updatedByUserId);
 
     Task<ServiceResult<List<ProjectMember>>> GetMembers(int projectId, string requestingUserId);
+
+    Task<List<string>> GetMemberUserIds(int projectId);
 }

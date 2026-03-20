@@ -330,6 +330,32 @@ public class ProjectMemberServiceTests : IDisposable
         Assert.Contains(result.Errors, e => e.Contains("not a member"));
     }
 
+    // --- GetMemberUserIds ---
+
+    [Fact]
+    public async Task GetMemberUserIds_ReturnsAllMemberIds()
+    {
+        var owner = CreateUser("gmuid-owner@test.com", "Owner");
+        var member = CreateUser("gmuid-member@test.com", "Member");
+        var project = await CreateProjectWithOwner(owner);
+
+        await _memberService.InviteMember(project.Id, member.Id, owner.Id);
+
+        var ids = await _memberService.GetMemberUserIds(project.Id);
+
+        Assert.Equal(2, ids.Count);
+        Assert.Contains(owner.Id, ids);
+        Assert.Contains(member.Id, ids);
+    }
+
+    [Fact]
+    public async Task GetMemberUserIds_NoMembers_ReturnsEmpty()
+    {
+        var ids = await _memberService.GetMemberUserIds(999);
+
+        Assert.Empty(ids);
+    }
+
     public void Dispose()
     {
         _context.Dispose();

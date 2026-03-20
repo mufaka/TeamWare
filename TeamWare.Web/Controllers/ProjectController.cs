@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using TeamWare.Web.Models;
 using TeamWare.Web.Services;
 using TeamWare.Web.ViewModels;
@@ -249,6 +250,26 @@ public class ProjectController : Controller
         }
 
         return RedirectToAction(nameof(Index));
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> SearchUsers(int projectId, string query)
+    {
+        if (string.IsNullOrWhiteSpace(query) || query.Length < 2)
+        {
+            return Json(Array.Empty<object>());
+        }
+
+        var currentMemberIds = await _memberService.GetMemberUserIds(projectId);
+
+        var users = _userManager.Users
+            .Where(u => !currentMemberIds.Contains(u.Id) &&
+                        (u.Email!.Contains(query) || u.DisplayName.Contains(query)))
+            .OrderBy(u => u.DisplayName)
+            .Take(10)
+            .Select(u => new { u.Email, u.DisplayName });
+
+        return Json(await users.ToListAsync());
     }
 
     [HttpPost]

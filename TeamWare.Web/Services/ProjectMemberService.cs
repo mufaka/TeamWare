@@ -139,4 +139,12 @@ public class ProjectMemberService : IProjectMemberService
 
         return ServiceResult<List<ProjectMember>>.Success(members);
     }
+
+    public async Task<List<string>> GetMemberUserIds(int projectId)
+    {
+        return await _context.ProjectMembers
+            .Where(pm => pm.ProjectId == projectId)
+            .Select(pm => pm.UserId)
+            .ToListAsync();
+    }
 }

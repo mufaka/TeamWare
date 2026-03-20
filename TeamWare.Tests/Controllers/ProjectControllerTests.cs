@@ -144,6 +144,48 @@ public class ProjectControllerTests : IClassFixture<TeamWareWebApplicationFactor
         Assert.Contains("Create Project", content);
     }
 
+    // --- SearchUsers ---
+
+    [Fact]
+    public async Task SearchUsers_Unauthenticated_RedirectsToLogin()
+    {
+        var response = await _client.GetAsync("/Project/SearchUsers?projectId=1&query=test");
+
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+        Assert.Contains("/Account/Login", response.Headers.Location?.ToString());
+    }
+
+    [Fact]
+    public async Task SearchUsers_ShortQuery_ReturnsEmptyArray()
+    {
+        var (_, cookie) = await CreateAndLoginUser("search-short@test.com", "Search User");
+
+        var request = new HttpRequestMessage(HttpMethod.Get, "/Project/SearchUsers?projectId=1&query=a");
+        request.Headers.Add("Cookie", cookie);
+
+        var response = await _client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var content = await response.Content.ReadAsStringAsync();
+        Assert.Equal("[]", content);
+    }
+
+    [Fact]
+    public async Task SearchUsers_Authenticated_ReturnsJson()
+    {
+        var (_, cookie) = await CreateAndLoginUser("search-auth@test.com", "Search Auth User");
+        await CreateAndLoginUser("findme@test.com", "Find Me");
+
+        var request = new HttpRequestMessage(HttpMethod.Get, "/Project/SearchUsers?projectId=9999&query=findme");
+        request.Headers.Add("Cookie", cookie);
+
+        var response = await _client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var content = await response.Content.ReadAsStringAsync();
+        Assert.Contains("findme@test.com", content);
+    }
+
     public void Dispose()
     {
         _client.Dispose();
