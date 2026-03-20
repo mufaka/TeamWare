@@ -1,4 +1,4 @@
-﻿# Geneneral Idea 
+﻿# General Idea 
 This document is to be used for collaboration and discussion of the general idea of the project. It is not meant to be a detailed specification, but rather a high-level overview of the project and its goals.
 
 ## Project Overview
