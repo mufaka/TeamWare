@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using TeamWare.Web.Data;
+using TeamWare.Web.Hubs;
 using TeamWare.Web.Models;
 using TeamWare.Web.Services;
 
@@ -48,6 +49,8 @@ builder.Services.AddScoped<IAdminActivityLogService, AdminActivityLogService>();
 builder.Services.AddScoped<IAdminService, AdminService>();
 builder.Services.AddScoped<IUserDirectoryService, UserDirectoryService>();
 
+builder.Services.AddSignalR();
+
 builder.Services.AddDataProtection()
     .PersistKeysToFileSystem(new DirectoryInfo(
         Path.Combine(Environment.GetEnvironmentVariable("STATE_DIRECTORY")
@@ -87,6 +90,8 @@ app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}")
     .WithStaticAssets();
+
+app.MapHub<PresenceHub>("/hubs/presence");
 
 // Seed the admin account on first run
 using (var scope = app.Services.CreateScope())
