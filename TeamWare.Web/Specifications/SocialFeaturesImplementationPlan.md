@@ -8,7 +8,7 @@ This document defines the phased implementation plan for TeamWare social feature
 
 | Phase | Description | Status |
 |-------|------------|--------|
-| 10 | System Administration | Not Started |
+| 10 | System Administration | Complete |
 | 11 | User Directory | Not Started |
 | 12 | User Activity and Presence | Not Started |
 | 13 | Project Invitation Improvements | Not Started |
@@ -85,14 +85,14 @@ Introduce the site-wide admin role (via ASP.NET Identity roles), admin dashboard
 
 ### 10.4 Admin Controllers and Views
 
-- [ ] Create `AdminController` with actions: Dashboard, Users (list), LockUser, UnlockUser, ResetPassword, PromoteToAdmin, DemoteToUser, ActivityLog
-- [ ] Protect all admin actions with `[Authorize(Roles = "Admin")]`
-- [ ] Build the admin dashboard view showing system-wide statistics (ADMIN-04, ADMIN-09)
-- [ ] Build the user management list view with search/filter (ADMIN-05)
-- [ ] Build user action views/modals for lock, unlock, reset password, and role changes
-- [ ] Build the admin activity log view with pagination
-- [ ] Update existing project authorization to allow site admins to view and edit any project (ADMIN-10)
-- [ ] Write integration tests for all admin controller actions and authorization checks (TEST-06)
+- [x] Create `AdminController` with actions: Dashboard, Users (list), LockUser, UnlockUser, ResetPassword, PromoteToAdmin, DemoteToUser, ActivityLog
+- [x] Protect all admin actions with `[Authorize(Roles = "Admin")]`
+- [x] Build the admin dashboard view showing system-wide statistics (ADMIN-04, ADMIN-09)
+- [x] Build the user management list view with search/filter (ADMIN-05)
+- [x] Build user action views/modals for lock, unlock, reset password, and role changes
+- [x] Build the admin activity log view with pagination
+- [x] Update existing project authorization to allow site admins to view and edit any project (ADMIN-10)
+- [x] Write integration tests for all admin controller actions and authorization checks (TEST-06)
 
 ---
 
