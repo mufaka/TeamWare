@@ -64,10 +64,10 @@ Introduce the site-wide admin role (via ASP.NET Identity roles), admin dashboard
 
 ### 10.2 Admin Activity Log Domain Model
 
-- [ ] Create `AdminActivityLog` entity (ADMIN-11, ADMIN-12)
-- [ ] Create EF Core configuration (relationships, constraints, indexes)
-- [ ] Add and apply the EF Core migration
-- [ ] Write unit tests for entity validation
+- [x] Create `AdminActivityLog` entity (ADMIN-11, ADMIN-12)
+- [x] Create EF Core configuration (relationships, constraints, indexes)
+- [x] Add and apply the EF Core migration
+- [x] Write unit tests for entity validation
 
 ### 10.3 Admin Services
 

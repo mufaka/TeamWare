@@ -29,6 +29,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 
     public DbSet<UserReview> UserReviews => Set<UserReview>();
 
+    public DbSet<AdminActivityLog> AdminActivityLogs => Set<AdminActivityLog>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -220,6 +222,34 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 
             entity.HasIndex(r => r.UserId);
             entity.HasIndex(r => r.CompletedAt);
+        });
+
+        builder.Entity<AdminActivityLog>(entity =>
+        {
+            entity.HasKey(a => a.Id);
+            entity.Property(a => a.Action).IsRequired().HasMaxLength(100);
+            entity.Property(a => a.Details).HasMaxLength(1000);
+
+            entity.HasOne(a => a.AdminUser)
+                .WithMany()
+                .HasForeignKey(a => a.AdminUserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(a => a.TargetUser)
+                .WithMany()
+                .HasForeignKey(a => a.TargetUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(a => a.TargetProject)
+                .WithMany()
+                .HasForeignKey(a => a.TargetProjectId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasIndex(a => a.AdminUserId);
+            entity.HasIndex(a => a.CreatedAt);
+
+            // Composite index for common query: admin activity log sorted by date
+            entity.HasIndex(a => new { a.AdminUserId, a.CreatedAt });
         });
     }
 }
