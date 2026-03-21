@@ -87,16 +87,21 @@
                 <a asp-action="Profile" asp-route-id="@user.UserId"
                    class="block rounded-lg border border-gray-200 bg-white p-4 transition-shadow hover:shadow-md dark:border-gray-700 dark:bg-gray-800 dark:hover:border-gray-600">
                     <div class="flex items-center gap-3">
-                        @if (!string.IsNullOrEmpty(user.AvatarUrl))
-                        {
-                            <img src="@user.AvatarUrl" alt="@user.DisplayName" class="h-10 w-10 rounded-full object-cover" />
-                        }
-                        else
-                        {
-                            <div class="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-sm font-medium text-blue-600 dark:bg-blue-900 dark:text-blue-300">
-                                @(string.IsNullOrEmpty(user.DisplayName) ? "?" : user.DisplayName[0].ToString().ToUpper())
-                            </div>
-                        }
+                        <div class="relative flex-shrink-0">
+                            @if (!string.IsNullOrEmpty(user.AvatarUrl))
+                            {
+                                <img src="@user.AvatarUrl" alt="@user.DisplayName" class="h-10 w-10 rounded-full object-cover" />
+                            }
+                            else
+                            {
+                                <div class="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-sm font-medium text-blue-600 dark:bg-blue-900 dark:text-blue-300">
+                                    @(string.IsNullOrEmpty(user.DisplayName) ? "?" : user.DisplayName[0].ToString().ToUpper())
+                                </div>
+                            }
+                            <span data-presence-user="@user.UserId"
+                                  class="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white dark:border-gray-800 @(user.IsOnline ? "bg-green-500" : "bg-gray-400")"
+                                  title="@(user.IsOnline ? "Online" : "Offline")"></span>
+                        </div>
                         <div class="min-w-0 flex-1">
                             <div class="truncate text-sm font-medium text-gray-900 dark:text-white">@user.DisplayName</div>
                             <div class="truncate text-xs text-gray-500 dark:text-gray-400">@user.Email</div>

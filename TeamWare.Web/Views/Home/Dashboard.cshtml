@@ -65,5 +65,15 @@
                 </div>
             </div>
         </div>
+
+        <!-- Global Activity Feed (ACTV-02) -->
+        <div class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800 lg:col-span-2">
+            <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-white">Recent Activity</h2>
+            <div hx-get="/Activity/GlobalFeed" hx-trigger="load" hx-swap="innerHTML">
+                <div class="flex items-center justify-center py-4">
+                    <span class="text-sm text-gray-400">Loading...</span>
+                </div>
+            </div>
+        </div>
     </div>
 </div>

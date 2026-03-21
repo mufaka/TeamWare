@@ -9,10 +9,12 @@ namespace TeamWare.Web.Controllers;
 public class DirectoryController : Controller
 {
     private readonly IUserDirectoryService _directoryService;
+    private readonly IPresenceService _presenceService;
 
-    public DirectoryController(IUserDirectoryService directoryService)
+    public DirectoryController(IUserDirectoryService directoryService, IPresenceService presenceService)
     {
         _directoryService = directoryService;
+        _presenceService = presenceService;
     }
 
     public async Task<IActionResult> Index(string? search, string sortBy = "displayname", bool ascending = true, int page = 1)
@@ -31,6 +33,12 @@ public class DirectoryController : Controller
         if (!result.Succeeded)
         {
             return View(new DirectoryListViewModel());
+        }
+
+        var onlineUsers = _presenceService.GetOnlineUsers();
+        foreach (var user in result.Data!.Items)
+        {
+            user.IsOnline = onlineUsers.Contains(user.UserId);
         }
 
         var viewModel = new DirectoryListViewModel
@@ -60,6 +68,9 @@ public class DirectoryController : Controller
             return NotFound();
         }
 
-        return View(result.Data);
+        var profile = result.Data!;
+        profile.IsOnline = _presenceService.IsUserOnline(id);
+
+        return View(profile);
     }
 }

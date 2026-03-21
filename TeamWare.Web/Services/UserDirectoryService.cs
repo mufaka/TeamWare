@@ -119,7 +119,8 @@ public class UserDirectoryService : IUserDirectoryService
             AvatarUrl = user.AvatarUrl,
             ProjectMemberships = memberships,
             TaskStatistics = taskStats,
-            RecentActivity = recentActivity
+            RecentActivity = recentActivity,
+            LastActiveAt = user.LastActiveAt
         };
 
         return ServiceResult<UserProfileViewModel>.Success(profile);

@@ -9,4 +9,6 @@ public class UserDirectoryEntryViewModel
     public string Email { get; set; } = string.Empty;
 
     public string? AvatarUrl { get; set; }
+
+    public bool IsOnline { get; set; }
 }

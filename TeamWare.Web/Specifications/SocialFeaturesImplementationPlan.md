@@ -10,7 +10,7 @@ This document defines the phased implementation plan for TeamWare social feature
 |-------|------------|--------|
 | 10 | System Administration | Complete |
 | 11 | User Directory | Complete |
-| 12 | User Activity and Presence | Not Started |
+| 12 | User Activity and Presence | Complete |
 | 13 | Project Invitation Improvements | Not Started |
 | 14 | Social Features Polish | Not Started |
 
@@ -131,34 +131,34 @@ Deliver the global activity feed, "last active" tracking, and real-time online/o
 
 ### 12.1 SignalR Infrastructure
 
-- [ ] Add NuGet package: `Microsoft.AspNetCore.SignalR` (if not already included)
-- [ ] Create `PresenceHub` SignalR hub for tracking connected users (ACTV-05, ACTV-06)
-- [ ] Implement hub methods for tracking user connections and disconnections
-- [ ] Configure SignalR in `Program.cs` and map the hub endpoint
-- [ ] Add SignalR client JavaScript to the layout (connected on page load for authenticated users)
-- [ ] Write integration tests for hub connection and presence tracking (TEST-05)
+- [x] Add NuGet package: `Microsoft.AspNetCore.SignalR` (if not already included)
+- [x] Create `PresenceHub` SignalR hub for tracking connected users (ACTV-05, ACTV-06)
+- [x] Implement hub methods for tracking user connections and disconnections
+- [x] Configure SignalR in `Program.cs` and map the hub endpoint
+- [x] Add SignalR client JavaScript to the layout (connected on page load for authenticated users)
+- [x] Write integration tests for hub connection and presence tracking (TEST-05)
 
 ### 12.2 Activity and Presence Services
 
-- [ ] Create `IPresenceService` and `PresenceService`
-  - [ ] `TrackUserConnection` / `TrackUserDisconnection`
-  - [ ] `GetOnlineUsers` - returns currently connected user IDs
-  - [ ] `UpdateLastActive` - updates the user's last active timestamp (ACTV-01)
-- [ ] Create `IGlobalActivityService` and `GlobalActivityService`
-  - [ ] `GetGlobalActivityFeed` - returns recent activity across all projects for a given viewer (ACTV-02)
-  - [ ] Apply masking rules: full detail for member projects, generic format for non-member projects (ACTV-03, ACTV-04)
-- [ ] Add a `LastActiveAt` field to `ApplicationUser` (or a separate tracking table)
-- [ ] Add and apply the EF Core migration
-- [ ] Write unit tests for all service methods, including masking logic
+- [x] Create `IPresenceService` and `PresenceService`
+  - [x] `TrackUserConnection` / `TrackUserDisconnection`
+  - [x] `GetOnlineUsers` - returns currently connected user IDs
+  - [x] `UpdateLastActive` - updates the user's last active timestamp (ACTV-01)
+- [x] Create `IGlobalActivityService` and `GlobalActivityService`
+  - [x] `GetGlobalActivityFeed` - returns recent activity across all projects for a given viewer (ACTV-02)
+  - [x] Apply masking rules: full detail for member projects, generic format for non-member projects (ACTV-03, ACTV-04)
+- [x] Add a `LastActiveAt` field to `ApplicationUser` (or a separate tracking table)
+- [x] Add and apply the EF Core migration
+- [x] Write unit tests for all service methods, including masking logic
 
 ### 12.3 Controllers and Views
 
-- [ ] Create `ActivityController` (or extend `HomeController`) with an action for the global activity feed
-- [ ] Build the global activity feed partial view, loaded via HTMX on the dashboard (ACTV-02)
-- [ ] Display masked activity entries for non-member projects (ACTV-04)
-- [ ] Add online/offline presence indicator to user directory and profile pages (ACTV-05)
-- [ ] Display "last active" timestamp on user profile pages (ACTV-01)
-- [ ] Write integration tests for activity feed rendering and presence indicators
+- [x] Create `ActivityController` (or extend `HomeController`) with an action for the global activity feed
+- [x] Build the global activity feed partial view, loaded via HTMX on the dashboard (ACTV-02)
+- [x] Display masked activity entries for non-member projects (ACTV-04)
+- [x] Add online/offline presence indicator to user directory and profile pages (ACTV-05)
+- [x] Display "last active" timestamp on user profile pages (ACTV-01)
+- [x] Write integration tests for activity feed rendering and presence indicators
 
 ---
 

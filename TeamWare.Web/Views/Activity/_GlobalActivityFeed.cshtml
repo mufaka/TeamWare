@@ -1,0 +1,44 @@
+﻿@using TeamWare.Web.Helpers
+@model List<TeamWare.Web.ViewModels.GlobalActivityFeedEntryViewModel>
+
+@if (Model == null || Model.Count == 0)
+{
+    <p class="text-sm text-gray-500 dark:text-gray-400">No recent activity across projects.</p>
+}
+else
+{
+    <div class="space-y-3">
+        @foreach (var entry in Model)
+        {
+            <div class="flex items-start gap-3 border-b border-gray-100 pb-3 last:border-0 last:pb-0 dark:border-gray-700">
+                <div class="mt-0.5 h-2 w-2 flex-shrink-0 rounded-full @(entry.IsMasked ? "bg-gray-400" : "bg-blue-400")"></div>
+                <div class="min-w-0 flex-1">
+                    <p class="text-sm text-gray-900 dark:text-white">
+                        @if (!entry.IsMasked)
+                        {
+                            <a asp-controller="Directory" asp-action="Profile" asp-route-id="@entry.UserId"
+                               class="font-medium text-blue-600 hover:underline dark:text-blue-400">@entry.UserDisplayName</a>
+                        }
+                        else
+                        {
+                            <span class="font-medium text-gray-500 dark:text-gray-400">@entry.UserDisplayName</span>
+                        }
+                        <span> - @entry.Description</span>
+                    </p>
+                    <div class="mt-1 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                        @if (!entry.IsMasked)
+                        {
+                            <a asp-controller="Project" asp-action="Details" asp-route-id="@entry.ProjectId"
+                               class="text-blue-600 hover:underline dark:text-blue-400">@entry.ProjectName</a>
+                        }
+                        else
+                        {
+                            <span>@entry.ProjectName</span>
+                        }
+                        <span>@Html.LocalTime(entry.CreatedAt, "short-datetime")</span>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
