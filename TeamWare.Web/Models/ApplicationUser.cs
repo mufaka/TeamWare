@@ -9,4 +9,6 @@ public class ApplicationUser : IdentityUser
     public string? AvatarUrl { get; set; }
 
     public string ThemePreference { get; set; } = "system";
+
+    public DateTime? LastActiveAt { get; set; }
 }

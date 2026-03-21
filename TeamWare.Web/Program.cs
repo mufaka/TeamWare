@@ -48,6 +48,8 @@ builder.Services.AddScoped<IUserProfileService, UserProfileService>();
 builder.Services.AddScoped<IAdminActivityLogService, AdminActivityLogService>();
 builder.Services.AddScoped<IAdminService, AdminService>();
 builder.Services.AddScoped<IUserDirectoryService, UserDirectoryService>();
+builder.Services.AddScoped<IPresenceService, PresenceService>();
+builder.Services.AddScoped<IGlobalActivityService, GlobalActivityService>();
 
 builder.Services.AddSignalR();
 
