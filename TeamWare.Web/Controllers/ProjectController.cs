@@ -33,6 +33,7 @@ public class ProjectController : Controller
     }
 
     private string GetUserId() => User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+    private bool IsAdmin() => User.IsInRole("Admin");
 
     [HttpGet]
     public async Task<IActionResult> Index()
@@ -88,7 +89,7 @@ public class ProjectController : Controller
     [HttpGet]
     public async Task<IActionResult> Edit(int id)
     {
-        var result = await _projectService.GetProjectDashboard(id, GetUserId());
+        var result = await _projectService.GetProjectDashboard(id, GetUserId(), IsAdmin());
 
         if (!result.Succeeded)
         {
@@ -116,7 +117,7 @@ public class ProjectController : Controller
             return View(model);
         }
 
-        var result = await _projectService.UpdateProject(model.Id, model.Name, model.Description, GetUserId());
+        var result = await _projectService.UpdateProject(model.Id, model.Name, model.Description, GetUserId(), IsAdmin());
 
         if (!result.Succeeded)
         {
@@ -135,7 +136,7 @@ public class ProjectController : Controller
     public async Task<IActionResult> Details(int id)
     {
         var userId = GetUserId();
-        var result = await _projectService.GetProjectDashboard(id, userId);
+        var result = await _projectService.GetProjectDashboard(id, userId, IsAdmin());
 
         if (!result.Succeeded)
         {

@@ -10,6 +10,7 @@ public static class SeedData
     public const string AdminPassword = "Admin123!";
     public const string AdminDisplayName = "Administrator";
     public const string AdminRoleName = "Admin";
+    public const string UserRoleName = "User";
 
     public static async Task InitializeAsync(IServiceProvider serviceProvider)
     {
@@ -22,6 +23,11 @@ public static class SeedData
         if (!await roleManager.RoleExistsAsync(AdminRoleName))
         {
             await roleManager.CreateAsync(new IdentityRole(AdminRoleName));
+        }
+
+        if (!await roleManager.RoleExistsAsync(UserRoleName))
+        {
+            await roleManager.CreateAsync(new IdentityRole(UserRoleName));
         }
 
         var adminUser = await userManager.FindByEmailAsync(AdminEmail);
@@ -41,6 +47,14 @@ public static class SeedData
             if (result.Succeeded)
             {
                 await userManager.AddToRoleAsync(adminUser, AdminRoleName);
+                await userManager.AddToRoleAsync(adminUser, UserRoleName);
+            }
+        }
+        else
+        {
+            if (!await userManager.IsInRoleAsync(adminUser, UserRoleName))
+            {
+                await userManager.AddToRoleAsync(adminUser, UserRoleName);
             }
         }
     }

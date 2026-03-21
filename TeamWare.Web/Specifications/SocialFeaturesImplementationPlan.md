@@ -8,7 +8,7 @@ This document defines the phased implementation plan for TeamWare social feature
 
 | Phase | Description | Status |
 |-------|------------|--------|
-| 10 | System Administration | Not Started |
+| 10 | System Administration | Complete |
 | 11 | User Directory | Not Started |
 | 12 | User Activity and Presence | Not Started |
 | 13 | Project Invitation Improvements | Not Started |
@@ -55,44 +55,44 @@ Introduce the site-wide admin role (via ASP.NET Identity roles), admin dashboard
 
 ### 10.1 Identity Roles and Seeding
 
-- [ ] Create ASP.NET Identity roles: "Admin" and "User" (ADMIN-01, ADMIN-02)
-- [ ] Configure role services in `Program.cs`
-- [ ] Update the existing admin seed account to be assigned the "Admin" Identity role (ADMIN-03)
-- [ ] Assign the "User" role to all new registrations by default
-- [ ] Add and apply the EF Core migration for Identity roles
-- [ ] Write tests verifying role seeding and default role assignment on registration
+- [x] Create ASP.NET Identity roles: "Admin" and "User" (ADMIN-01, ADMIN-02)
+- [x] Configure role services in `Program.cs`
+- [x] Update the existing admin seed account to be assigned the "Admin" Identity role (ADMIN-03)
+- [x] Assign the "User" role to all new registrations by default
+- [x] Add and apply the EF Core migration for Identity roles
+- [x] Write tests verifying role seeding and default role assignment on registration
 
 ### 10.2 Admin Activity Log Domain Model
 
-- [ ] Create `AdminActivityLog` entity (ADMIN-11, ADMIN-12)
-- [ ] Create EF Core configuration (relationships, constraints, indexes)
-- [ ] Add and apply the EF Core migration
-- [ ] Write unit tests for entity validation
+- [x] Create `AdminActivityLog` entity (ADMIN-11, ADMIN-12)
+- [x] Create EF Core configuration (relationships, constraints, indexes)
+- [x] Add and apply the EF Core migration
+- [x] Write unit tests for entity validation
 
 ### 10.3 Admin Services
 
-- [ ] Create `IAdminService` and `AdminService`
-  - [ ] `GetAllUsers` with search and filter (ADMIN-05)
-  - [ ] `LockUser` / `UnlockUser` (ADMIN-06)
-  - [ ] `ResetPassword` (ADMIN-07, fulfills AUTH-04)
-  - [ ] `PromoteToAdmin` / `DemoteToUser` (ADMIN-08)
-  - [ ] `GetSystemStatistics` - total users, projects, tasks (ADMIN-09)
-- [ ] Create `IAdminActivityLogService` and `AdminActivityLogService`
-  - [ ] `LogAction` - records admin actions with actor, target, action type, details, and timestamp
-  - [ ] `GetActivityLog` - returns paginated admin activity log entries
-- [ ] Integrate `AdminActivityLogService` into `AdminService` to log all administrative actions
-- [ ] Write unit tests for all service methods and authorization rules (TEST-06)
+- [x] Create `IAdminService` and `AdminService`
+  - [x] `GetAllUsers` with search and filter (ADMIN-05)
+  - [x] `LockUser` / `UnlockUser` (ADMIN-06)
+  - [x] `ResetPassword` (ADMIN-07, fulfills AUTH-04)
+  - [x] `PromoteToAdmin` / `DemoteToUser` (ADMIN-08)
+  - [x] `GetSystemStatistics` - total users, projects, tasks (ADMIN-09)
+- [x] Create `IAdminActivityLogService` and `AdminActivityLogService`
+  - [x] `LogAction` - records admin actions with actor, target, action type, details, and timestamp
+  - [x] `GetActivityLog` - returns paginated admin activity log entries
+- [x] Integrate `AdminActivityLogService` into `AdminService` to log all administrative actions
+- [x] Write unit tests for all service methods and authorization rules (TEST-06)
 
 ### 10.4 Admin Controllers and Views
 
-- [ ] Create `AdminController` with actions: Dashboard, Users (list), LockUser, UnlockUser, ResetPassword, PromoteToAdmin, DemoteToUser, ActivityLog
-- [ ] Protect all admin actions with `[Authorize(Roles = "Admin")]`
-- [ ] Build the admin dashboard view showing system-wide statistics (ADMIN-04, ADMIN-09)
-- [ ] Build the user management list view with search/filter (ADMIN-05)
-- [ ] Build user action views/modals for lock, unlock, reset password, and role changes
-- [ ] Build the admin activity log view with pagination
-- [ ] Update existing project authorization to allow site admins to view and edit any project (ADMIN-10)
-- [ ] Write integration tests for all admin controller actions and authorization checks (TEST-06)
+- [x] Create `AdminController` with actions: Dashboard, Users (list), LockUser, UnlockUser, ResetPassword, PromoteToAdmin, DemoteToUser, ActivityLog
+- [x] Protect all admin actions with `[Authorize(Roles = "Admin")]`
+- [x] Build the admin dashboard view showing system-wide statistics (ADMIN-04, ADMIN-09)
+- [x] Build the user management list view with search/filter (ADMIN-05)
+- [x] Build user action views/modals for lock, unlock, reset password, and role changes
+- [x] Build the admin activity log view with pagination
+- [x] Update existing project authorization to allow site admins to view and edit any project (ADMIN-10)
+- [x] Write integration tests for all admin controller actions and authorization checks (TEST-06)
 
 ---
 

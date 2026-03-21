@@ -46,7 +46,7 @@ public class ProjectService : IProjectService
         return ServiceResult<Project>.Success(project);
     }
 
-    public async Task<ServiceResult<Project>> UpdateProject(int projectId, string name, string? description, string userId)
+    public async Task<ServiceResult<Project>> UpdateProject(int projectId, string name, string? description, string userId, bool isAdmin = false)
     {
         if (string.IsNullOrWhiteSpace(name))
         {
@@ -59,12 +59,15 @@ public class ProjectService : IProjectService
             return ServiceResult<Project>.Failure("Project not found.");
         }
 
-        var membership = await _context.ProjectMembers
-            .FirstOrDefaultAsync(pm => pm.ProjectId == projectId && pm.UserId == userId);
-
-        if (membership == null || (membership.Role != ProjectRole.Owner && membership.Role != ProjectRole.Admin))
+        if (!isAdmin)
         {
-            return ServiceResult<Project>.Failure("Only project owners and admins can edit project details.");
+            var membership = await _context.ProjectMembers
+                .FirstOrDefaultAsync(pm => pm.ProjectId == projectId && pm.UserId == userId);
+
+            if (membership == null || (membership.Role != ProjectRole.Owner && membership.Role != ProjectRole.Admin))
+            {
+                return ServiceResult<Project>.Failure("Only project owners and admins can edit project details.");
+            }
         }
 
         project.Name = name.Trim();
@@ -135,7 +138,7 @@ public class ProjectService : IProjectService
         return ServiceResult<List<Project>>.Success(projects);
     }
 
-    public async Task<ServiceResult<ProjectDashboard>> GetProjectDashboard(int projectId, string userId)
+    public async Task<ServiceResult<ProjectDashboard>> GetProjectDashboard(int projectId, string userId, bool isAdmin = false)
     {
         var project = await _context.Projects
             .Include(p => p.Members)
@@ -147,10 +150,13 @@ public class ProjectService : IProjectService
             return ServiceResult<ProjectDashboard>.Failure("Project not found.");
         }
 
-        var isMember = project.Members.Any(m => m.UserId == userId);
-        if (!isMember)
+        if (!isAdmin)
         {
-            return ServiceResult<ProjectDashboard>.Failure("You are not a member of this project.");
+            var isMember = project.Members.Any(m => m.UserId == userId);
+            if (!isMember)
+            {
+                return ServiceResult<ProjectDashboard>.Failure("You are not a member of this project.");
+            }
         }
 
         var dashboard = new ProjectDashboard
