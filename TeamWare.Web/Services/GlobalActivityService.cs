@@ -36,11 +36,20 @@ public class GlobalActivityService : IGlobalActivityService
 
         var entries = await _context.ActivityLogEntries
             .Where(a => a.CreatedAt >= cutoff)
-            .Include(a => a.Project)
-            .Include(a => a.TaskItem)
-            .Include(a => a.User)
             .OrderByDescending(a => a.CreatedAt)
             .Take(count)
+            .Select(a => new
+            {
+                a.ChangeType,
+                a.ProjectId,
+                ProjectName = a.Project.Name,
+                a.UserId,
+                UserDisplayName = a.User != null ? a.User.DisplayName : null,
+                TaskTitle = a.TaskItem != null ? a.TaskItem.Title : null,
+                a.OldValue,
+                a.NewValue,
+                a.CreatedAt
+            })
             .ToListAsync();
 
         var result = entries.Select(entry =>
@@ -50,12 +59,12 @@ public class GlobalActivityService : IGlobalActivityService
             return new GlobalActivityFeedEntryViewModel
             {
                 Description = isMember
-                    ? FormatFullDescription(entry)
-                    : FormatMaskedDescription(entry),
-                ProjectName = entry.Project.Name,
+                    ? FormatFullDescription(entry.ChangeType, entry.TaskTitle, entry.OldValue, entry.NewValue)
+                    : FormatMaskedDescription(entry.ChangeType),
+                ProjectName = entry.ProjectName,
                 ProjectId = entry.ProjectId,
                 UserDisplayName = isMember
-                    ? (entry.User?.DisplayName ?? "Unknown")
+                    ? (entry.UserDisplayName ?? "Unknown")
                     : "A user",
                 UserId = isMember ? entry.UserId : string.Empty,
                 CreatedAt = entry.CreatedAt,
@@ -66,30 +75,30 @@ public class GlobalActivityService : IGlobalActivityService
         return ServiceResult<List<GlobalActivityFeedEntryViewModel>>.Success(result);
     }
 
-    private static string FormatFullDescription(ActivityLogEntry entry)
+    private static string FormatFullDescription(ActivityChangeType changeType, string? taskTitle, string? oldValue, string? newValue)
     {
-        var taskTitle = entry.TaskItem?.Title ?? "a task";
+        var title = taskTitle ?? "a task";
 
-        return entry.ChangeType switch
+        return changeType switch
         {
-            ActivityChangeType.Created => $"Created task \"{taskTitle}\"",
-            ActivityChangeType.StatusChanged => $"Changed status of \"{taskTitle}\" from {entry.OldValue} to {entry.NewValue}",
-            ActivityChangeType.PriorityChanged => $"Changed priority of \"{taskTitle}\" from {entry.OldValue} to {entry.NewValue}",
-            ActivityChangeType.Assigned => $"Assigned to \"{taskTitle}\"",
-            ActivityChangeType.Unassigned => $"Unassigned from \"{taskTitle}\"",
-            ActivityChangeType.MarkedNextAction => $"Marked \"{taskTitle}\" as Next Action",
-            ActivityChangeType.ClearedNextAction => $"Cleared Next Action on \"{taskTitle}\"",
-            ActivityChangeType.MarkedSomedayMaybe => $"Marked \"{taskTitle}\" as Someday/Maybe",
-            ActivityChangeType.ClearedSomedayMaybe => $"Cleared Someday/Maybe on \"{taskTitle}\"",
-            ActivityChangeType.Updated => $"Updated \"{taskTitle}\"",
-            ActivityChangeType.Deleted => $"Deleted task \"{taskTitle}\"",
-            _ => $"Performed action on \"{taskTitle}\""
+            ActivityChangeType.Created => $"Created task \"{title}\"",
+            ActivityChangeType.StatusChanged => $"Changed status of \"{title}\" from {oldValue} to {newValue}",
+            ActivityChangeType.PriorityChanged => $"Changed priority of \"{title}\" from {oldValue} to {newValue}",
+            ActivityChangeType.Assigned => $"Assigned to \"{title}\"",
+            ActivityChangeType.Unassigned => $"Unassigned from \"{title}\"",
+            ActivityChangeType.MarkedNextAction => $"Marked \"{title}\" as Next Action",
+            ActivityChangeType.ClearedNextAction => $"Cleared Next Action on \"{title}\"",
+            ActivityChangeType.MarkedSomedayMaybe => $"Marked \"{title}\" as Someday/Maybe",
+            ActivityChangeType.ClearedSomedayMaybe => $"Cleared Someday/Maybe on \"{title}\"",
+            ActivityChangeType.Updated => $"Updated \"{title}\"",
+            ActivityChangeType.Deleted => $"Deleted task \"{title}\"",
+            _ => $"Performed action on \"{title}\""
         };
     }
 
-    private static string FormatMaskedDescription(ActivityLogEntry entry)
+    private static string FormatMaskedDescription(ActivityChangeType changeType)
     {
-        return entry.ChangeType switch
+        return changeType switch
         {
             ActivityChangeType.Created => "A task was created",
             ActivityChangeType.StatusChanged => "A task status was changed",
