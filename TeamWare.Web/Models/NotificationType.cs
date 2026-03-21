@@ -6,5 +6,6 @@ public enum NotificationType
     DeadlineApproaching,
     StatusChanged,
     CommentAdded,
-    InboxThreshold
+    InboxThreshold,
+    ProjectInvitation
 }

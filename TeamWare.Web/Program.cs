@@ -50,6 +50,7 @@ builder.Services.AddScoped<IAdminService, AdminService>();
 builder.Services.AddScoped<IUserDirectoryService, UserDirectoryService>();
 builder.Services.AddScoped<IPresenceService, PresenceService>();
 builder.Services.AddScoped<IGlobalActivityService, GlobalActivityService>();
+builder.Services.AddScoped<IProjectInvitationService, ProjectInvitationService>();
 
 builder.Services.AddSignalR();
 

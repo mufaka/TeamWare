@@ -38,6 +38,13 @@
                                 @notification.Type
                             </span>
                         </p>
+                        @if (notification.Type == TeamWare.Web.Models.NotificationType.ProjectInvitation)
+                        {
+                            <a asp-controller="Invitation" asp-action="PendingForUser"
+                               class="mt-2 inline-flex items-center text-sm font-medium text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300">
+                                View Invitation
+                            </a>
+                        }
                     </div>
                     <div class="flex items-center gap-2 shrink-0">
                         <form method="post" asp-controller="Notification" asp-action="MarkAsRead" asp-route-id="@notification.Id">

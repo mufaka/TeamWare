@@ -31,6 +31,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 
     public DbSet<AdminActivityLog> AdminActivityLogs => Set<AdminActivityLog>();
 
+    public DbSet<ProjectInvitation> ProjectInvitations => Set<ProjectInvitation>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -250,6 +252,32 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 
             // Composite index for common query: admin activity log sorted by date
             entity.HasIndex(a => new { a.AdminUserId, a.CreatedAt });
+        });
+
+        builder.Entity<ProjectInvitation>(entity =>
+        {
+            entity.HasKey(i => i.Id);
+            entity.Property(i => i.Status).HasConversion<string>().HasMaxLength(20);
+            entity.Property(i => i.Role).HasConversion<string>().HasMaxLength(20);
+
+            entity.HasOne(i => i.Project)
+                .WithMany(p => p.Invitations)
+                .HasForeignKey(i => i.ProjectId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(i => i.InvitedUser)
+                .WithMany()
+                .HasForeignKey(i => i.InvitedUserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(i => i.InvitedByUser)
+                .WithMany()
+                .HasForeignKey(i => i.InvitedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(i => new { i.ProjectId, i.InvitedUserId, i.Status });
+            entity.HasIndex(i => i.InvitedUserId);
+            entity.HasIndex(i => i.Status);
         });
     }
 }

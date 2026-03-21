@@ -16,6 +16,7 @@ public class ProjectController : Controller
     private readonly IProjectMemberService _memberService;
     private readonly IActivityLogService _activityLogService;
     private readonly IProgressService _progressService;
+    private readonly IProjectInvitationService _invitationService;
     private readonly UserManager<ApplicationUser> _userManager;
 
     public ProjectController(
@@ -23,12 +24,14 @@ public class ProjectController : Controller
         IProjectMemberService memberService,
         IActivityLogService activityLogService,
         IProgressService progressService,
+        IProjectInvitationService invitationService,
         UserManager<ApplicationUser> userManager)
     {
         _projectService = projectService;
         _memberService = memberService;
         _activityLogService = activityLogService;
         _progressService = progressService;
+        _invitationService = invitationService;
         _userManager = userManager;
     }
 
@@ -194,6 +197,27 @@ public class ProjectController : Controller
             }).OrderByDescending(m => m.Role).ThenBy(m => m.DisplayName).ToList()
         };
 
+        if (currentUserMember != null &&
+            (currentUserMember.Role == ProjectRole.Owner || currentUserMember.Role == ProjectRole.Admin))
+        {
+            var pendingResult = await _invitationService.GetPendingInvitationsForProject(id, userId);
+            if (pendingResult.Succeeded && pendingResult.Data != null)
+            {
+                viewModel.PendingInvitations = pendingResult.Data.Select(i => new ProjectInvitationViewModel
+                {
+                    Id = i.Id,
+                    ProjectId = i.ProjectId,
+                    InvitedUserId = i.InvitedUserId,
+                    InvitedUserDisplayName = i.InvitedUser?.DisplayName ?? string.Empty,
+                    InvitedUserEmail = i.InvitedUser?.Email ?? string.Empty,
+                    InvitedByUserDisplayName = i.InvitedByUser?.DisplayName ?? string.Empty,
+                    Role = i.Role,
+                    Status = i.Status,
+                    CreatedAt = i.CreatedAt
+                }).ToList();
+            }
+        }
+
         return View(viewModel);
     }
 
@@ -268,29 +292,24 @@ public class ProjectController : Controller
                         (u.Email!.Contains(query) || u.DisplayName.Contains(query)))
             .OrderBy(u => u.DisplayName)
             .Take(10)
-            .Select(u => new { u.Email, u.DisplayName });
+            .Select(u => new { u.Id, u.Email, u.DisplayName });
 
         return Json(await users.ToListAsync());
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> InviteMember(InviteMemberViewModel model)
+    public async Task<IActionResult> InviteMember(SendInvitationViewModel model)
     {
         if (!ModelState.IsValid)
         {
-            TempData["ErrorMessage"] = "Please provide a valid email address.";
+            TempData["ErrorMessage"] = "Please select a valid user.";
             return RedirectToAction(nameof(Details), new { id = model.ProjectId });
         }
 
-        var targetUser = await _userManager.FindByEmailAsync(model.Email);
-        if (targetUser == null)
-        {
-            TempData["ErrorMessage"] = "No user found with that email address.";
-            return RedirectToAction(nameof(Details), new { id = model.ProjectId });
-        }
+        var role = Enum.TryParse<ProjectRole>(model.Role, out var parsedRole) ? parsedRole : ProjectRole.Member;
 
-        var result = await _memberService.InviteMember(model.ProjectId, targetUser.Id, GetUserId());
+        var result = await _invitationService.SendInvitation(model.ProjectId, model.UserId, role, GetUserId());
 
         if (!result.Succeeded)
         {
@@ -298,7 +317,7 @@ public class ProjectController : Controller
         }
         else
         {
-            TempData["SuccessMessage"] = $"{targetUser.DisplayName} has been added to the project.";
+            TempData["SuccessMessage"] = "Invitation sent successfully.";
         }
 
         return RedirectToAction(nameof(Details), new { id = model.ProjectId });

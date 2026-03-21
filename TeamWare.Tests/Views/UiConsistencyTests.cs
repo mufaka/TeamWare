@@ -230,6 +230,7 @@ public class UiConsistencyTests : IClassFixture<TeamWareWebApplicationFactory>, 
 
         Assert.Contains(">Home</a>", html, StringComparison.Ordinal);
         Assert.Contains(">Notifications</span>", html, StringComparison.Ordinal);
+        Assert.Contains(">Invitations</a>", html, StringComparison.Ordinal);
         Assert.Contains(">Projects</a>", html, StringComparison.Ordinal);
         Assert.Contains(">Inbox</span>", html, StringComparison.Ordinal);
         Assert.Contains(">What\u0027s Next</a>", html, StringComparison.Ordinal);
@@ -293,6 +294,7 @@ public class UiConsistencyTests : IClassFixture<TeamWareWebApplicationFactory>, 
 
         var homeIndex = html.IndexOf(">Home</a>", StringComparison.Ordinal);
         var notifIndex = html.IndexOf(">Notifications</span>", StringComparison.Ordinal);
+        var invitationsIndex = html.IndexOf(">Invitations</a>", StringComparison.Ordinal);
         var projectsIndex = html.IndexOf(">Projects</a>", StringComparison.Ordinal);
         var inboxIndex = html.IndexOf(">Inbox</span>", StringComparison.Ordinal);
         var whatsNextIndex = html.IndexOf(">What\u0027s Next</a>", StringComparison.Ordinal);
@@ -300,7 +302,8 @@ public class UiConsistencyTests : IClassFixture<TeamWareWebApplicationFactory>, 
         var reviewIndex = html.IndexOf(">Weekly Review</a>", StringComparison.Ordinal);
 
         Assert.True(homeIndex < notifIndex, "Home should appear before Notifications");
-        Assert.True(notifIndex < projectsIndex, "Notifications should appear before Projects");
+        Assert.True(notifIndex < invitationsIndex, "Notifications should appear before Invitations");
+        Assert.True(invitationsIndex < projectsIndex, "Invitations should appear before Projects");
         Assert.True(projectsIndex < inboxIndex, "Projects should appear before Inbox");
         Assert.True(inboxIndex < whatsNextIndex, "Inbox should appear before What's Next");
         Assert.True(whatsNextIndex < somedayIndex, "What's Next should appear before Someday/Maybe");
