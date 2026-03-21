@@ -1,0 +1,114 @@
+﻿@using TeamWare.Web.Helpers
+@model TeamWare.Web.ViewModels.UserProfileViewModel
+@{
+    ViewData["Title"] = Model.DisplayName;
+}
+
+<div class="mx-auto max-w-4xl">
+    <div class="mb-4">
+        <a asp-action="Index" class="text-sm text-blue-600 hover:underline dark:text-blue-400">Back to Directory</a>
+    </div>
+
+    <!-- User Header -->
+    <div class="mb-6 rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
+        <div class="flex items-center gap-4">
+            @if (!string.IsNullOrEmpty(Model.AvatarUrl))
+            {
+                <img src="@Model.AvatarUrl" alt="@Model.DisplayName" class="h-16 w-16 rounded-full object-cover" />
+            }
+            else
+            {
+                <div class="flex h-16 w-16 items-center justify-center rounded-full bg-blue-100 text-xl font-medium text-blue-600 dark:bg-blue-900 dark:text-blue-300">
+                    @(string.IsNullOrEmpty(Model.DisplayName) ? "?" : Model.DisplayName[0].ToString().ToUpper())
+                </div>
+            }
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900 dark:text-white">@Model.DisplayName</h1>
+                <p class="text-sm text-gray-500 dark:text-gray-400">@Model.Email</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid gap-6 lg:grid-cols-2">
+        <!-- Task Statistics -->
+        <div class="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
+            <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-white">Task Statistics</h2>
+            <div class="grid grid-cols-3 gap-4 text-center">
+                <div>
+                    <div class="text-2xl font-bold text-blue-600 dark:text-blue-400">@Model.TaskStatistics.TasksAssigned</div>
+                    <div class="text-xs text-gray-500 dark:text-gray-400">Assigned</div>
+                </div>
+                <div>
+                    <div class="text-2xl font-bold text-green-600 dark:text-green-400">@Model.TaskStatistics.TasksCompleted</div>
+                    <div class="text-xs text-gray-500 dark:text-gray-400">Completed</div>
+                </div>
+                <div>
+                    <div class="text-2xl font-bold text-red-600 dark:text-red-400">@Model.TaskStatistics.TasksOverdue</div>
+                    <div class="text-xs text-gray-500 dark:text-gray-400">Overdue</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Project Memberships -->
+        <div class="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
+            <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-white">Projects</h2>
+            @if (Model.ProjectMemberships.Count == 0)
+            {
+                <p class="text-sm text-gray-500 dark:text-gray-400">Not a member of any projects.</p>
+            }
+            else
+            {
+                <ul class="space-y-2">
+                    @foreach (var membership in Model.ProjectMemberships)
+                    {
+                        <li class="flex items-center justify-between rounded-lg border border-gray-100 px-3 py-2 dark:border-gray-700">
+                            <a asp-controller="Project" asp-action="Details" asp-route-id="@membership.ProjectId"
+                               class="text-sm font-medium text-blue-600 hover:underline dark:text-blue-400">
+                                @membership.ProjectName
+                            </a>
+                            <span class="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600 dark:bg-gray-700 dark:text-gray-300">
+                                @membership.Role
+                            </span>
+                        </li>
+                    }
+                </ul>
+            }
+        </div>
+    </div>
+
+    <!-- Invite to Project Link (DIR-09) -->
+    <div class="mt-4">
+        <a asp-controller="Project" asp-action="Index"
+           class="inline-flex items-center rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
+            Invite to a project
+        </a>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="mt-6 rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
+        <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-white">Recent Activity</h2>
+        @if (Model.RecentActivity.Count == 0)
+        {
+            <p class="text-sm text-gray-500 dark:text-gray-400">No recent activity in the last 30 days.</p>
+        }
+        else
+        {
+            <div class="space-y-3">
+                @foreach (var activity in Model.RecentActivity)
+                {
+                    <div class="flex items-start gap-3 border-b border-gray-100 pb-3 last:border-0 last:pb-0 dark:border-gray-700">
+                        <div class="mt-0.5 h-2 w-2 flex-shrink-0 rounded-full bg-blue-400"></div>
+                        <div class="min-w-0 flex-1">
+                            <p class="text-sm text-gray-900 dark:text-white">@activity.Description</p>
+                            <div class="mt-1 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                                <a asp-controller="Project" asp-action="Details" asp-route-id="@activity.ProjectId"
+                                   class="text-blue-600 hover:underline dark:text-blue-400">@activity.ProjectName</a>
+                                <span>@Html.LocalTime(activity.CreatedAt, "short-datetime")</span>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>
