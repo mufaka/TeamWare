@@ -15,4 +15,8 @@ public class UserProfileViewModel
     public UserTaskStatisticsViewModel TaskStatistics { get; set; } = new();
 
     public List<UserRecentActivityViewModel> RecentActivity { get; set; } = new();
+
+    public bool IsOnline { get; set; }
+
+    public DateTime? LastActiveAt { get; set; }
 }

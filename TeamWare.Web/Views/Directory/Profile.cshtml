@@ -12,19 +12,40 @@
     <!-- User Header -->
     <div class="mb-6 rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
         <div class="flex items-center gap-4">
-            @if (!string.IsNullOrEmpty(Model.AvatarUrl))
-            {
-                <img src="@Model.AvatarUrl" alt="@Model.DisplayName" class="h-16 w-16 rounded-full object-cover" />
-            }
-            else
-            {
-                <div class="flex h-16 w-16 items-center justify-center rounded-full bg-blue-100 text-xl font-medium text-blue-600 dark:bg-blue-900 dark:text-blue-300">
-                    @(string.IsNullOrEmpty(Model.DisplayName) ? "?" : Model.DisplayName[0].ToString().ToUpper())
-                </div>
-            }
+            <div class="relative flex-shrink-0">
+                @if (!string.IsNullOrEmpty(Model.AvatarUrl))
+                {
+                    <img src="@Model.AvatarUrl" alt="@Model.DisplayName" class="h-16 w-16 rounded-full object-cover" />
+                }
+                else
+                {
+                    <div class="flex h-16 w-16 items-center justify-center rounded-full bg-blue-100 text-xl font-medium text-blue-600 dark:bg-blue-900 dark:text-blue-300">
+                        @(string.IsNullOrEmpty(Model.DisplayName) ? "?" : Model.DisplayName[0].ToString().ToUpper())
+                    </div>
+                }
+                <span data-presence-user="@Model.UserId"
+                      class="absolute bottom-0 right-0 h-4 w-4 rounded-full border-2 border-white dark:border-gray-800 @(Model.IsOnline ? "bg-green-500" : "bg-gray-400")"
+                      title="@(Model.IsOnline ? "Online" : "Offline")"></span>
+            </div>
             <div>
                 <h1 class="text-2xl font-bold text-gray-900 dark:text-white">@Model.DisplayName</h1>
                 <p class="text-sm text-gray-500 dark:text-gray-400">@Model.Email</p>
+                <div class="mt-1 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                    @if (Model.IsOnline)
+                    {
+                        <span class="inline-flex items-center gap-1 text-green-600 dark:text-green-400">
+                            <span class="h-2 w-2 rounded-full bg-green-500"></span> Online
+                        </span>
+                    }
+                    else if (Model.LastActiveAt.HasValue)
+                    {
+                        <span>Last active @Html.LocalTime(Model.LastActiveAt.Value, "short-datetime")</span>
+                    }
+                    else
+                    {
+                        <span>Never active</span>
+                    }
+                </div>
             </div>
         </div>
     </div>
