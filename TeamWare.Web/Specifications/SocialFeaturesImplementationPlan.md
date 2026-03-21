@@ -102,13 +102,13 @@ Deliver the searchable user directory and user profile pages.
 
 ### 11.1 Directory Services
 
-- [ ] Create `IUserDirectoryService` and `UserDirectoryService`
-  - [ ] `SearchUsers` - search by display name or email (DIR-01, DIR-02)
-  - [ ] `GetUsersSorted` - return users sorted by display name or email (DIR-03)
-  - [ ] `GetUserProfile` - returns display name, avatar, email, project memberships, task stats, and recent activity (DIR-05 through DIR-08)
-  - [ ] `GetUserTaskStatistics` - tasks assigned, completed, and overdue (DIR-07)
-  - [ ] `GetUserRecentActivity` - last 30 days across all projects (DIR-08)
-- [ ] Write unit tests for all service methods
+- [x] Create `IUserDirectoryService` and `UserDirectoryService`
+  - [x] `SearchUsers` - search by display name or email (DIR-01, DIR-02)
+  - [x] `GetUsersSorted` - return users sorted by display name or email (DIR-03)
+  - [x] `GetUserProfile` - returns display name, avatar, email, project memberships, task stats, and recent activity (DIR-05 through DIR-08)
+  - [x] `GetUserTaskStatistics` - tasks assigned, completed, and overdue (DIR-07)
+  - [x] `GetUserRecentActivity` - last 30 days across all projects (DIR-08)
+- [x] Write unit tests for all service methods
 
 ### 11.2 Controllers and Views
 
