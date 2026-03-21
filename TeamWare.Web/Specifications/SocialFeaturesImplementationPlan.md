@@ -71,17 +71,17 @@ Introduce the site-wide admin role (via ASP.NET Identity roles), admin dashboard
 
 ### 10.3 Admin Services
 
-- [ ] Create `IAdminService` and `AdminService`
-  - [ ] `GetAllUsers` with search and filter (ADMIN-05)
-  - [ ] `LockUser` / `UnlockUser` (ADMIN-06)
-  - [ ] `ResetPassword` (ADMIN-07, fulfills AUTH-04)
-  - [ ] `PromoteToAdmin` / `DemoteToUser` (ADMIN-08)
-  - [ ] `GetSystemStatistics` - total users, projects, tasks (ADMIN-09)
-- [ ] Create `IAdminActivityLogService` and `AdminActivityLogService`
-  - [ ] `LogAction` - records admin actions with actor, target, action type, details, and timestamp
-  - [ ] `GetActivityLog` - returns paginated admin activity log entries
-- [ ] Integrate `AdminActivityLogService` into `AdminService` to log all administrative actions
-- [ ] Write unit tests for all service methods and authorization rules (TEST-06)
+- [x] Create `IAdminService` and `AdminService`
+  - [x] `GetAllUsers` with search and filter (ADMIN-05)
+  - [x] `LockUser` / `UnlockUser` (ADMIN-06)
+  - [x] `ResetPassword` (ADMIN-07, fulfills AUTH-04)
+  - [x] `PromoteToAdmin` / `DemoteToUser` (ADMIN-08)
+  - [x] `GetSystemStatistics` - total users, projects, tasks (ADMIN-09)
+- [x] Create `IAdminActivityLogService` and `AdminActivityLogService`
+  - [x] `LogAction` - records admin actions with actor, target, action type, details, and timestamp
+  - [x] `GetActivityLog` - returns paginated admin activity log entries
+- [x] Integrate `AdminActivityLogService` into `AdminService` to log all administrative actions
+- [x] Write unit tests for all service methods and authorization rules (TEST-06)
 
 ### 10.4 Admin Controllers and Views
 

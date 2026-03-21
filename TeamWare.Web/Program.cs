@@ -44,6 +44,8 @@ builder.Services.AddScoped<IProgressService, ProgressService>();
 builder.Services.AddScoped<ICommentService, CommentService>();
 builder.Services.AddScoped<IReviewService, ReviewService>();
 builder.Services.AddScoped<IUserProfileService, UserProfileService>();
+builder.Services.AddScoped<IAdminActivityLogService, AdminActivityLogService>();
+builder.Services.AddScoped<IAdminService, AdminService>();
 
 builder.Services.AddDataProtection()
     .PersistKeysToFileSystem(new DirectoryInfo(
