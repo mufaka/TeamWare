@@ -15,12 +15,17 @@ TeamWare is a lightweight, self-hosted project and task management application b
 - **Weekly Review** — A guided multi-step review workflow to process your inbox, re-prioritize tasks, and review Someday/Maybe items
 - **User Profile** — Manage display name, avatar URL, password, and light/dark theme preference
 - **Dashboard** — A personal dashboard aggregating inbox count, What's Next items, project summaries, upcoming deadlines, review status, and recent notifications
+- **System Administration** — Site-wide admin dashboard with user management (lock, unlock, reset password, promote/demote), system statistics, and admin activity log
+- **User Directory** — Searchable directory of all registered users with sortable listing, user profiles showing project memberships, task statistics, and recent activity
+- **Real-Time Presence** — Online/offline status indicators via SignalR, "last active" timestamps on user profiles, and a global activity feed across all projects
+- **Project Invitations** — Accept/decline invitation workflow with bulk invite support, pending invitation management, and notification integration
 
 ## Tech Stack
 
 - **Backend:** ASP.NET Core MVC (.NET 10)
 - **Database:** SQLite via Entity Framework Core 10
 - **Authentication:** Microsoft Identity with cookie authentication
+- **Real-Time:** SignalR for user presence tracking (online/offline indicators)
 - **Frontend:** Tailwind CSS 4.2, HTMX 2.0, Alpine.js 3.14
 - **Client Validation:** aspnet-client-validation (jQuery-free)
 - **Testing:** xUnit with `Microsoft.AspNetCore.Mvc.Testing`
@@ -118,6 +123,8 @@ TeamWare/
   TeamWare.Web/              # ASP.NET Core MVC application
     Controllers/              # MVC controllers
     Data/                     # DbContext, migrations, and seed data
+    Helpers/                  # HTML helper extensions
+    Hubs/                     # SignalR hubs (PresenceHub)
     Models/                   # Domain entities (one class per file)
     Services/                 # Business logic interfaces and implementations
     Views/                    # Razor views organized by controller
@@ -128,9 +135,10 @@ TeamWare/
   TeamWare.Tests/             # xUnit test project
     Controllers/              # Integration tests for controllers
     Data/                     # Database context tests
-    Infrastructure/           # Error handling and anti-forgery tests
+    Infrastructure/           # Error handling, anti-forgery, and SignalR hub tests
     Models/                   # Entity validation tests
-    Security/                 # Security hardening tests
+    Performance/              # Performance and index verification tests
+    Security/                 # Security hardening and authorization tests
     Services/                 # Unit tests for service layer
     Views/                    # Layout smoke tests and UI consistency tests
 ```
@@ -143,25 +151,82 @@ TeamWare/
 2. Log in with the admin credentials.
 3. Navigate to **My Profile > Change Password** to set a secure password.
 
+### Admin Dashboard
+
+The admin dashboard (`/Admin/Dashboard`) provides system-wide statistics (total users, projects, and tasks) and quick access to user management and the admin activity log. Only users with the `Admin` role can access these features.
+
+### User Management
+
+Administrators can manage all user accounts from the admin dashboard:
+
+1. Navigate to **Admin Dashboard > User Management** (or go to `/Admin/Users`).
+2. **Search** — Filter users by display name or email.
+3. **Lock/Unlock** — Lock a user account to prevent login, or unlock a previously locked account.
+4. **Reset Password** — Set a new password for any user account.
+5. **Promote/Demote** — Change a user's role between Admin and User.
+
+All administrative actions are recorded in the admin activity log for audit purposes.
+
+### Admin Activity Log
+
+The activity log (`/Admin/ActivityLog`) shows a paginated, chronological record of all administrative actions including who performed the action, who was affected, what action was taken, and when it occurred.
+
 ### Password Reset
 
 Administrators can reset any user's password:
 
 1. Log in with an admin account.
-2. Navigate to **Reset Password** (available in the sidebar for admin users, or go to `/Account/ResetPassword`).
-3. Enter the user's email address and the new password.
-4. Click **Reset Password**.
+2. Navigate to **Admin Dashboard > User Management**.
+3. Click **Reset Password** next to the target user.
+4. Enter and confirm the new password.
+5. Click **Reset Password**.
 
 > Only users with the `Admin` role can access this feature. Regular users can change their own password via **My Profile > Change Password**.
 
-### User Management
+### Project-Level Member Management
 
-Members are managed at the project level:
+Members are managed at the project level through the invitation workflow:
 
 1. Navigate to a project's **Details** page.
-2. Use the **Invite Member** form to add a user by email address (the user must have a registered account).
-3. Assign roles: **Owner** (full control), **Admin** (can manage members and tasks), or **Member** (can create and manage own tasks).
-4. Use **Remove Member** to revoke access.
+2. Use the **Invite Member** autocomplete to search and select a user from the directory.
+3. Choose a role: **Owner** (full control), **Admin** (manage members and tasks), or **Member** (create and manage own tasks).
+4. Click **Send Invitation**. The invited user receives an in-app notification.
+5. The invited user can **Accept** or **Decline** the invitation from their notifications or the pending invitations page.
+
+## User Directory
+
+The user directory (`/Directory`) lists all registered users and supports:
+
+- **Search** — Find users by display name or email.
+- **Sort** — Sort the list by name or email, ascending or descending.
+- **User Profiles** — Click on a user to view their profile page showing:
+  - Display name, avatar, and email
+  - Project membership list
+  - Task statistics (assigned, completed, overdue)
+  - Recent activity (last 30 days)
+  - Online/offline presence indicator and last active timestamp
+  - Quick link to invite the user to a project
+
+All registered users appear in the directory. There is no opt-out mechanism.
+
+## Project Invitations
+
+TeamWare uses an accept/decline invitation workflow for adding members to projects:
+
+1. **Sending Invitations** — Project owners and admins can invite users from the project details page. Autocomplete search pulls from the user directory.
+2. **Bulk Invitations** — Multiple users can be invited to a project at once.
+3. **Pending Invitations** — Project owners/admins can view pending invitations for their projects at `/Invitation/PendingForProject`.
+4. **Accepting/Declining** — Invited users see pending invitations at `/Invitation/PendingForUser` and via notification links. Accepting creates the project membership; declining removes the invitation.
+5. **Notifications** — Invitation notifications include direct accept/decline action links.
+
+## Real-Time Presence
+
+TeamWare uses SignalR to provide real-time user presence:
+
+- **Online/Offline Indicators** — Green dot indicators appear next to online users in the directory and on profile pages.
+- **Last Active Timestamp** — User profile pages show when the user was last active.
+- **Global Activity Feed** — The dashboard includes a global activity feed showing recent actions across all projects. Activity from projects the viewer is not a member of is shown in a masked/generic format to preserve privacy.
+- **Automatic Connection** — SignalR connects automatically when an authenticated user loads any page. No manual setup is required.
 
 ## GTD Workflow Guide
 
@@ -213,7 +278,11 @@ Items flagged as Someday/Maybe are parked for future consideration. Access them 
 
 ## Development
 
-See the [Implementation Plan](TeamWare.Web/Specifications/ImplementationPlan.md) for the phased development roadmap and the [Specification](TeamWare.Web/Specifications/Specification.md) for formal requirements. Each phase has a corresponding GitHub branch (`phase-X/<name>`) and issues for individual work items.
+See the [Implementation Plan](TeamWare.Web/Specifications/ImplementationPlan.md) and the [Social Features Implementation Plan](TeamWare.Web/Specifications/SocialFeaturesImplementationPlan.md) for the phased development roadmap. See the [Specification](TeamWare.Web/Specifications/Specification.md) and [Social Features Specification](TeamWare.Web/Specifications/SocialFeaturesSpecification.md) for formal requirements. Each phase has a corresponding GitHub branch (`phase-X/<name>`) and issues for individual work items.
+
+### SignalR Configuration
+
+SignalR is configured automatically in `Program.cs`. The `PresenceHub` endpoint is mapped at `/hubs/presence`. No additional configuration is needed for development. For production deployments behind a load balancer, consider configuring a SignalR backplane (e.g., Redis) if scaling to multiple server instances.
 
 ## License
 
