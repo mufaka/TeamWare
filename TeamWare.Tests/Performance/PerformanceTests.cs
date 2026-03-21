@@ -677,6 +677,137 @@ public class PerformanceTests : IClassFixture<TeamWareWebApplicationFactory>, ID
             $"Notification page with 20 notifications took {stopwatch.ElapsedMilliseconds}ms (threshold: {PageLoadThresholdMs}ms)");
     }
 
+    // ---------------------------------------------------------------
+    // Phase 14.2: Social feature performance tests
+    // ---------------------------------------------------------------
+
+    [Fact]
+    public async Task DirectoryIndex_LoadsWithinThreshold()
+    {
+        var (userId, cookie) = await CreateAndLoginUser("perf-directory@test.com", "Directory Perf");
+        await SeedTestData(userId);
+
+        var request = new HttpRequestMessage(HttpMethod.Get, "/Directory");
+        request.Headers.Add("Cookie", cookie);
+
+        var stopwatch = Stopwatch.StartNew();
+        var response = await _client.SendAsync(request);
+        stopwatch.Stop();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.True(stopwatch.ElapsedMilliseconds < PageLoadThresholdMs,
+            $"Directory index took {stopwatch.ElapsedMilliseconds}ms (threshold: {PageLoadThresholdMs}ms)");
+    }
+
+    [Fact]
+    public async Task DirectorySearch_LoadsWithinThreshold()
+    {
+        var (userId, cookie) = await CreateAndLoginUser("perf-dir-search@test.com", "DirSearch Perf");
+        await SeedTestData(userId);
+
+        var request = new HttpRequestMessage(HttpMethod.Get, "/Directory?search=perf");
+        request.Headers.Add("Cookie", cookie);
+
+        var stopwatch = Stopwatch.StartNew();
+        var response = await _client.SendAsync(request);
+        stopwatch.Stop();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.True(stopwatch.ElapsedMilliseconds < PageLoadThresholdMs,
+            $"Directory search took {stopwatch.ElapsedMilliseconds}ms (threshold: {PageLoadThresholdMs}ms)");
+    }
+
+    [Fact]
+    public async Task GlobalActivityFeed_LoadsWithinThreshold()
+    {
+        var (userId, cookie) = await CreateAndLoginUser("perf-activity@test.com", "Activity Perf");
+        await SeedTestData(userId);
+
+        var request = new HttpRequestMessage(HttpMethod.Get, "/Activity/GlobalFeed");
+        request.Headers.Add("Cookie", cookie);
+        request.Headers.Add("HX-Request", "true");
+
+        var stopwatch = Stopwatch.StartNew();
+        var response = await _client.SendAsync(request);
+        stopwatch.Stop();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.True(stopwatch.ElapsedMilliseconds < HtmxPartialThresholdMs,
+            $"Global activity feed took {stopwatch.ElapsedMilliseconds}ms (threshold: {HtmxPartialThresholdMs}ms)");
+    }
+
+    [Fact]
+    public async Task InvitationPendingForUser_LoadsWithinThreshold()
+    {
+        var (userId, cookie) = await CreateAndLoginUser("perf-invitation@test.com", "Invitation Perf");
+        await SeedTestData(userId);
+
+        var request = new HttpRequestMessage(HttpMethod.Get, "/Invitation/PendingForUser");
+        request.Headers.Add("Cookie", cookie);
+
+        var stopwatch = Stopwatch.StartNew();
+        var response = await _client.SendAsync(request);
+        stopwatch.Stop();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.True(stopwatch.ElapsedMilliseconds < PageLoadThresholdMs,
+            $"Invitation pending for user took {stopwatch.ElapsedMilliseconds}ms (threshold: {PageLoadThresholdMs}ms)");
+    }
+
+    // Social feature index verification
+
+    [Fact]
+    public async Task CompositeIndex_AdminActivityLogs_AdminUserIdCreatedAt_Exists()
+    {
+        using var scope = _factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        await context.Database.EnsureCreatedAsync();
+
+        var indexes = await context.Database
+            .SqlQueryRaw<string>("SELECT name FROM sqlite_master WHERE type='index' AND tbl_name='AdminActivityLogs'")
+            .ToListAsync();
+
+        Assert.True(indexes.Count >= 2, "AdminActivityLogs should have multiple indexes including composite AdminUserId+CreatedAt");
+    }
+
+    [Fact]
+    public async Task CompositeIndex_ProjectInvitations_ProjectIdInvitedUserIdStatus_Exists()
+    {
+        using var scope = _factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        await context.Database.EnsureCreatedAsync();
+
+        var indexes = await context.Database
+            .SqlQueryRaw<string>("SELECT name FROM sqlite_master WHERE type='index' AND tbl_name='ProjectInvitations'")
+            .ToListAsync();
+
+        Assert.True(indexes.Count >= 2, "ProjectInvitations should have multiple indexes including composite ProjectId+InvitedUserId+Status");
+    }
+
+    // Social feature concurrent access
+
+    [Fact]
+    public async Task ConcurrentUsers_SocialFeatureEndpoints_AllSucceed()
+    {
+        var (userId, cookie) = await CreateAndLoginUser("perf-social-concurrent@test.com", "Social Concurrent");
+        await SeedTestData(userId);
+
+        var endpoints = new[] { "/Directory", "/Invitation/PendingForUser" };
+
+        var responses = new List<HttpResponseMessage>();
+        foreach (var endpoint in endpoints)
+        {
+            for (int i = 0; i < 5; i++)
+            {
+                var request = new HttpRequestMessage(HttpMethod.Get, endpoint);
+                request.Headers.Add("Cookie", cookie);
+                responses.Add(await _client.SendAsync(request));
+            }
+        }
+
+        Assert.All(responses, r => Assert.Equal(HttpStatusCode.OK, r.StatusCode));
+    }
+
     public void Dispose()
     {
         _client.Dispose();
