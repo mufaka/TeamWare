@@ -152,6 +152,31 @@ public class AccountControllerTests : IClassFixture<TeamWareWebApplicationFactor
         Assert.True(await userManager.IsInRoleAsync(admin, SeedData.AdminRoleName));
     }
 
+    [Fact]
+    public async Task Register_Post_WithValidData_AssignsUserRole()
+    {
+        var antiForgeryToken = await GetAntiForgeryTokenAsync("/Account/Register");
+        var uniqueEmail = $"roletest-{Guid.NewGuid():N}@example.com";
+
+        var formData = new Dictionary<string, string>
+        {
+            { "__RequestVerificationToken", antiForgeryToken },
+            { "DisplayName", "Role Test User" },
+            { "Email", uniqueEmail },
+            { "Password", "TestPass1" },
+            { "ConfirmPassword", "TestPass1" }
+        };
+
+        await _client.PostAsync("/Account/Register", new FormUrlEncodedContent(formData));
+
+        using var scope = _factory.Services.CreateScope();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+        var user = await userManager.FindByEmailAsync(uniqueEmail);
+
+        Assert.NotNull(user);
+        Assert.True(await userManager.IsInRoleAsync(user, SeedData.UserRoleName));
+    }
+
     private async Task<string> GetAntiForgeryTokenAsync(string url)
     {
         var response = await _client.GetAsync(url);

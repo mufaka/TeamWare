@@ -4,7 +4,7 @@
 - TeamWare is an ASP.NET Core MVC application. It should not use Razor Pages. Use Controllers and Views instead.
 - One type per file (MAINT-01).
 - Tests accompany every feature. No phase is complete without its test cases.
-- Follow the implementation plan in `TeamWare.Web/Specifications/ImplementationPlan.md`.
+- Follow the implementation plan in `TeamWare.Web/Specifications/ImplementationPlan.md` and `TeamWare.Web/Specifications/SocialFeaturesImplementationPlan.md`.
 
 ---
 
@@ -26,6 +26,11 @@ Each phase in the implementation plan gets its own branch created from `master`.
 | Phase 7 | `phase-7/review-workflow` |
 | Phase 8 | `phase-8/user-profile-dashboard` |
 | Phase 9 | `phase-9/polish-hardening` |
+| Phase 10 | `phase-10/system-administration` |
+| Phase 11 | `phase-11/user-directory` |
+| Phase 12 | `phase-12/activity-presence` |
+| Phase 13 | `phase-13/invitation-improvements` |
+| Phase 14 | `phase-14/social-polish` |
 
 When starting a phase:
 1. Create the phase branch from `master` in GitHub.
@@ -168,6 +173,50 @@ The following issues are duplicates and should be closed in favor of their canon
 - #7 (duplicate of #11 — Phase 1.2)
 - #9 (duplicate of #13 — Phase 1.3)
 - #21 (duplicate of #14 — Phase 1.4)
+- #17 (duplicate of #20 — Phase 2.1)
+- #15 (duplicate of #18 — Phase 2.2)
+- #16 (duplicate of #19 — Phase 2.3)
+
+### Phase 10: System Administration (label: `Phase 10: System Administration`)
+
+| Work Item | Canonical Issue | Duplicate Issues |
+|-----------|----------------|-----------------|
+| 10.1 Identity Roles and Seeding | #66 | — |
+| 10.2 Admin Activity Log Domain Model | #64 | — |
+| 10.3 Admin Services | #63 | — |
+| 10.4 Admin Controllers and Views | #65 | — |
+
+### Phase 11: User Directory (label: `Phase 11: User Directory`)
+
+| Work Item | Canonical Issue | Duplicate Issues |
+|-----------|----------------|-----------------|
+| 11.1 Directory Services | #68 | — |
+| 11.2 Directory Controllers and Views | #67 | — |
+
+### Phase 12: User Activity and Presence (label: `Phase 12: User Activity and Presence`)
+
+| Work Item | Canonical Issue | Duplicate Issues |
+|-----------|----------------|-----------------|
+| 12.1 SignalR Infrastructure | #70 | — |
+| 12.2 Activity and Presence Services | #69 | — |
+| 12.3 Activity and Presence Controllers and Views | #71 | — |
+
+### Phase 13: Project Invitation Improvements (label: `Phase 13: Project Invitation Improvements`)
+
+| Work Item | Canonical Issue | Duplicate Issues |
+|-----------|----------------|-----------------|
+| 13.1 Invitation Domain Model | #72 | — |
+| 13.2 Invitation Services | #74 | — |
+| 13.3 Invitation Controllers and Views | #73 | — |
+
+### Phase 14: Social Features Polish (label: `Phase 14: Social Features Polish`)
+
+| Work Item | Canonical Issue | Duplicate Issues |
+|-----------|----------------|-----------------|
+| 14.1 Security and Authorization | #76 | — |
+| 14.2 Performance | #75 | — |
+| 14.3 UI/UX Consistency | #78 | — |
+| 14.4 Documentation | #77 | — |
 - #17 (duplicate of #20 — Phase 2.1)
 - #15 (duplicate of #18 — Phase 2.2)
 - #16 (duplicate of #19 — Phase 2.3)

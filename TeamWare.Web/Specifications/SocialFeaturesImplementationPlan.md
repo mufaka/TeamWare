@@ -55,12 +55,12 @@ Introduce the site-wide admin role (via ASP.NET Identity roles), admin dashboard
 
 ### 10.1 Identity Roles and Seeding
 
-- [ ] Create ASP.NET Identity roles: "Admin" and "User" (ADMIN-01, ADMIN-02)
-- [ ] Configure role services in `Program.cs`
-- [ ] Update the existing admin seed account to be assigned the "Admin" Identity role (ADMIN-03)
-- [ ] Assign the "User" role to all new registrations by default
-- [ ] Add and apply the EF Core migration for Identity roles
-- [ ] Write tests verifying role seeding and default role assignment on registration
+- [x] Create ASP.NET Identity roles: "Admin" and "User" (ADMIN-01, ADMIN-02)
+- [x] Configure role services in `Program.cs`
+- [x] Update the existing admin seed account to be assigned the "Admin" Identity role (ADMIN-03)
+- [x] Assign the "User" role to all new registrations by default
+- [x] Add and apply the EF Core migration for Identity roles
+- [x] Write tests verifying role seeding and default role assignment on registration
 
 ### 10.2 Admin Activity Log Domain Model
 
