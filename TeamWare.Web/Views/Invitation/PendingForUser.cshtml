@@ -1,0 +1,62 @@
+﻿@model TeamWare.Web.ViewModels.PendingInvitationsViewModel
+@{
+    ViewData["Title"] = "Pending Invitations";
+}
+
+<div class="mx-auto max-w-3xl">
+    <div class="mb-6">
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Pending Invitations</h1>
+        <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">Project invitations awaiting your response.</p>
+    </div>
+
+    @if (Model.Invitations.Count == 0)
+    {
+        <div class="rounded-lg border border-gray-200 bg-white p-8 text-center dark:border-gray-700 dark:bg-gray-800">
+            <svg class="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+            <p class="mt-4 text-gray-500 dark:text-gray-400">No pending invitations.</p>
+        </div>
+    }
+    else
+    {
+        <div class="space-y-3">
+            @foreach (var invitation in Model.Invitations)
+            {
+                <div class="rounded-lg border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-800">
+                    <div class="flex items-start justify-between">
+                        <div class="flex items-start gap-3">
+                            <div class="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-100 text-sm font-medium text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400">
+                                @invitation.ProjectName.FirstOrDefault().ToString().ToUpper()
+                            </div>
+                            <div>
+                                <p class="text-sm font-semibold text-gray-900 dark:text-white">@invitation.ProjectName</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">
+                                    Invited by @invitation.InvitedByUserDisplayName
+                                    as <span class="font-medium">@invitation.Role</span>
+                                </p>
+                                <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">
+                                    @Html.LocalTime(invitation.CreatedAt)
+                                </p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <form asp-controller="Invitation" asp-action="Accept" asp-route-id="@invitation.Id" method="post">
+                                <button type="submit"
+                                        class="inline-flex items-center rounded-md bg-green-600 px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-green-700">
+                                    Accept
+                                </button>
+                            </form>
+                            <form asp-controller="Invitation" asp-action="Decline" asp-route-id="@invitation.Id" method="post">
+                                <button type="submit"
+                                        class="inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
+                                    Decline
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>

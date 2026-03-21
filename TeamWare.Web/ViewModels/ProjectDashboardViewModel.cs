@@ -36,6 +36,8 @@ public class ProjectDashboardViewModel
     public List<TaskDeadlineViewModel> UpcomingDeadlines { get; set; } = new();
 
     public List<ActivityLogEntryViewModel> RecentActivity { get; set; } = new();
+
+    public List<ProjectInvitationViewModel> PendingInvitations { get; set; } = new();
 }
 
 public class ProjectMemberViewModel

@@ -11,7 +11,7 @@ This document defines the phased implementation plan for TeamWare social feature
 | 10 | System Administration | Complete |
 | 11 | User Directory | Complete |
 | 12 | User Activity and Presence | Complete |
-| 13 | Project Invitation Improvements | Not Started |
+| 13 | Project Invitation Improvements | Complete |
 | 14 | Social Features Polish | Not Started |
 
 ---
@@ -168,32 +168,32 @@ Replace the current direct-add member flow with an invitation accept/decline wor
 
 ### 13.1 Invitation Domain Model
 
-- [ ] Create `ProjectInvitation` entity (INVITE-02)
-- [ ] Create EF Core configuration (relationships, constraints, indexes)
-- [ ] Add and apply the EF Core migration
-- [ ] Write unit tests for entity validation
+- [x] Create `ProjectInvitation` entity (INVITE-02)
+- [x] Create EF Core configuration (relationships, constraints, indexes)
+- [x] Add and apply the EF Core migration
+- [x] Write unit tests for entity validation
 
 ### 13.2 Invitation Services
 
-- [ ] Create `IProjectInvitationService` and `ProjectInvitationService`
-  - [ ] `SendInvitation` - creates a pending invitation and triggers a notification (INVITE-02, INVITE-06, NOTIF-06)
-  - [ ] `SendBulkInvitations` - invites multiple users at once (INVITE-05)
-  - [ ] `AcceptInvitation` - accepts the invitation, creates the `ProjectMember`, and updates invitation status (INVITE-03)
-  - [ ] `DeclineInvitation` - declines the invitation and updates invitation status (INVITE-03)
-  - [ ] `GetPendingInvitationsForProject` - returns pending invitations for project owners/admins (INVITE-04)
-  - [ ] `GetPendingInvitationsForUser` - returns pending invitations the user has not yet responded to
-- [ ] Integrate with `NotificationService` to create "ProjectInvitation" notifications with accept/decline link (INVITE-07, NOTIF-07)
-- [ ] Write unit tests for all service methods and authorization rules (TEST-07)
+- [x] Create `IProjectInvitationService` and `ProjectInvitationService`
+  - [x] `SendInvitation` - creates a pending invitation and triggers a notification (INVITE-02, INVITE-06, NOTIF-06)
+  - [x] `SendBulkInvitations` - invites multiple users at once (INVITE-05)
+  - [x] `AcceptInvitation` - accepts the invitation, creates the `ProjectMember`, and updates invitation status (INVITE-03)
+  - [x] `DeclineInvitation` - declines the invitation and updates invitation status (INVITE-03)
+  - [x] `GetPendingInvitationsForProject` - returns pending invitations for project owners/admins (INVITE-04)
+  - [x] `GetPendingInvitationsForUser` - returns pending invitations the user has not yet responded to
+- [x] Integrate with `NotificationService` to create "ProjectInvitation" notifications with accept/decline link (INVITE-07, NOTIF-07)
+- [x] Write unit tests for all service methods and authorization rules (TEST-07)
 
 ### 13.3 Controllers and Views
 
-- [ ] Create `InvitationController` with actions: Send, SendBulk, Accept, Decline, PendingForProject, PendingForUser
-- [ ] Update the existing project member invitation UI to use autocomplete search from the user directory (INVITE-01)
-- [ ] Build the pending invitation list view for project owners/admins (INVITE-04)
-- [ ] Build the user's pending invitations view (accessible from notifications or a dedicated page)
-- [ ] Build accept/decline UI (INVITE-03), accessible from the notification link (NOTIF-07)
-- [ ] Update or replace the existing direct-add member flow in `ProjectController` / `ProjectMemberController`
-- [ ] Write integration tests for the full invitation workflow (TEST-07)
+- [x] Create `InvitationController` with actions: Send, SendBulk, Accept, Decline, PendingForProject, PendingForUser
+- [x] Update the existing project member invitation UI to use autocomplete search from the user directory (INVITE-01)
+- [x] Build the pending invitation list view for project owners/admins (INVITE-04)
+- [x] Build the user's pending invitations view (accessible from notifications or a dedicated page)
+- [x] Build accept/decline UI (INVITE-03), accessible from the notification link (NOTIF-07)
+- [x] Update or replace the existing direct-add member flow in `ProjectController` / `ProjectMemberController`
+- [x] Write integration tests for the full invitation workflow (TEST-07)
 
 ---
 
