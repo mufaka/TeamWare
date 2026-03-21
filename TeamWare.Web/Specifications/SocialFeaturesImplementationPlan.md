@@ -9,7 +9,7 @@ This document defines the phased implementation plan for TeamWare social feature
 | Phase | Description | Status |
 |-------|------------|--------|
 | 10 | System Administration | Complete |
-| 11 | User Directory | Not Started |
+| 11 | User Directory | Complete |
 | 12 | User Activity and Presence | Not Started |
 | 13 | Project Invitation Improvements | Not Started |
 | 14 | Social Features Polish | Not Started |
@@ -112,16 +112,16 @@ Deliver the searchable user directory and user profile pages.
 
 ### 11.2 Controllers and Views
 
-- [ ] Create `DirectoryController` with actions: Index (list with search and sort), Profile (user detail)
-- [ ] Build the directory list view with search input and sort controls (Tailwind CSS, HTMX for search) (DIR-01, DIR-02, DIR-03)
-- [ ] Build the user profile page showing:
-  - [ ] Display name, avatar, and email (DIR-05)
-  - [ ] Project membership list (DIR-06)
-  - [ ] Task statistics (DIR-07)
-  - [ ] Recent activity feed, last 30 days (DIR-08)
-  - [ ] "Invite to project" link (DIR-09)
-- [ ] Ensure all registered users appear in the directory with no opt-out (DIR-10)
-- [ ] Write integration tests for directory and profile controller actions
+- [x] Create `DirectoryController` with actions: Index (list with search and sort), Profile (user detail)
+- [x] Build the directory list view with search input and sort controls (Tailwind CSS, HTMX for search) (DIR-01, DIR-02, DIR-03)
+- [x] Build the user profile page showing:
+  - [x] Display name, avatar, and email (DIR-05)
+  - [x] Project membership list (DIR-06)
+  - [x] Task statistics (DIR-07)
+  - [x] Recent activity feed, last 30 days (DIR-08)
+  - [x] "Invite to project" link (DIR-09)
+- [x] Ensure all registered users appear in the directory with no opt-out (DIR-10)
+- [x] Write integration tests for directory and profile controller actions
 
 ---
 
