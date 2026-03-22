@@ -8,7 +8,7 @@ This document defines the phased implementation plan for the TeamWare Project Lo
 
 | Phase | Description | Status |
 |-------|------------|--------|
-| 15 | Lounge Data Layer | Not Started |
+| 15 | Lounge Data Layer | Complete |
 | 16 | Lounge Service Layer | Not Started |
 | 17 | Lounge SignalR Hub | Not Started |
 | 18 | Lounge Controllers and Views | Not Started |
@@ -62,46 +62,46 @@ Create the domain entities, EF Core configuration, and database migration for lo
 
 ### 15.1 LoungeMessage Entity
 
-- [ ] Create `LoungeMessage` entity with fields: `Id`, `ProjectId`, `UserId`, `Content`, `CreatedAt`, `IsEdited`, `EditedAt`, `IsPinned`, `PinnedByUserId`, `PinnedAt`, `CreatedTaskId` (LOUNGE-04, LOUNGE-06, LOUNGE-07, LOUNGE-11, LOUNGE-25, LOUNGE-42)
-- [ ] Create EF Core configuration for `LoungeMessage`:
-  - [ ] `ProjectId` as nullable FK to `Project` (null means #general) (LOUNGE-01, LOUNGE-02)
-  - [ ] `UserId` as required FK to `ApplicationUser` (message author)
-  - [ ] `PinnedByUserId` as nullable FK to `ApplicationUser`
-  - [ ] `CreatedTaskId` as nullable FK to `TaskItem` (LOUNGE-47)
-  - [ ] Index `IX_LoungeMessage_ProjectId_CreatedAt` (ProjectId, CreatedAt)
-  - [ ] Index `IX_LoungeMessage_UserId` (UserId)
-- [ ] Add `LoungeMessages` navigation property to `Project` entity
-- [ ] Add `LoungeMessages` navigation property to `ApplicationUser` entity
-- [ ] Write unit tests for `LoungeMessage` entity validation (content required, max 4000 chars)
+- [x] Create `LoungeMessage` entity with fields: `Id`, `ProjectId`, `UserId`, `Content`, `CreatedAt`, `IsEdited`, `EditedAt`, `IsPinned`, `PinnedByUserId`, `PinnedAt`, `CreatedTaskId` (LOUNGE-04, LOUNGE-06, LOUNGE-07, LOUNGE-11, LOUNGE-25, LOUNGE-42)
+- [x] Create EF Core configuration for `LoungeMessage`:
+  - [x] `ProjectId` as nullable FK to `Project` (null means #general) (LOUNGE-01, LOUNGE-02)
+  - [x] `UserId` as required FK to `ApplicationUser` (message author)
+  - [x] `PinnedByUserId` as nullable FK to `ApplicationUser`
+  - [x] `CreatedTaskId` as nullable FK to `TaskItem` (LOUNGE-47)
+  - [x] Index `IX_LoungeMessage_ProjectId_CreatedAt` (ProjectId, CreatedAt)
+  - [x] Index `IX_LoungeMessage_UserId` (UserId)
+- [x] Add `LoungeMessages` navigation property to `Project` entity
+- [x] Add `LoungeMessages` navigation property to `ApplicationUser` entity
+- [x] Write unit tests for `LoungeMessage` entity validation (content required, max 4000 chars)
 
 ### 15.2 LoungeReaction Entity
 
-- [ ] Create `LoungeReaction` entity with fields: `Id`, `LoungeMessageId`, `UserId`, `ReactionType`, `CreatedAt` (LOUNGE-31, LOUNGE-32, LOUNGE-33)
-- [ ] Create EF Core configuration for `LoungeReaction`:
-  - [ ] `LoungeMessageId` as required FK to `LoungeMessage` with cascade delete (LOUNGE-18)
-  - [ ] `UserId` as required FK to `ApplicationUser`
-  - [ ] Unique index `IX_LoungeReaction_MessageId_UserId_Type` (LoungeMessageId, UserId, ReactionType) (LOUNGE-33)
-  - [ ] Index `IX_LoungeReaction_MessageId` (LoungeMessageId)
-- [ ] Write unit tests for `LoungeReaction` entity validation (reaction type constrained to valid values)
+- [x] Create `LoungeReaction` entity with fields: `Id`, `LoungeMessageId`, `UserId`, `ReactionType`, `CreatedAt` (LOUNGE-31, LOUNGE-32, LOUNGE-33)
+- [x] Create EF Core configuration for `LoungeReaction`:
+  - [x] `LoungeMessageId` as required FK to `LoungeMessage` with cascade delete (LOUNGE-18)
+  - [x] `UserId` as required FK to `ApplicationUser`
+  - [x] Unique index `IX_LoungeReaction_MessageId_UserId_Type` (LoungeMessageId, UserId, ReactionType) (LOUNGE-33)
+  - [x] Index `IX_LoungeReaction_MessageId` (LoungeMessageId)
+- [x] Write unit tests for `LoungeReaction` entity validation (reaction type constrained to valid values)
 
 ### 15.3 LoungeReadPosition Entity
 
-- [ ] Create `LoungeReadPosition` entity with fields: `Id`, `UserId`, `ProjectId`, `LastReadMessageId`, `UpdatedAt` (LOUNGE-37)
-- [ ] Create EF Core configuration for `LoungeReadPosition`:
-  - [ ] `UserId` as required FK to `ApplicationUser`
-  - [ ] `ProjectId` as nullable FK to `Project` (null means #general)
-  - [ ] `LastReadMessageId` as required FK to `LoungeMessage`
-  - [ ] Unique index `IX_LoungeReadPosition_UserId_ProjectId` (UserId, ProjectId)
-- [ ] Write unit tests for `LoungeReadPosition` entity validation
+- [x] Create `LoungeReadPosition` entity with fields: `Id`, `UserId`, `ProjectId`, `LastReadMessageId`, `UpdatedAt` (LOUNGE-37)
+- [x] Create EF Core configuration for `LoungeReadPosition`:
+  - [x] `UserId` as required FK to `ApplicationUser`
+  - [x] `ProjectId` as nullable FK to `Project` (null means #general)
+  - [x] `LastReadMessageId` as required FK to `LoungeMessage`
+  - [x] Unique index `IX_LoungeReadPosition_UserId_ProjectId` (UserId, ProjectId)
+- [x] Write unit tests for `LoungeReadPosition` entity validation
 
 ### 15.4 Notification Type Extension
 
-- [ ] Add `LoungeMention` value to the `NotificationType` enum (LOUNGE-22)
+- [x] Add `LoungeMention` value to the `NotificationType` enum (LOUNGE-22)
 
 ### 15.5 Migration
 
-- [ ] Add and apply the EF Core migration for all lounge entities
-- [ ] Write integration tests verifying migration applies cleanly and all indexes and constraints are created
+- [x] Add and apply the EF Core migration for all lounge entities
+- [x] Write integration tests verifying migration applies cleanly and all indexes and constraints are created
 
 ---
 
