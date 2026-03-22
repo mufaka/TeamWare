@@ -96,6 +96,14 @@
                         Directory
                     </a>
                 </div>
+                <div class="mt-2 border-t border-gray-200 pt-2 dark:border-gray-700">
+                    <span class="px-3 py-1 text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Lounge</span>
+                    <a asp-controller="Lounge" asp-action="Room"
+                       class="flex items-center justify-between rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700">
+                        <span>#general</span>
+                        @await Component.InvokeAsync("LoungeUnreadCount")
+                    </a>
+                </div>
                 @if (User.IsInRole("Admin"))
                 {
                     <div class="mt-2 border-t border-gray-200 pt-2 dark:border-gray-700">
