@@ -1,9 +1,12 @@
-﻿using Microsoft.AspNetCore.DataProtection;
+﻿using Hangfire;
+using Hangfire.MemoryStorage;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using TeamWare.Web.Data;
 using TeamWare.Web.Hubs;
+using TeamWare.Web.Jobs;
 using TeamWare.Web.Models;
 using TeamWare.Web.Services;
 
@@ -53,6 +56,14 @@ builder.Services.AddScoped<IGlobalActivityService, GlobalActivityService>();
 builder.Services.AddScoped<IProjectInvitationService, ProjectInvitationService>();
 builder.Services.AddScoped<ILoungeService, LoungeService>();
 
+builder.Services.AddHangfire(configuration => configuration
+    .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+    .UseSimpleAssemblyNameTypeSerializer()
+    .UseRecommendedSerializerSettings()
+    .UseMemoryStorage());
+
+builder.Services.AddHangfireServer();
+
 builder.Services.AddSignalR();
 
 builder.Services.AddDataProtection()
@@ -98,12 +109,24 @@ app.MapControllerRoute(
 app.MapHub<PresenceHub>("/hubs/presence");
 app.MapHub<LoungeHub>("/hubs/lounge");
 
+app.UseHangfireDashboard("/hangfire", new DashboardOptions
+{
+    Authorization = [new HangfireDashboardAuthorizationFilter()]
+});
+
 // Seed the admin account on first run
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
     await SeedData.InitializeAsync(services);
 }
+
+// Register Hangfire recurring jobs
+var recurringJobManager = app.Services.GetRequiredService<IRecurringJobManager>();
+recurringJobManager.AddOrUpdate<LoungeRetentionJob>(
+    "lounge-retention-cleanup",
+    job => job.Execute(),
+    Cron.Daily);
 
 app.Run();
 
