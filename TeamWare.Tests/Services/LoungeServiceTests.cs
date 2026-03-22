@@ -13,6 +13,7 @@ public class LoungeServiceTests : IDisposable
     private readonly LoungeService _loungeService;
     private readonly ProjectService _projectService;
     private readonly ProjectMemberService _memberService;
+    private readonly NotificationService _notificationService;
 
     public LoungeServiceTests()
     {
@@ -26,7 +27,8 @@ public class LoungeServiceTests : IDisposable
         _context = new ApplicationDbContext(options);
         _context.Database.EnsureCreated();
 
-        _loungeService = new LoungeService(_context);
+        _notificationService = new NotificationService(_context);
+        _loungeService = new LoungeService(_context, _notificationService);
         _projectService = new ProjectService(_context);
         _memberService = new ProjectMemberService(_context);
     }

@@ -1,12 +1,14 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System.Text.RegularExpressions;
+using Microsoft.EntityFrameworkCore;
 using TeamWare.Web.Data;
 using TeamWare.Web.Models;
 
 namespace TeamWare.Web.Services;
 
-public class LoungeService : ILoungeService
+public partial class LoungeService : ILoungeService
 {
     private readonly ApplicationDbContext _context;
+    private readonly INotificationService _notificationService;
 
     private static readonly HashSet<string> AllowedReactionTypes = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -17,9 +19,13 @@ public class LoungeService : ILoungeService
         "eyes"
     };
 
-    public LoungeService(ApplicationDbContext context)
+    [GeneratedRegex(@"(?<!\w)@([\w.+-]+@[\w.-]+\.\w+|[\w]+)", RegexOptions.Compiled)]
+    private static partial Regex MentionRegex();
+
+    public LoungeService(ApplicationDbContext context, INotificationService notificationService)
     {
         _context = context;
+        _notificationService = notificationService;
     }
 
     // --- Authorization helpers ---
@@ -47,6 +53,87 @@ public class LoungeService : ILoungeService
         }
 
         return await IsProjectMember(projectId.Value, userId);
+    }
+
+    // --- Mention parsing helpers (Phase 19) ---
+
+    /// <summary>
+    /// Extracts @username mentions from message content (LOUNGE-20).
+    /// </summary>
+    public static List<string> ExtractMentionedUsernames(string content)
+    {
+        var matches = MentionRegex().Matches(content);
+        return matches
+            .Select(m => m.Groups[1].Value)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    /// <summary>
+    /// Resolves mentioned usernames to users, filters to room members,
+    /// excludes self-mentions, and creates LoungeMention notifications (LOUNGE-21, LOUNGE-22, LOUNGE-23).
+    /// </summary>
+    private async Task ProcessMentions(LoungeMessage message)
+    {
+        var usernames = ExtractMentionedUsernames(message.Content);
+        if (usernames.Count == 0) return;
+
+        // Resolve usernames to actual users
+        var mentionedUsers = await _context.Users
+            .Where(u => u.UserName != null && usernames.Contains(u.UserName))
+            .ToListAsync();
+
+        if (mentionedUsers.Count == 0) return;
+
+        // Filter to room members only (LOUNGE-21)
+        List<ApplicationUser> validMentionedUsers;
+        if (message.ProjectId != null)
+        {
+            // Project room: only project members
+            var memberUserIds = await _context.ProjectMembers
+                .Where(pm => pm.ProjectId == message.ProjectId)
+                .Select(pm => pm.UserId)
+                .ToListAsync();
+
+            validMentionedUsers = mentionedUsers
+                .Where(u => memberUserIds.Contains(u.Id))
+                .ToList();
+        }
+        else
+        {
+            // #general: all authenticated users are valid
+            validMentionedUsers = mentionedUsers;
+        }
+
+        // Exclude self-mentions
+        validMentionedUsers = validMentionedUsers
+            .Where(u => u.Id != message.UserId)
+            .ToList();
+
+        // Determine room name for notification message
+        string roomName;
+        if (message.ProjectId != null)
+        {
+            var project = await _context.Projects.FindAsync(message.ProjectId);
+            roomName = project?.Name ?? "a project lounge";
+        }
+        else
+        {
+            roomName = "#general";
+        }
+
+        var senderDisplayName = message.User?.DisplayName ?? "Someone";
+
+        // Create notifications for each mentioned user (LOUNGE-22, LOUNGE-23)
+        foreach (var user in validMentionedUsers)
+        {
+            var notificationMessage = $"{senderDisplayName} mentioned you in {roomName}";
+            await _notificationService.CreateNotification(
+                user.Id,
+                notificationMessage,
+                NotificationType.LoungeMention,
+                message.Id);
+        }
     }
 
     // --- 16.1 Message Services ---
@@ -80,6 +167,9 @@ public class LoungeService : ILoungeService
         await _context.SaveChangesAsync();
 
         await _context.Entry(message).Reference(m => m.User).LoadAsync();
+
+        // Phase 19: Parse @mentions and create notifications
+        await ProcessMentions(message);
 
         return ServiceResult<LoungeMessage>.Success(message);
     }
