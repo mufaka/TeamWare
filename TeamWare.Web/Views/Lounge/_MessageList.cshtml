@@ -2,7 +2,7 @@
 
 @foreach (var message in Model)
 {
-    <div class="group mb-4 flex gap-3" id="message-@message.Id" data-message-id="@message.Id" data-author-id="@message.AuthorId">
+    <div class="group mb-4 flex gap-3" id="message-@message.Id" data-message-id="@message.Id" data-author-id="@message.AuthorId" role="article" aria-label="Message from @message.AuthorDisplayName">
         <!-- Avatar -->
         <div class="flex-shrink-0">
             @if (!string.IsNullOrEmpty(message.AuthorAvatarUrl))

@@ -99,6 +99,9 @@ public class LoungeController : Controller
     {
         var userId = GetUserId();
 
+        // SEC-04: Clamp count to a reasonable range
+        count = Math.Clamp(count, 1, 100);
+
         // Authorize
         if (projectId.HasValue)
         {
@@ -280,9 +283,22 @@ public class LoungeController : Controller
     [HttpGet]
     public async Task<IActionResult> MemberSearch(int? projectId, string term)
     {
-        if (string.IsNullOrWhiteSpace(term))
+        if (string.IsNullOrWhiteSpace(term) || term.Length > 100)
         {
             return Json(Array.Empty<object>());
+        }
+
+        var userId = GetUserId();
+
+        // Authorize: must have room access to search members
+        if (projectId.HasValue)
+        {
+            var isMember = await _dbContext.ProjectMembers
+                .AnyAsync(pm => pm.ProjectId == projectId.Value && pm.UserId == userId);
+            if (!isMember && !IsAdmin())
+            {
+                return Forbid();
+            }
         }
 
         var members = await GetRoomMembers(projectId);

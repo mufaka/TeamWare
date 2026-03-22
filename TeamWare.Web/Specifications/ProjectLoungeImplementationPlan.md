@@ -14,7 +14,7 @@ This document defines the phased implementation plan for the TeamWare Project Lo
 | 18 | Lounge Controllers and Views | Complete |
 | 19 | Lounge Notifications and Mentions | Complete |
 | 20 | Lounge Background Jobs | Complete |
-| 21 | Lounge Polish and Hardening | Not Started |
+| 21 | Lounge Polish and Hardening | Complete |
 
 ---
 
@@ -322,42 +322,42 @@ Final pass on cross-cutting concerns for the lounge feature.
 
 ### 21.1 Security and Authorization
 
-- [ ] Audit all lounge endpoints (controller actions and hub methods) for authorization enforcement (SEC-07, LOUNGE-72)
-- [ ] Verify Markdown rendering includes XSS sanitization on all message content (SEC-06)
-- [ ] Review input validation on message content, reaction types, and mention parsing (SEC-04)
-- [ ] Verify CSRF tokens on all lounge POST actions (SEC-03)
-- [ ] Write security-focused integration tests
+- [x] Audit all lounge endpoints (controller actions and hub methods) for authorization enforcement (SEC-07, LOUNGE-72)
+- [x] Verify Markdown rendering includes XSS sanitization on all message content (SEC-06)
+- [x] Review input validation on message content, reaction types, and mention parsing (SEC-04)
+- [x] Verify CSRF tokens on all lounge POST actions (SEC-03)
+- [x] Write security-focused integration tests
 
 ### 21.2 Performance
 
-- [ ] Verify real-time message delivery latency under normal conditions (PERF-04)
-- [ ] Verify paginated history loading response times (PERF-05)
-- [ ] Profile message queries and optimize indexes if needed
-- [ ] Test SignalR group management with multiple concurrent rooms
-- [ ] Test retention job performance with large message volumes
+- [x] Verify real-time message delivery latency under normal conditions (PERF-04)
+- [x] Verify paginated history loading response times (PERF-05)
+- [x] Profile message queries and optimize indexes if needed
+- [x] Test SignalR group management with multiple concurrent rooms
+- [x] Test retention job performance with large message volumes
 
 ### 21.3 UI/UX Consistency
 
-- [ ] Verify lounge views are responsive across breakpoints (UI-01, UI-15)
-- [ ] Verify light/dark theme consistency on all lounge views (UI-02, UI-16)
-- [ ] Verify no emoticons or emojis in lounge UI chrome or labels (UI-07, UI-17)
-- [ ] Verify message input remains fixed at bottom on all screen sizes (UI-14)
-- [ ] Verify auto-scroll and "new messages" indicator behavior (UI-13)
-- [ ] Verify unread badge accuracy across multiple tabs and sessions
-- [ ] Review all lounge views for clarity and consistency with existing design (UI-03)
+- [x] Verify lounge views are responsive across breakpoints (UI-01, UI-15)
+- [x] Verify light/dark theme consistency on all lounge views (UI-02, UI-16)
+- [x] Verify no emoticons or emojis in lounge UI chrome or labels (UI-07, UI-17)
+- [x] Verify message input remains fixed at bottom on all screen sizes (UI-14)
+- [x] Verify auto-scroll and "new messages" indicator behavior (UI-13)
+- [x] Verify unread badge accuracy across multiple tabs and sessions
+- [x] Review all lounge views for clarity and consistency with existing design (UI-03)
 
 ### 21.4 Accessibility
 
-- [ ] Verify keyboard navigation through message list, input field, and reactions
-- [ ] Verify screen reader support for message content, reactions, and unread indicators
-- [ ] Ensure focus management when new messages arrive
+- [x] Verify keyboard navigation through message list, input field, and reactions
+- [x] Verify screen reader support for message content, reactions, and unread indicators
+- [x] Ensure focus management when new messages arrive
 
 ### 21.5 Documentation
 
-- [ ] Update `README.md` with lounge feature overview and configuration (Hangfire setup, SignalR hub)
-- [ ] Document the lounge feature for end users (rooms, mentions, reactions, pinned messages, task conversion)
-- [ ] Document the message retention policy (30-day cleanup, pinned message exemption)
-- [ ] Document admin capabilities in #general room (message deletion, pinning)
+- [x] Update `README.md` with lounge feature overview and configuration (Hangfire setup, SignalR hub)
+- [x] Document the lounge feature for end users (rooms, mentions, reactions, pinned messages, task conversion)
+- [x] Document the message retention policy (30-day cleanup, pinned message exemption)
+- [x] Document admin capabilities in #general room (message deletion, pinning)
 
 ---
 

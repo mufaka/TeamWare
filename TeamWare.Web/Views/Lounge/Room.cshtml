@@ -43,7 +43,7 @@
     </div>
 
     <!-- Scrollable message area -->
-    <div id="message-area" class="flex-1 overflow-y-auto px-4 py-4">
+    <div id="message-area" class="flex-1 overflow-y-auto px-4 py-4" role="log" aria-label="Chat messages" aria-live="polite">
         <!-- Load older messages button -->
         <div id="load-older-area" class="mb-4 text-center">
             @if (Model.Messages.Count >= 50)
@@ -84,13 +84,16 @@
                        class="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-500 dark:focus:border-blue-400"
                        placeholder="Type a message..."
                        autocomplete="off"
-                       maxlength="4000" />
+                       maxlength="4000"
+                       aria-label="Message input" />
                 <!-- Mention autocomplete dropdown -->
-                <div id="mention-dropdown" class="absolute bottom-full left-0 z-50 mb-1 hidden max-h-48 w-64 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-600 dark:bg-gray-700">
+                <div id="mention-dropdown" class="absolute bottom-full left-0 z-50 mb-1 hidden max-h-48 w-64 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-600 dark:bg-gray-700"
+                     role="listbox" aria-label="Mention suggestions">
                 </div>
             </div>
             <button type="submit" id="btn-send"
-                    class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:bg-blue-500 dark:hover:bg-blue-600">
+                    class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:bg-blue-500 dark:hover:bg-blue-600"
+                    aria-label="Send message">
                 Send
             </button>
         </form>
@@ -98,7 +101,7 @@
 </div>
 
 <!-- Edit message modal -->
-<div id="edit-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50">
+<div id="edit-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50" role="dialog" aria-modal="true" aria-label="Edit message">
     <div class="mx-4 w-full max-w-lg rounded-lg bg-white p-6 shadow-xl dark:bg-gray-800">
         <h3 class="mb-4 text-lg font-semibold text-gray-900 dark:text-white">Edit Message</h3>
         <input type="hidden" id="edit-message-id" />

@@ -19,13 +19,15 @@ TeamWare is a lightweight, self-hosted project and task management application b
 - **User Directory** — Searchable directory of all registered users with sortable listing, user profiles showing project memberships, task statistics, and recent activity
 - **Real-Time Presence** — Online/offline status indicators via SignalR, "last active" timestamps on user profiles, and a global activity feed across all projects
 - **Project Invitations** — Accept/decline invitation workflow with bulk invite support, pending invitation management, and notification integration
+- **Project Lounge** — Real-time chat rooms for each project and a site-wide #general room, with @mentions, emoji reactions, message pinning, message-to-task conversion, and unread tracking
 
 ## Tech Stack
 
 - **Backend:** ASP.NET Core MVC (.NET 10)
 - **Database:** SQLite via Entity Framework Core 10
 - **Authentication:** Microsoft Identity with cookie authentication
-- **Real-Time:** SignalR for user presence tracking (online/offline indicators)
+- **Real-Time:** SignalR for user presence tracking and lounge messaging
+- **Background Jobs:** Hangfire for scheduled tasks (message retention cleanup)
 - **Frontend:** Tailwind CSS 4.2, HTMX 2.0, Alpine.js 3.14
 - **Client Validation:** aspnet-client-validation (jQuery-free)
 - **Testing:** xUnit with `Microsoft.AspNetCore.Mvc.Testing`
@@ -75,7 +77,7 @@ On first run, the database is automatically created and migrated, and a default 
 dotnet test
 ```
 
-The test suite includes 480+ tests covering unit tests, integration tests, and security tests.
+The test suite includes 1050+ tests covering unit tests, integration tests, and security tests.
 
 ## Configuration
 
@@ -124,7 +126,7 @@ TeamWare/
     Controllers/              # MVC controllers
     Data/                     # DbContext, migrations, and seed data
     Helpers/                  # HTML helper extensions
-    Hubs/                     # SignalR hubs (PresenceHub)
+    Hubs/                     # SignalR hubs (PresenceHub, LoungeHub)
     Models/                   # Domain entities (one class per file)
     Services/                 # Business logic interfaces and implementations
     Views/                    # Razor views organized by controller
@@ -282,7 +284,45 @@ See the [Implementation Plan](TeamWare.Web/Specifications/ImplementationPlan.md)
 
 ### SignalR Configuration
 
-SignalR is configured automatically in `Program.cs`. The `PresenceHub` endpoint is mapped at `/hubs/presence`. No additional configuration is needed for development. For production deployments behind a load balancer, consider configuring a SignalR backplane (e.g., Redis) if scaling to multiple server instances.
+SignalR is configured automatically in `Program.cs`. Two hubs are registered:
+
+- `PresenceHub` at `/hubs/presence` — Real-time user online/offline presence tracking.
+- `LoungeHub` at `/hubs/lounge` — Real-time lounge messaging, reactions, and read position updates.
+
+No additional configuration is needed for development. For production deployments behind a load balancer, consider configuring a SignalR backplane (e.g., Redis) if scaling to multiple server instances.
+
+### Hangfire Configuration
+
+Hangfire is used for background job scheduling. It is configured automatically in `Program.cs` with in-memory storage. The Hangfire dashboard is available at `/hangfire` for users with the `Admin` role.
+
+The following recurring jobs are registered:
+
+- **lounge-retention-cleanup** — Runs daily to delete non-pinned lounge messages older than 30 days.
+
+## Project Lounge
+
+The Project Lounge provides real-time chat rooms for team communication:
+
+### Rooms
+
+- **#general** — A site-wide room accessible to all authenticated users.
+- **Project rooms** — Each project has its own lounge room, accessible only to project members.
+
+### Features
+
+- **Real-time messaging** — Messages are delivered instantly via SignalR. No page refresh needed.
+- **@mentions** — Type `@` followed by a username to mention a team member. Mentioned users receive an in-app notification. Autocomplete suggests matching members as you type.
+- **Emoji reactions** — React to messages with +1, heart, laugh, rocket, or eyes reactions. Click a reaction to toggle it on/off.
+- **Message pinning** — Project owners/admins (or site admins in #general) can pin important messages. Pinned messages appear in a collapsible banner at the top of the room.
+- **Message editing** — Edit your own messages after sending. Edited messages display an "(edited)" indicator.
+- **Message deletion** — Delete your own messages, or (for admins) any message in the room.
+- **Message-to-task conversion** — In project rooms, convert a lounge message into a project task with one click. The task is pre-populated from the message content.
+- **Unread tracking** — Unread message counts appear as badges in the sidebar. A "new messages" divider marks where you left off.
+- **Message history** — Scroll up to load older messages. Messages are paginated for performance.
+
+### Message Retention
+
+Lounge messages are retained for 30 days. After 30 days, non-pinned messages are automatically deleted by the daily retention job. Pinned messages are exempt from cleanup and are retained indefinitely.
 
 ## License
 

@@ -808,6 +808,236 @@ public class PerformanceTests : IClassFixture<TeamWareWebApplicationFactory>, ID
         Assert.All(responses, r => Assert.Equal(HttpStatusCode.OK, r.StatusCode));
     }
 
+    // ---------------------------------------------------------------
+    // PERF-04/PERF-05: Lounge feature performance tests
+    // ---------------------------------------------------------------
+
+    private async Task SeedLoungeData(string userId, int? projectId)
+    {
+        using var scope = _factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+        // Create 100 messages with varying ages
+        for (int i = 0; i < 100; i++)
+        {
+            var message = new LoungeMessage
+            {
+                ProjectId = projectId,
+                UserId = userId,
+                Content = $"Performance test message {i + 1}. This is a lounge message with some content to simulate realistic message sizes.",
+                CreatedAt = DateTime.UtcNow.AddMinutes(-i * 5)
+            };
+            context.LoungeMessages.Add(message);
+        }
+        await context.SaveChangesAsync();
+
+        // Add some reactions to messages
+        var messageIds = await context.LoungeMessages
+            .Where(m => m.ProjectId == projectId)
+            .OrderByDescending(m => m.CreatedAt)
+            .Take(20)
+            .Select(m => m.Id)
+            .ToListAsync();
+
+        var reactionTypes = new[] { "thumbsup", "heart", "laugh", "rocket", "eyes" };
+        foreach (var msgId in messageIds)
+        {
+            context.LoungeReactions.Add(new LoungeReaction
+            {
+                LoungeMessageId = msgId,
+                UserId = userId,
+                ReactionType = reactionTypes[msgId % reactionTypes.Length],
+                CreatedAt = DateTime.UtcNow
+            });
+        }
+        await context.SaveChangesAsync();
+    }
+
+    [Fact]
+    public async Task LoungeRoom_General_LoadsWithinThreshold()
+    {
+        var (userId, cookie) = await CreateAndLoginUser("perf-lounge-gen@test.com", "Lounge Perf Gen");
+        await SeedLoungeData(userId, null);
+
+        var request = new HttpRequestMessage(HttpMethod.Get, "/Lounge/Room");
+        request.Headers.Add("Cookie", cookie);
+
+        var stopwatch = Stopwatch.StartNew();
+        var response = await _client.SendAsync(request);
+        stopwatch.Stop();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.True(stopwatch.ElapsedMilliseconds < PageLoadThresholdMs,
+            $"Lounge #general room took {stopwatch.ElapsedMilliseconds}ms (threshold: {PageLoadThresholdMs}ms)");
+    }
+
+    [Fact]
+    public async Task LoungeRoom_ProjectRoom_LoadsWithinThreshold()
+    {
+        var (userId, cookie) = await CreateAndLoginUser("perf-lounge-proj@test.com", "Lounge Perf Proj");
+        await SeedTestData(userId);
+
+        using var scope = _factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var projectId = await context.ProjectMembers
+            .Where(pm => pm.UserId == userId)
+            .Select(pm => pm.ProjectId)
+            .FirstAsync();
+
+        await SeedLoungeData(userId, projectId);
+
+        var request = new HttpRequestMessage(HttpMethod.Get, $"/Lounge/Room?projectId={projectId}");
+        request.Headers.Add("Cookie", cookie);
+
+        var stopwatch = Stopwatch.StartNew();
+        var response = await _client.SendAsync(request);
+        stopwatch.Stop();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.True(stopwatch.ElapsedMilliseconds < PageLoadThresholdMs,
+            $"Lounge project room took {stopwatch.ElapsedMilliseconds}ms (threshold: {PageLoadThresholdMs}ms)");
+    }
+
+    [Fact]
+    public async Task LoungeMessages_Pagination_LoadsWithinThreshold()
+    {
+        var (userId, cookie) = await CreateAndLoginUser("perf-lounge-msgs@test.com", "Lounge Perf Msgs");
+        await SeedLoungeData(userId, null);
+
+        var request = new HttpRequestMessage(HttpMethod.Get, "/Lounge/Messages?count=50");
+        request.Headers.Add("Cookie", cookie);
+        request.Headers.Add("HX-Request", "true");
+
+        var stopwatch = Stopwatch.StartNew();
+        var response = await _client.SendAsync(request);
+        stopwatch.Stop();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.True(stopwatch.ElapsedMilliseconds < HtmxPartialThresholdMs,
+            $"Lounge messages partial took {stopwatch.ElapsedMilliseconds}ms (threshold: {HtmxPartialThresholdMs}ms)");
+    }
+
+    [Fact]
+    public async Task LoungePinnedMessages_LoadsWithinThreshold()
+    {
+        var (userId, cookie) = await CreateAndLoginUser("perf-lounge-pinned@test.com", "Lounge Perf Pin");
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            for (int i = 0; i < 10; i++)
+            {
+                context.LoungeMessages.Add(new LoungeMessage
+                {
+                    ProjectId = null,
+                    UserId = userId,
+                    Content = $"Pinned message {i + 1}",
+                    CreatedAt = DateTime.UtcNow.AddMinutes(-i),
+                    IsPinned = true,
+                    PinnedByUserId = userId,
+                    PinnedAt = DateTime.UtcNow
+                });
+            }
+            await context.SaveChangesAsync();
+        }
+
+        var request = new HttpRequestMessage(HttpMethod.Get, "/Lounge/PinnedMessages");
+        request.Headers.Add("Cookie", cookie);
+
+        var stopwatch = Stopwatch.StartNew();
+        var response = await _client.SendAsync(request);
+        stopwatch.Stop();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.True(stopwatch.ElapsedMilliseconds < HtmxPartialThresholdMs,
+            $"Lounge pinned messages partial took {stopwatch.ElapsedMilliseconds}ms (threshold: {HtmxPartialThresholdMs}ms)");
+    }
+
+    [Fact]
+    public async Task LoungeMemberSearch_LoadsWithinThreshold()
+    {
+        var (userId, cookie) = await CreateAndLoginUser("perf-lounge-search@test.com", "Lounge Search Perf");
+
+        var request = new HttpRequestMessage(HttpMethod.Get, "/Lounge/MemberSearch?term=lounge");
+        request.Headers.Add("Cookie", cookie);
+
+        var stopwatch = Stopwatch.StartNew();
+        var response = await _client.SendAsync(request);
+        stopwatch.Stop();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.True(stopwatch.ElapsedMilliseconds < HtmxPartialThresholdMs,
+            $"Lounge member search took {stopwatch.ElapsedMilliseconds}ms (threshold: {HtmxPartialThresholdMs}ms)");
+    }
+
+    // Lounge index verification
+
+    [Fact]
+    public async Task CompositeIndex_LoungeMessages_ProjectIdCreatedAt_Exists()
+    {
+        using var scope = _factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        await context.Database.EnsureCreatedAsync();
+
+        var indexes = await context.Database
+            .SqlQueryRaw<string>("SELECT name FROM sqlite_master WHERE type='index' AND tbl_name='LoungeMessages'")
+            .ToListAsync();
+
+        Assert.True(indexes.Count >= 2, "LoungeMessages should have multiple indexes including IX_LoungeMessage_ProjectId_CreatedAt");
+    }
+
+    [Fact]
+    public async Task CompositeIndex_LoungeReactions_MessageIdUserIdType_Exists()
+    {
+        using var scope = _factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        await context.Database.EnsureCreatedAsync();
+
+        var indexes = await context.Database
+            .SqlQueryRaw<string>("SELECT name FROM sqlite_master WHERE type='index' AND tbl_name='LoungeReactions'")
+            .ToListAsync();
+
+        Assert.True(indexes.Count >= 2, "LoungeReactions should have multiple indexes including unique IX_LoungeReaction_MessageId_UserId_Type");
+    }
+
+    [Fact]
+    public async Task CompositeIndex_LoungeReadPositions_UserIdProjectId_Exists()
+    {
+        using var scope = _factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        await context.Database.EnsureCreatedAsync();
+
+        var indexes = await context.Database
+            .SqlQueryRaw<string>("SELECT name FROM sqlite_master WHERE type='index' AND tbl_name='LoungeReadPositions'")
+            .ToListAsync();
+
+        Assert.True(indexes.Count >= 1, "LoungeReadPositions should have indexes including unique IX_LoungeReadPosition_UserId_ProjectId");
+    }
+
+    // Lounge concurrent access
+
+    [Fact]
+    public async Task ConcurrentUsers_LoungeEndpoints_AllSucceed()
+    {
+        var (userId, cookie) = await CreateAndLoginUser("perf-lounge-concurrent@test.com", "Lounge Concurrent");
+        await SeedLoungeData(userId, null);
+
+        var endpoints = new[] { "/Lounge/Room", "/Lounge/Messages?count=50", "/Lounge/PinnedMessages" };
+
+        var responses = new List<HttpResponseMessage>();
+        foreach (var endpoint in endpoints)
+        {
+            for (int i = 0; i < 3; i++)
+            {
+                var request = new HttpRequestMessage(HttpMethod.Get, endpoint);
+                request.Headers.Add("Cookie", cookie);
+                responses.Add(await _client.SendAsync(request));
+            }
+        }
+
+        Assert.All(responses, r => Assert.Equal(HttpStatusCode.OK, r.StatusCode));
+    }
+
     public void Dispose()
     {
         _client.Dispose();
