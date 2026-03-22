@@ -22,7 +22,7 @@
         <div class="min-w-0 flex-1">
             <div class="flex items-baseline gap-2">
                 <span class="text-sm font-semibold text-gray-900 dark:text-white">@message.AuthorDisplayName</span>
-                <span class="message-timestamp text-xs text-gray-500 dark:text-gray-400" data-utc="@message.CreatedAt.ToString("o")" title="@message.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss") UTC">
+                <span class="message-timestamp text-xs text-gray-500 dark:text-gray-400" data-utc="@(DateTime.SpecifyKind(message.CreatedAt, DateTimeKind.Utc).ToString("o"))" title="@message.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss") UTC">
                     @FormatTimestamp(message.CreatedAt)
                 </span>
                 @if (message.IsEdited)
@@ -57,21 +57,18 @@
             }
 
             <!-- Reactions -->
-            @if (message.Reactions.Count > 0)
-            {
-                <div class="mt-1 flex flex-wrap gap-1">
-                    @foreach (var reaction in message.Reactions)
-                    {
-                        <button type="button"
-                                class="reaction-btn inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs @(reaction.CurrentUserReacted ? "border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-600 dark:bg-blue-900/30 dark:text-blue-300" : "border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600")"
-                                data-message-id="@message.Id"
-                                data-reaction-type="@reaction.ReactionType">
-                            <span class="reaction-emoji">@GetReactionDisplay(reaction.ReactionType)</span>
-                            <span class="reaction-count">@reaction.Count</span>
-                        </button>
-                    }
-                </div>
-            }
+            <div class="mt-1 flex flex-wrap gap-1" data-reactions>
+                @foreach (var reaction in message.Reactions)
+                {
+                    <button type="button"
+                            class="reaction-btn inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs @(reaction.CurrentUserReacted ? "border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-600 dark:bg-blue-900/30 dark:text-blue-300" : "border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600")"
+                            data-message-id="@message.Id"
+                            data-reaction-type="@reaction.ReactionType">
+                        <span class="reaction-emoji">@GetReactionDisplay(reaction.ReactionType)</span>
+                        <span class="reaction-count">@reaction.Count</span>
+                    </button>
+                }
+            </div>
 
             <!-- Action buttons (visible on hover) -->
             <div class="mt-1 hidden gap-1 group-hover:flex">
