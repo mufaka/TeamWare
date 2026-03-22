@@ -247,10 +247,7 @@ public partial class LoungeService : ILoungeService
 
     public async Task<ServiceResult<List<LoungeMessage>>> GetMessages(int? projectId, DateTime? before, int count)
     {
-        if (count <= 0)
-        {
-            count = 50;
-        }
+        count = Math.Clamp(count, 1, 100);
 
         var query = _context.LoungeMessages
             .Where(m => m.ProjectId == projectId)

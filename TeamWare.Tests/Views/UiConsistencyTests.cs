@@ -143,6 +143,7 @@ public class UiConsistencyTests : IClassFixture<TeamWareWebApplicationFactory>, 
     [InlineData("/Profile/ChangePassword")]
     [InlineData("/Directory")]
     [InlineData("/Invitation/PendingForUser")]
+    [InlineData("/Lounge/Room")]
     public async Task AuthenticatedPage_ContainsDarkModeClasses(string url)
     {
         var cookie = await GetLoginCookie("ui-dark@test.com");
@@ -178,6 +179,7 @@ public class UiConsistencyTests : IClassFixture<TeamWareWebApplicationFactory>, 
     [InlineData("/Profile")]
     [InlineData("/Directory")]
     [InlineData("/Invitation/PendingForUser")]
+    [InlineData("/Lounge/Room")]
     public async Task AuthenticatedPage_NoEmojiCharacters(string url)
     {
         var cookie = await GetLoginCookie("ui-emoji@test.com");
@@ -207,6 +209,7 @@ public class UiConsistencyTests : IClassFixture<TeamWareWebApplicationFactory>, 
     [InlineData("/Profile/ChangePassword")]
     [InlineData("/Directory")]
     [InlineData("/Invitation/PendingForUser")]
+    [InlineData("/Lounge/Room")]
     public async Task AuthenticatedPage_ReturnsSuccess(string url)
     {
         var cookie = await GetLoginCookie("ui-render@test.com");
@@ -397,6 +400,117 @@ public class UiConsistencyTests : IClassFixture<TeamWareWebApplicationFactory>, 
         Assert.True(inboxIndex < whatsNextIndex, "Inbox should appear before What's Next");
         Assert.True(whatsNextIndex < somedayIndex, "What's Next should appear before Someday/Maybe");
         Assert.True(somedayIndex < reviewIndex, "Someday/Maybe should appear before Weekly Review");
+    }
+
+    // ---------------------------------------------------------------
+    // UI-11 through UI-17: Lounge view consistency
+    // ---------------------------------------------------------------
+
+    [Fact]
+    public async Task LoungeRoom_ContainsAriaAttributes()
+    {
+        var cookie = await GetLoginCookie("ui-lounge-aria@test.com");
+
+        var request = new HttpRequestMessage(HttpMethod.Get, "/Lounge/Room");
+        request.Headers.Add("Cookie", cookie);
+
+        var response = await _client.SendAsync(request);
+        var html = await response.Content.ReadAsStringAsync();
+
+        // UI-11: Message area has ARIA attributes for accessibility
+        Assert.Contains("role=\"log\"", html, StringComparison.Ordinal);
+        Assert.Contains("aria-live=\"polite\"", html, StringComparison.Ordinal);
+        Assert.Contains("aria-label=\"Chat messages\"", html, StringComparison.Ordinal);
+
+        // Mention dropdown has listbox role
+        Assert.Contains("role=\"listbox\"", html, StringComparison.Ordinal);
+
+        // Edit modal has dialog role
+        Assert.Contains("role=\"dialog\"", html, StringComparison.Ordinal);
+        Assert.Contains("aria-modal=\"true\"", html, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task LoungeRoom_ContainsMessageInput()
+    {
+        var cookie = await GetLoginCookie("ui-lounge-input@test.com");
+
+        var request = new HttpRequestMessage(HttpMethod.Get, "/Lounge/Room");
+        request.Headers.Add("Cookie", cookie);
+
+        var response = await _client.SendAsync(request);
+        var html = await response.Content.ReadAsStringAsync();
+
+        // UI-14: Message input is present and fixed at bottom
+        Assert.Contains("message-input", html, StringComparison.Ordinal);
+        Assert.Contains("message-form", html, StringComparison.Ordinal);
+        Assert.Contains("maxlength=\"4000\"", html, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task LoungeRoom_ContainsResponsiveClasses()
+    {
+        var cookie = await GetLoginCookie("ui-lounge-responsive@test.com");
+
+        var request = new HttpRequestMessage(HttpMethod.Get, "/Lounge/Room");
+        request.Headers.Add("Cookie", cookie);
+
+        var response = await _client.SendAsync(request);
+        var html = await response.Content.ReadAsStringAsync();
+
+        // UI-15: Responsive layout classes
+        Assert.Contains("flex", html, StringComparison.Ordinal);
+        Assert.Contains("flex-col", html, StringComparison.Ordinal);
+        Assert.Contains("overflow-y-auto", html, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task LoungeRoom_ContainsSignalRReference()
+    {
+        var cookie = await GetLoginCookie("ui-lounge-signalr@test.com");
+
+        var request = new HttpRequestMessage(HttpMethod.Get, "/Lounge/Room");
+        request.Headers.Add("Cookie", cookie);
+
+        var response = await _client.SendAsync(request);
+        var html = await response.Content.ReadAsStringAsync();
+
+        // Lounge JavaScript is included
+        Assert.Contains("lounge.js", html, StringComparison.Ordinal);
+        Assert.Contains("lounge-room", html, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task LoungeRoom_ContainsRoomHeader()
+    {
+        var cookie = await GetLoginCookie("ui-lounge-header@test.com");
+
+        var request = new HttpRequestMessage(HttpMethod.Get, "/Lounge/Room");
+        request.Headers.Add("Cookie", cookie);
+
+        var response = await _client.SendAsync(request);
+        var html = await response.Content.ReadAsStringAsync();
+
+        // UI-11: Room header with room name
+        Assert.Contains("#general", html, StringComparison.Ordinal);
+        Assert.Contains("Pinned", html, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task LoungeRoom_ContainsNewMessagesIndicator()
+    {
+        var cookie = await GetLoginCookie("ui-lounge-indicator@test.com");
+
+        var request = new HttpRequestMessage(HttpMethod.Get, "/Lounge/Room");
+        request.Headers.Add("Cookie", cookie);
+
+        var response = await _client.SendAsync(request);
+        var html = await response.Content.ReadAsStringAsync();
+
+        // UI-13: New messages indicator and scroll-to-bottom button
+        Assert.Contains("new-messages-indicator", html, StringComparison.Ordinal);
+        Assert.Contains("btn-scroll-to-bottom", html, StringComparison.Ordinal);
+        Assert.Contains("new-messages-divider", html, StringComparison.Ordinal);
     }
 
     private static void AssertNoEmojis(string html, string url)

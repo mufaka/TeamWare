@@ -101,7 +101,7 @@
         var authorName = msg.author ? escapeHtml(msg.author.displayName) : "Unknown";
         var timestamp = formatTimestamp(msg.createdAt);
 
-        return '<div class="group mb-4 flex gap-3" id="message-' + msg.id + '" data-message-id="' + msg.id + '" data-author-id="' + (msg.author ? msg.author.id : "") + '">' +
+        return '<div class="group mb-4 flex gap-3" id="message-' + msg.id + '" data-message-id="' + msg.id + '" data-author-id="' + (msg.author ? msg.author.id : "") + '" role="article" aria-label="Message from ' + authorName + '">' +
             '<div class="flex-shrink-0">' + avatarHtml + '</div>' +
             '<div class="min-w-0 flex-1">' +
                 '<div class="flex items-baseline gap-2">' +
@@ -426,7 +426,8 @@
         var html = "";
         filtered.forEach(function (m, i) {
             var activeClass = i === 0 ? " bg-blue-100 dark:bg-blue-800" : "";
-            html += '<div class="cursor-pointer px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-600' + activeClass + '" data-mention-username="' + escapeHtml(m.userName) + '">' +
+            var ariaSelected = i === 0 ? "true" : "false";
+            html += '<div class="cursor-pointer px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-600' + activeClass + '" role="option" aria-selected="' + ariaSelected + '" data-mention-username="' + escapeHtml(m.userName) + '">' +
                 '<span class="font-medium text-gray-900 dark:text-white">' + escapeHtml(m.displayName) + '</span>' +
                 ' <span class="text-gray-400 dark:text-gray-500">@' + escapeHtml(m.userName) + '</span>' +
             '</div>';
@@ -448,6 +449,7 @@
         mentionStart = -1;
         mentionDropdown.classList.add("hidden");
         mentionDropdown.innerHTML = "";
+        messageInput.removeAttribute("aria-activedescendant");
     }
 
     function selectNextMention(items, activeItem, direction) {
@@ -457,6 +459,7 @@
         items.forEach(function (item, i) {
             if (item === activeItem) currentIndex = i;
             item.classList.remove("bg-blue-100", "dark:bg-blue-800");
+            item.setAttribute("aria-selected", "false");
         });
 
         var nextIndex = currentIndex + direction;
@@ -464,6 +467,7 @@
         if (nextIndex >= items.length) nextIndex = 0;
 
         items[nextIndex].classList.add("bg-blue-100", "dark:bg-blue-800");
+        items[nextIndex].setAttribute("aria-selected", "true");
         items[nextIndex].scrollIntoView({ block: "nearest" });
     }
 
