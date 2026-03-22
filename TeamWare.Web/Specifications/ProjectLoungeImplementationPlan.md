@@ -10,7 +10,7 @@ This document defines the phased implementation plan for the TeamWare Project Lo
 |-------|------------|--------|
 | 15 | Lounge Data Layer | Complete |
 | 16 | Lounge Service Layer | Complete |
-| 17 | Lounge SignalR Hub | Not Started |
+| 17 | Lounge SignalR Hub | Complete |
 | 18 | Lounge Controllers and Views | Not Started |
 | 19 | Lounge Notifications and Mentions | Not Started |
 | 20 | Lounge Background Jobs | Not Started |
@@ -163,36 +163,36 @@ Create the `LoungeHub` for real-time message delivery, reactions, and read posit
 
 ### 17.1 LoungeHub Implementation
 
-- [ ] Create `LoungeHub` class inheriting from `Hub`, decorated with `[Authorize]` (LOUNGE-56, LOUNGE-61)
-- [ ] Implement client-to-server methods (LOUNGE-59):
-  - [ ] `JoinRoom(int? projectId)` — Validate authorization (project membership or authenticated for #general), add connection to SignalR group (LOUNGE-58, LOUNGE-62, LOUNGE-63)
-  - [ ] `LeaveRoom(int? projectId)` — Remove connection from SignalR group
-  - [ ] `SendMessage(int? projectId, string content)` — Validate authorization and content, call `ILoungeService.SendMessage`, broadcast `ReceiveMessage` to group (LOUNGE-09, LOUNGE-62, LOUNGE-63)
-  - [ ] `EditMessage(int messageId, string content)` — Validate author-only, call `ILoungeService.EditMessage`, broadcast `MessageEdited` to group (LOUNGE-14, LOUNGE-64)
-  - [ ] `DeleteMessage(int messageId)` — Validate authorization, call `ILoungeService.DeleteMessage`, broadcast `MessageDeleted` to group (LOUNGE-19, LOUNGE-65, LOUNGE-66)
-  - [ ] `ToggleReaction(int messageId, string reactionType)` — Validate room membership, call `ILoungeService.ToggleReaction`, broadcast `ReactionUpdated` to group (LOUNGE-36, LOUNGE-69, LOUNGE-70)
-  - [ ] `MarkAsRead(int? projectId, int lastReadMessageId)` — Call `ILoungeService.UpdateReadPosition` (LOUNGE-40)
-- [ ] Implement server-to-client method broadcasts (LOUNGE-60):
-  - [ ] `ReceiveMessage` — New message payload with author info
-  - [ ] `MessageEdited` — Updated content and edit timestamp
-  - [ ] `MessageDeleted` — Message ID
-  - [ ] `MessagePinned` / `MessageUnpinned` — Pin status changes
-  - [ ] `ReactionUpdated` — Reaction type, count, and current user status
-  - [ ] `TaskCreatedFromMessage` — Task ID and title
+- [x] Create `LoungeHub` class inheriting from `Hub`, decorated with `[Authorize]` (LOUNGE-56, LOUNGE-61)
+- [x] Implement client-to-server methods (LOUNGE-59):
+  - [x] `JoinRoom(int? projectId)` — Validate authorization (project membership or authenticated for #general), add connection to SignalR group (LOUNGE-58, LOUNGE-62, LOUNGE-63)
+  - [x] `LeaveRoom(int? projectId)` — Remove connection from SignalR group
+  - [x] `SendMessage(int? projectId, string content)` — Validate authorization and content, call `ILoungeService.SendMessage`, broadcast `ReceiveMessage` to group (LOUNGE-09, LOUNGE-62, LOUNGE-63)
+  - [x] `EditMessage(int messageId, string content)` — Validate author-only, call `ILoungeService.EditMessage`, broadcast `MessageEdited` to group (LOUNGE-14, LOUNGE-64)
+  - [x] `DeleteMessage(int messageId)` — Validate authorization, call `ILoungeService.DeleteMessage`, broadcast `MessageDeleted` to group (LOUNGE-19, LOUNGE-65, LOUNGE-66)
+  - [x] `ToggleReaction(int messageId, string reactionType)` — Validate room membership, call `ILoungeService.ToggleReaction`, broadcast `ReactionUpdated` to group (LOUNGE-36, LOUNGE-69, LOUNGE-70)
+  - [x] `MarkAsRead(int? projectId, int lastReadMessageId)` — Call `ILoungeService.UpdateReadPosition` (LOUNGE-40)
+- [x] Implement server-to-client method broadcasts (LOUNGE-60):
+  - [x] `ReceiveMessage` — New message payload with author info
+  - [x] `MessageEdited` — Updated content and edit timestamp
+  - [x] `MessageDeleted` — Message ID
+  - [x] `MessagePinned` / `MessageUnpinned` — Pin status changes
+  - [x] `ReactionUpdated` — Reaction type, count, and current user status
+  - [x] `TaskCreatedFromMessage` — Task ID and title
 
 ### 17.2 Hub Registration
 
-- [ ] Map `LoungeHub` at `/hubs/lounge` in `Program.cs` (LOUNGE-56)
-- [ ] Verify the hub is independent of the existing `PresenceHub` at `/hubs/presence`
+- [x] Map `LoungeHub` at `/hubs/lounge` in `Program.cs` (LOUNGE-56)
+- [x] Verify the hub is independent of the existing `PresenceHub` at `/hubs/presence`
 
 ### 17.3 Hub Tests
 
-- [ ] Write integration tests for `JoinRoom` / `LeaveRoom` authorization (project membership, authenticated for #general) (TEST-09)
-- [ ] Write integration tests for `SendMessage` authorization and real-time delivery (TEST-09)
-- [ ] Write integration tests for `EditMessage` author-only enforcement (TEST-09)
-- [ ] Write integration tests for `DeleteMessage` authorization (author, project admin, site admin) (TEST-09)
-- [ ] Write integration tests for `ToggleReaction` room membership enforcement (TEST-09)
-- [ ] Write integration tests for SignalR group management (correct group names, isolation between rooms) (TEST-09)
+- [x] Write integration tests for `JoinRoom` / `LeaveRoom` authorization (project membership, authenticated for #general) (TEST-09)
+- [x] Write integration tests for `SendMessage` authorization and real-time delivery (TEST-09)
+- [x] Write integration tests for `EditMessage` author-only enforcement (TEST-09)
+- [x] Write integration tests for `DeleteMessage` authorization (author, project admin, site admin) (TEST-09)
+- [x] Write integration tests for `ToggleReaction` room membership enforcement (TEST-09)
+- [x] Write integration tests for SignalR group management (correct group names, isolation between rooms) (TEST-09)
 
 ---
 

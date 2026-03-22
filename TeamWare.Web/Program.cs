@@ -96,6 +96,7 @@ app.MapControllerRoute(
     .WithStaticAssets();
 
 app.MapHub<PresenceHub>("/hubs/presence");
+app.MapHub<LoungeHub>("/hubs/lounge");
 
 // Seed the admin account on first run
 using (var scope = app.Services.CreateScope())
