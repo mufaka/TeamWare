@@ -1,0 +1,15 @@
+﻿@model List<TeamWare.Web.ViewComponents.ProjectLoungeItem>
+
+@foreach (var item in Model)
+{
+    <a asp-controller="Lounge" asp-action="Room" asp-route-projectId="@item.ProjectId"
+       class="flex items-center justify-between rounded-lg pl-7 pr-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700">
+        <span class="truncate">@item.ProjectName</span>
+        @if (item.UnreadCount > 0)
+        {
+            <span class="ml-auto inline-flex items-center justify-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+                @item.UnreadCount
+            </span>
+        }
+    </a>
+}

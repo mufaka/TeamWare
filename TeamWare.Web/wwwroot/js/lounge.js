@@ -85,8 +85,26 @@
         return div.innerHTML;
     }
 
-    function highlightMentions(text) {
-        return escapeHtml(text).replace(/@(\w+)/g, '<span class="font-semibold text-blue-600 dark:text-blue-400">@$1</span>');
+    function highlightMentions(html) {
+        return html.replace(/@(\w+)/g, '<span class="font-semibold text-blue-600 dark:text-blue-400">@$1</span>');
+    }
+
+    // Configure marked for safe output (no raw HTML passthrough)
+    if (typeof marked !== "undefined") {
+        marked.setOptions({
+            breaks: true,
+            gfm: true
+        });
+    }
+
+    function renderContent(text) {
+        var html;
+        if (typeof marked !== "undefined") {
+            html = marked.parse(escapeHtml(text));
+        } else {
+            html = escapeHtml(text);
+        }
+        return highlightMentions(html);
     }
 
     function createMessageHtml(msg) {
@@ -108,7 +126,7 @@
                     '<span class="text-sm font-semibold text-gray-900 dark:text-white">' + authorName + '</span>' +
                     '<span class="text-xs text-gray-500 dark:text-gray-400">' + timestamp + '</span>' +
                 '</div>' +
-                '<div class="message-content mt-1 text-sm text-gray-700 dark:text-gray-300" data-content="' + escapeHtml(msg.content) + '">' + highlightMentions(msg.content) + '</div>' +
+                '<div class="message-content markdown-body mt-1 text-sm text-gray-700 dark:text-gray-300" data-content="' + escapeHtml(msg.content) + '">' + renderContent(msg.content) + '</div>' +
                 '<div class="mt-1 flex flex-wrap gap-1" data-reactions></div>' +
                 '<div id="task-status-' + msg.id + '"></div>' +
             '</div>' +
@@ -135,7 +153,7 @@
         var contentEl = el.querySelector(".message-content");
         if (contentEl) {
             contentEl.setAttribute("data-content", msg.content);
-            contentEl.innerHTML = highlightMentions(msg.content);
+            contentEl.innerHTML = renderContent(msg.content);
         }
         // Add edited indicator if not already present
         var headerEl = el.querySelector(".flex.items-baseline");

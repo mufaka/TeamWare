@@ -103,6 +103,7 @@
                         <span>#general</span>
                         @await Component.InvokeAsync("LoungeUnreadCount")
                     </a>
+                    @await Component.InvokeAsync("ProjectLounges")
                 </div>
                 @if (User.IsInRole("Admin"))
                 {

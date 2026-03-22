@@ -41,8 +41,8 @@
             </div>
 
             <!-- Message body -->
-            <div class="message-content mt-1 text-sm text-gray-700 dark:text-gray-300" data-content="@message.Content">
-                @message.Content
+            <div class="message-content markdown-body mt-1 text-sm text-gray-700 dark:text-gray-300" data-content="@message.Content">
+                @MarkdownHelper.RenderMarkdown(message.Content)
             </div>
 
             <!-- Created task indicator -->

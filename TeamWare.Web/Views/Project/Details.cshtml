@@ -55,10 +55,16 @@
 <!-- Task Stats Cards -->
 <div class="mb-4 flex items-center justify-between">
     <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Tasks</h2>
-    <a asp-controller="Task" asp-action="Index" asp-route-projectId="@Model.Id"
-       class="text-sm font-medium text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300">
-        View all tasks
-    </a>
+    <div class="flex items-center gap-4">
+        <a asp-controller="Lounge" asp-action="Room" asp-route-projectId="@Model.Id"
+           class="text-sm font-medium text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300">
+            Project Lounge
+        </a>
+        <a asp-controller="Task" asp-action="Index" asp-route-projectId="@Model.Id"
+           class="text-sm font-medium text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300">
+            View all tasks
+        </a>
+    </div>
 </div>
 
 @if (Model.TotalTasks > 0)
