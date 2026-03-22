@@ -12,7 +12,7 @@ This document defines the phased implementation plan for the TeamWare Project Lo
 | 16 | Lounge Service Layer | Complete |
 | 17 | Lounge SignalR Hub | Complete |
 | 18 | Lounge Controllers and Views | Complete |
-| 19 | Lounge Notifications and Mentions | Not Started |
+| 19 | Lounge Notifications and Mentions | Complete |
 | 20 | Lounge Background Jobs | Not Started |
 | 21 | Lounge Polish and Hardening | Not Started |
 
@@ -268,25 +268,25 @@ Integrate `@mention` parsing with the existing notification system.
 
 ### 19.1 Mention Parsing
 
-- [ ] Implement `@mention` parsing in `LoungeService.SendMessage`:
-  - [ ] Extract `@username` references from message content (LOUNGE-20)
-  - [ ] Resolve usernames to user IDs
-  - [ ] Filter to only room members (project members for project rooms, all users for #general) (LOUNGE-21)
+- [x] Implement `@mention` parsing in `LoungeService.SendMessage`:
+  - [x] Extract `@username` references from message content (LOUNGE-20)
+  - [x] Resolve usernames to user IDs
+  - [x] Filter to only room members (project members for project rooms, all users for #general) (LOUNGE-21)
 
 ### 19.2 Notification Integration
 
-- [ ] Create `LoungeMention` notifications via `INotificationService` for each mentioned user (LOUNGE-22):
-  - [ ] Notification message includes the mentioning user's display name and room context
-  - [ ] `ReferenceId` set to the `LoungeMessage.Id` (LOUNGE-23)
-  - [ ] `Type` set to `NotificationType.LoungeMention`
-- [ ] Ensure self-mentions do not generate a notification
+- [x] Create `LoungeMention` notifications via `INotificationService` for each mentioned user (LOUNGE-22):
+  - [x] Notification message includes the mentioning user's display name and room context
+  - [x] `ReferenceId` set to the `LoungeMessage.Id` (LOUNGE-23)
+  - [x] `Type` set to `NotificationType.LoungeMention`
+- [x] Ensure self-mentions do not generate a notification
 
 ### 19.3 Notification Tests
 
-- [ ] Write integration tests verifying `@mention` parsing extracts correct usernames (TEST-12)
-- [ ] Write integration tests verifying `LoungeMention` notifications are created for valid room members (TEST-12)
-- [ ] Write integration tests verifying self-mentions are excluded (TEST-12)
-- [ ] Write integration tests verifying non-member mentions in project rooms are excluded (TEST-12)
+- [x] Write integration tests verifying `@mention` parsing extracts correct usernames (TEST-12)
+- [x] Write integration tests verifying `LoungeMention` notifications are created for valid room members (TEST-12)
+- [x] Write integration tests verifying self-mentions are excluded (TEST-12)
+- [x] Write integration tests verifying non-member mentions in project rooms are excluded (TEST-12)
 
 ---
 
