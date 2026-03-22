@@ -4,7 +4,7 @@
 - TeamWare is an ASP.NET Core MVC application. It should not use Razor Pages. Use Controllers and Views instead.
 - One type per file (MAINT-01).
 - Tests accompany every feature. No phase is complete without its test cases.
-- Follow the implementation plan in `TeamWare.Web/Specifications/ImplementationPlan.md` and `TeamWare.Web/Specifications/SocialFeaturesImplementationPlan.md`.
+- Follow the implementation plan in `TeamWare.Web/Specifications/ImplementationPlan.md`, `TeamWare.Web/Specifications/SocialFeaturesImplementationPlan.md`, and `TeamWare.Web/Specifications/ProjectLoungeImplementationPlan.md`.
 
 ---
 
@@ -31,6 +31,13 @@ Each phase in the implementation plan gets its own branch created from `master`.
 | Phase 12 | `phase-12/activity-presence` |
 | Phase 13 | `phase-13/invitation-improvements` |
 | Phase 14 | `phase-14/social-polish` |
+| Phase 15 | `phase-15/lounge-data-layer` |
+| Phase 16 | `phase-16/lounge-service-layer` |
+| Phase 17 | `phase-17/lounge-signalr-hub` |
+| Phase 18 | `phase-18/lounge-controllers-views` |
+| Phase 19 | `phase-19/lounge-notifications-mentions` |
+| Phase 20 | `phase-20/lounge-background-jobs` |
+| Phase 21 | `phase-21/lounge-polish-hardening` |
 
 When starting a phase:
 1. Create the phase branch from `master` in GitHub.
@@ -217,6 +224,69 @@ The following issues are duplicates and should be closed in favor of their canon
 | 14.2 Performance | #75 | — |
 | 14.3 UI/UX Consistency | #78 | — |
 | 14.4 Documentation | #77 | — |
-- #17 (duplicate of #20 — Phase 2.1)
-- #15 (duplicate of #18 — Phase 2.2)
-- #16 (duplicate of #19 — Phase 2.3)
+
+### Phase 15: Lounge Data Layer (label: `Phase 15: Lounge Data Layer`)
+
+| Work Item | Canonical Issue | Duplicate Issues |
+|-----------|----------------|------------------|
+| 15.1 LoungeMessage Entity | #84 | — |
+| 15.2 LoungeReaction Entity | #85 | — |
+| 15.3 LoungeReadPosition Entity | #86 | — |
+| 15.4 Notification Type Extension | #87 | — |
+| 15.5 EF Core Migration | #88 | — |
+
+### Phase 16: Lounge Service Layer (label: `Phase 16: Lounge Service Layer`)
+
+| Work Item | Canonical Issue | Duplicate Issues |
+|-----------|----------------|------------------|
+| 16.1 Lounge Message Services | #89 | — |
+| 16.2 Pin Services | #90 | — |
+| 16.3 Reaction Services | #91 | — |
+| 16.4 Unread Tracking Services | #92 | — |
+| 16.5 Message-to-Task Conversion | #93 | — |
+| 16.6 Message Retention | #94 | — |
+
+### Phase 17: Lounge SignalR Hub (label: `Phase 17: Lounge SignalR Hub`)
+
+| Work Item | Canonical Issue | Duplicate Issues |
+|-----------|----------------|------------------|
+| 17.1 LoungeHub Implementation | #95 | — |
+| 17.2 Hub Registration | #96 | — |
+| 17.3 Hub Tests | #97 | — |
+
+### Phase 18: Lounge Controllers and Views (label: `Phase 18: Lounge Controllers and Views`)
+
+| Work Item | Canonical Issue | Duplicate Issues |
+|-----------|----------------|------------------|
+| 18.1 LoungeController | #98 | — |
+| 18.2 Room View | #99 | — |
+| 18.3 Sidebar Integration | #100 | — |
+| 18.4 Client-Side JavaScript | #101 | — |
+| 18.5 Mention Autocomplete UI | #102 | — |
+| 18.6 Controller Tests | #103 | — |
+
+### Phase 19: Lounge Notifications and Mentions (label: `Phase 19: Lounge Notifications and Mentions`)
+
+| Work Item | Canonical Issue | Duplicate Issues |
+|-----------|----------------|------------------|
+| 19.1 Mention Parsing | #104 | — |
+| 19.2 Notification Integration | #105 | — |
+| 19.3 Notification Tests | #106 | — |
+
+### Phase 20: Lounge Background Jobs (label: `Phase 20: Lounge Background Jobs`)
+
+| Work Item | Canonical Issue | Duplicate Issues |
+|-----------|----------------|------------------|
+| 20.1 Hangfire Setup | #107 | — |
+| 20.2 LoungeRetentionJob | #108 | — |
+| 20.3 Retention Job Tests | #109 | — |
+
+### Phase 21: Lounge Polish and Hardening (label: `Phase 21: Lounge Polish and Hardening`)
+
+| Work Item | Canonical Issue | Duplicate Issues |
+|-----------|----------------|------------------|
+| 21.1 Security and Authorization | #110 | — |
+| 21.2 Performance | #111 | — |
+| 21.3 UI/UX Consistency | #112 | — |
+| 21.4 Accessibility | #113 | — |
+| 21.5 Documentation | #114 | — |
