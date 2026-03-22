@@ -13,7 +13,7 @@ This document defines the phased implementation plan for the TeamWare Project Lo
 | 17 | Lounge SignalR Hub | Complete |
 | 18 | Lounge Controllers and Views | Complete |
 | 19 | Lounge Notifications and Mentions | Complete |
-| 20 | Lounge Background Jobs | Not Started |
+| 20 | Lounge Background Jobs | Complete |
 | 21 | Lounge Polish and Hardening | Not Started |
 
 ---
@@ -296,23 +296,23 @@ Set up Hangfire and the message retention recurring job.
 
 ### 20.1 Hangfire Setup
 
-- [ ] Add NuGet packages: `Hangfire.Core`, `Hangfire.AspNetCore`, and a storage provider suitable for SQLite (e.g., `Hangfire.Storage.SQLite` or `Hangfire.InMemory`)
-- [ ] Configure Hangfire services in `Program.cs`
-- [ ] Configure Hangfire dashboard (optional, admin-only access)
-- [ ] Map Hangfire endpoints in the request pipeline
+- [x] Add NuGet packages: `Hangfire.Core`, `Hangfire.AspNetCore`, and a storage provider suitable for SQLite (e.g., `Hangfire.Storage.SQLite` or `Hangfire.InMemory`)
+- [x] Configure Hangfire services in `Program.cs`
+- [x] Configure Hangfire dashboard (optional, admin-only access)
+- [x] Map Hangfire endpoints in the request pipeline
 
 ### 20.2 LoungeRetentionJob
 
-- [ ] Create `LoungeRetentionJob` class with a public method for the cleanup logic (LOUNGE-52):
-  - [ ] Call `ILoungeService.CleanupExpiredMessages()` (LOUNGE-50, LOUNGE-51, LOUNGE-53, LOUNGE-54)
-- [ ] Register a Hangfire recurring job that calls `LoungeRetentionJob` once per day (LOUNGE-52)
-- [ ] Verify the job ID and cron schedule are correct
+- [x] Create `LoungeRetentionJob` class with a public method for the cleanup logic (LOUNGE-52):
+  - [x] Call `ILoungeService.CleanupExpiredMessages()` (LOUNGE-50, LOUNGE-51, LOUNGE-53, LOUNGE-54)
+- [x] Register a Hangfire recurring job that calls `LoungeRetentionJob` once per day (LOUNGE-52)
+- [x] Verify the job ID and cron schedule are correct
 
 ### 20.3 Retention Job Tests
 
-- [ ] Write tests verifying `LoungeRetentionJob` invokes `CleanupExpiredMessages` (TEST-11)
-- [ ] Write tests verifying the Hangfire recurring job is registered with daily frequency (TEST-11)
-- [ ] Write end-to-end tests verifying retention cleanup with test data: messages older than 30 days deleted, pinned messages retained, reactions and orphaned read positions cleaned up (TEST-11)
+- [x] Write tests verifying `LoungeRetentionJob` invokes `CleanupExpiredMessages` (TEST-11)
+- [x] Write tests verifying the Hangfire recurring job is registered with daily frequency (TEST-11)
+- [x] Write end-to-end tests verifying retention cleanup with test data: messages older than 30 days deleted, pinned messages retained, reactions and orphaned read positions cleaned up (TEST-11)
 
 ---
 
