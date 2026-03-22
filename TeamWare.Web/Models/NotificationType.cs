@@ -7,5 +7,6 @@ public enum NotificationType
     StatusChanged,
     CommentAdded,
     InboxThreshold,
-    ProjectInvitation
+    ProjectInvitation,
+    LoungeMention
 }
