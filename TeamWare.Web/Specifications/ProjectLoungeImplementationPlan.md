@@ -11,7 +11,7 @@ This document defines the phased implementation plan for the TeamWare Project Lo
 | 15 | Lounge Data Layer | Complete |
 | 16 | Lounge Service Layer | Complete |
 | 17 | Lounge SignalR Hub | Complete |
-| 18 | Lounge Controllers and Views | Not Started |
+| 18 | Lounge Controllers and Views | Complete |
 | 19 | Lounge Notifications and Mentions | Not Started |
 | 20 | Lounge Background Jobs | Not Started |
 | 21 | Lounge Polish and Hardening | Not Started |
@@ -202,63 +202,63 @@ Create the MVC controllers, views, and client-side JavaScript for the lounge UI.
 
 ### 18.1 LoungeController
 
-- [ ] Create `LoungeController` with actions:
-  - [ ] `Room(int? projectId)` — Render the room view for a project lounge or #general, validate authorization (LOUNGE-62, LOUNGE-63)
-  - [ ] `Messages(int? projectId, DateTime? before, int count)` — Return paginated message history as an HTMX partial (LOUNGE-10)
-  - [ ] `PinnedMessages(int? projectId)` — Return pinned messages as an HTMX partial (LOUNGE-27)
-  - [ ] `CreateTaskFromMessage(int messageId)` — Create a task from a lounge message, return result (LOUNGE-42 through LOUNGE-49)
-- [ ] Enforce authorization on all actions (LOUNGE-72)
+- [x] Create `LoungeController` with actions:
+  - [x] `Room(int? projectId)` — Render the room view for a project lounge or #general, validate authorization (LOUNGE-62, LOUNGE-63)
+  - [x] `Messages(int? projectId, DateTime? before, int count)` — Return paginated message history as an HTMX partial (LOUNGE-10)
+  - [x] `PinnedMessages(int? projectId)` — Return pinned messages as an HTMX partial (LOUNGE-27)
+  - [x] `CreateTaskFromMessage(int messageId)` — Create a task from a lounge message, return result (LOUNGE-42 through LOUNGE-49)
+- [x] Enforce authorization on all actions (LOUNGE-72)
 
 ### 18.2 Room View
 
-- [ ] Build the room view with Tailwind CSS 4, light/dark theme support (LOUNGE-08, UI-11, UI-16):
-  - [ ] Room header displaying room name (UI-11)
-  - [ ] Pinned message banner (UI-12, LOUNGE-27)
-  - [ ] Scrollable message area with author avatar, display name, timestamp, and content (LOUNGE-08)
-  - [ ] "Edited" indicator on edited messages (LOUNGE-12)
-  - [ ] Emoji reaction buttons beneath each message (LOUNGE-35)
-  - [ ] "Create Task" action on messages in project rooms (LOUNGE-42, LOUNGE-43)
-  - [ ] "New messages" divider for unread tracking (LOUNGE-39)
-  - [ ] Fixed message input field at the bottom (UI-11, UI-14)
-- [ ] Implement "Load older messages" button or scroll-up trigger via HTMX (LOUNGE-10)
-- [ ] Implement responsive layout: full-width on mobile, compact message format (UI-15)
-- [ ] Verify no emoticons or emojis in UI chrome or labels (UI-17)
+- [x] Build the room view with Tailwind CSS 4, light/dark theme support (LOUNGE-08, UI-11, UI-16):
+  - [x] Room header displaying room name (UI-11)
+  - [x] Pinned message banner (UI-12, LOUNGE-27)
+  - [x] Scrollable message area with author avatar, display name, timestamp, and content (LOUNGE-08)
+  - [x] "Edited" indicator on edited messages (LOUNGE-12)
+  - [x] Emoji reaction buttons beneath each message (LOUNGE-35)
+  - [x] "Create Task" action on messages in project rooms (LOUNGE-42, LOUNGE-43)
+  - [x] "New messages" divider for unread tracking (LOUNGE-39)
+  - [x] Fixed message input field at the bottom (UI-11, UI-14)
+- [x] Implement "Load older messages" button or scroll-up trigger via HTMX (LOUNGE-10)
+- [x] Implement responsive layout: full-width on mobile, compact message format (UI-15)
+- [x] Verify no emoticons or emojis in UI chrome or labels (UI-17)
 
 ### 18.3 Sidebar Integration
 
-- [ ] Add "Lounge" link for each project in the project sidebar or project detail page (UI-08)
-- [ ] Add "#general" link under a "Lounge" section in the main sidebar (UI-09)
-- [ ] Implement unread count badges via a ViewComponent (LOUNGE-38, UI-10)
+- [x] Add "Lounge" link for each project in the project sidebar or project detail page (UI-08)
+- [x] Add "#general" link under a "Lounge" section in the main sidebar (UI-09)
+- [x] Implement unread count badges via a ViewComponent (LOUNGE-38, UI-10)
 
 ### 18.4 Client-Side JavaScript
 
-- [ ] Create `lounge.js` for SignalR connection and real-time message handling (LOUNGE-57):
-  - [ ] Establish `LoungeHub` connection only when on a lounge view (LOUNGE-57)
-  - [ ] Call `JoinRoom` on page load, `LeaveRoom` on navigation away
-  - [ ] Handle `ReceiveMessage` — append new message to the message list
-  - [ ] Handle `MessageEdited` — update message content in-place
-  - [ ] Handle `MessageDeleted` — remove message from the list
-  - [ ] Handle `MessagePinned` / `MessageUnpinned` — update pinned banner
-  - [ ] Handle `ReactionUpdated` — update reaction counts and toggle state
-  - [ ] Handle `TaskCreatedFromMessage` — display task creation note on message
-  - [ ] Auto-scroll to bottom on new messages if already at bottom (UI-13)
-  - [ ] Show "new messages" indicator when scrolled up (UI-13)
-  - [ ] Call `MarkAsRead` when scrolled to the bottom (LOUNGE-40)
+- [x] Create `lounge.js` for SignalR connection and real-time message handling (LOUNGE-57):
+  - [x] Establish `LoungeHub` connection only when on a lounge view (LOUNGE-57)
+  - [x] Call `JoinRoom` on page load, `LeaveRoom` on navigation away
+  - [x] Handle `ReceiveMessage` — append new message to the message list
+  - [x] Handle `MessageEdited` — update message content in-place
+  - [x] Handle `MessageDeleted` — remove message from the list
+  - [x] Handle `MessagePinned` / `MessageUnpinned` — update pinned banner
+  - [x] Handle `ReactionUpdated` — update reaction counts and toggle state
+  - [x] Handle `TaskCreatedFromMessage` — display task creation note on message
+  - [x] Auto-scroll to bottom on new messages if already at bottom (UI-13)
+  - [x] Show "new messages" indicator when scrolled up (UI-13)
+  - [x] Call `MarkAsRead` when scrolled to the bottom (LOUNGE-40)
 
 ### 18.5 Mention Autocomplete UI
 
-- [ ] Implement `@mention` autocomplete in the message input (LOUNGE-20, LOUNGE-21):
-  - [ ] Trigger on `@` character in the input field
-  - [ ] Populate from project members (project rooms) or all users (#general)
-  - [ ] Insert the selected username into the message content
-- [ ] Visually highlight mentioned usernames in rendered messages (LOUNGE-24)
+- [x] Implement `@mention` autocomplete in the message input (LOUNGE-20, LOUNGE-21):
+  - [x] Trigger on `@` character in the input field
+  - [x] Populate from project members (project rooms) or all users (#general)
+  - [x] Insert the selected username into the message content
+- [x] Visually highlight mentioned usernames in rendered messages (LOUNGE-24)
 
 ### 18.6 Controller Tests
 
-- [ ] Write integration tests for `LoungeController.Room` authorization (project membership, authenticated for #general) (TEST-10)
-- [ ] Write integration tests for `LoungeController.Messages` pagination (TEST-10)
-- [ ] Write integration tests for `LoungeController.CreateTaskFromMessage` (TEST-10)
-- [ ] Write integration tests for sidebar unread badge ViewComponent
+- [x] Write integration tests for `LoungeController.Room` authorization (project membership, authenticated for #general) (TEST-10)
+- [x] Write integration tests for `LoungeController.Messages` pagination (TEST-10)
+- [x] Write integration tests for `LoungeController.CreateTaskFromMessage` (TEST-10)
+- [x] Write integration tests for sidebar unread badge ViewComponent
 
 ---
 

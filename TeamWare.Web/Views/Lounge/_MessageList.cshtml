@@ -1,0 +1,179 @@
+﻿@model List<TeamWare.Web.ViewModels.LoungeMessageViewModel>
+
+@foreach (var message in Model)
+{
+    <div class="group mb-4 flex gap-3" id="message-@message.Id" data-message-id="@message.Id" data-author-id="@message.AuthorId">
+        <!-- Avatar -->
+        <div class="flex-shrink-0">
+            @if (!string.IsNullOrEmpty(message.AuthorAvatarUrl))
+            {
+                <img src="@message.AuthorAvatarUrl" alt="@message.AuthorDisplayName"
+                     class="h-8 w-8 rounded-full object-cover" />
+            }
+            else
+            {
+                <div class="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-sm font-medium text-blue-600 dark:bg-blue-900 dark:text-blue-300">
+                    @(message.AuthorDisplayName.Length > 0 ? message.AuthorDisplayName[0].ToString().ToUpper() : "?")
+                </div>
+            }
+        </div>
+
+        <!-- Message content -->
+        <div class="min-w-0 flex-1">
+            <div class="flex items-baseline gap-2">
+                <span class="text-sm font-semibold text-gray-900 dark:text-white">@message.AuthorDisplayName</span>
+                <span class="text-xs text-gray-500 dark:text-gray-400" title="@message.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss") UTC">
+                    @FormatTimestamp(message.CreatedAt)
+                </span>
+                @if (message.IsEdited)
+                {
+                    <span class="text-xs text-gray-400 dark:text-gray-500" title="Edited @(message.EditedAt?.ToString("yyyy-MM-dd HH:mm:ss")) UTC">(edited)</span>
+                }
+                @if (message.IsPinned)
+                {
+                    <span class="text-xs font-medium text-yellow-600 dark:text-yellow-400">
+                        <svg class="inline-block h-3 w-3" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                        </svg>
+                        Pinned
+                    </span>
+                }
+            </div>
+
+            <!-- Message body -->
+            <div class="message-content mt-1 text-sm text-gray-700 dark:text-gray-300" data-content="@message.Content">
+                @message.Content
+            </div>
+
+            <!-- Created task indicator -->
+            @if (message.CreatedTaskId.HasValue)
+            {
+                <div class="mt-1">
+                    <a asp-controller="Task" asp-action="Details" asp-route-id="@message.CreatedTaskId.Value"
+                       class="text-xs text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300">
+                        Task #@message.CreatedTaskId.Value created from this message
+                    </a>
+                </div>
+            }
+
+            <!-- Reactions -->
+            @if (message.Reactions.Count > 0)
+            {
+                <div class="mt-1 flex flex-wrap gap-1">
+                    @foreach (var reaction in message.Reactions)
+                    {
+                        <button type="button"
+                                class="reaction-btn inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs @(reaction.CurrentUserReacted ? "border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-600 dark:bg-blue-900/30 dark:text-blue-300" : "border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600")"
+                                data-message-id="@message.Id"
+                                data-reaction-type="@reaction.ReactionType">
+                            <span class="reaction-emoji">@GetReactionDisplay(reaction.ReactionType)</span>
+                            <span class="reaction-count">@reaction.Count</span>
+                        </button>
+                    }
+                </div>
+            }
+
+            <!-- Action buttons (visible on hover) -->
+            <div class="mt-1 hidden gap-1 group-hover:flex">
+                @{
+                    var reactionTypes = new[] { "thumbsup", "heart", "laugh", "rocket", "eyes" };
+                }
+                @foreach (var rt in reactionTypes)
+                {
+                    <button type="button" class="reaction-add-btn rounded px-1.5 py-0.5 text-xs text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
+                            data-message-id="@message.Id"
+                            data-reaction-type="@rt"
+                            title="@rt">
+                        @GetReactionDisplay(rt)
+                    </button>
+                }
+
+                @if (message.CanPin)
+                {
+                    if (message.IsPinned)
+                    {
+                        <form asp-action="UnpinMessage" asp-controller="Lounge" method="post" class="inline"
+                              hx-post="@Url.Action("UnpinMessage", "Lounge")"
+                              hx-target="#pinned-messages-list"
+                              hx-swap="innerHTML">
+                            <input type="hidden" name="messageId" value="@message.Id" />
+                            <button type="submit" class="rounded px-1.5 py-0.5 text-xs text-yellow-500 hover:bg-yellow-50 hover:text-yellow-700 dark:hover:bg-yellow-900/20"
+                                    title="Unpin message">
+                                Unpin
+                            </button>
+                        </form>
+                    }
+                    else
+                    {
+                        <form asp-action="PinMessage" asp-controller="Lounge" method="post" class="inline"
+                              hx-post="@Url.Action("PinMessage", "Lounge")"
+                              hx-target="#pinned-messages-list"
+                              hx-swap="innerHTML">
+                            <input type="hidden" name="messageId" value="@message.Id" />
+                            <button type="submit" class="rounded px-1.5 py-0.5 text-xs text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
+                                    title="Pin message">
+                                Pin
+                            </button>
+                        </form>
+                    }
+                }
+
+                @if (message.CanEdit)
+                {
+                    <button type="button" class="btn-edit-message rounded px-1.5 py-0.5 text-xs text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
+                            data-message-id="@message.Id"
+                            title="Edit message">
+                        Edit
+                    </button>
+                }
+
+                @if (message.CanDelete)
+                {
+                    <button type="button" class="btn-delete-message rounded px-1.5 py-0.5 text-xs text-red-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-300"
+                            data-message-id="@message.Id"
+                            title="Delete message">
+                        Delete
+                    </button>
+                }
+
+                @if (message.CanCreateTask)
+                {
+                    <form asp-action="CreateTaskFromMessage" asp-controller="Lounge" method="post" class="inline"
+                          hx-post="@Url.Action("CreateTaskFromMessage", "Lounge")"
+                          hx-target="#task-status-@message.Id"
+                          hx-swap="innerHTML">
+                        <input type="hidden" name="messageId" value="@message.Id" />
+                        <button type="submit" class="rounded px-1.5 py-0.5 text-xs text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
+                                title="Create task from message">
+                            Create Task
+                        </button>
+                    </form>
+                }
+            </div>
+            <div id="task-status-@message.Id"></div>
+        </div>
+    </div>
+}
+
+@functions {
+    static string FormatTimestamp(DateTime utc)
+    {
+        var local = utc;
+        var now = DateTime.UtcNow;
+        if (local.Date == now.Date)
+            return local.ToString("HH:mm");
+        if (local.Date == now.Date.AddDays(-1))
+            return "Yesterday " + local.ToString("HH:mm");
+        return local.ToString("MMM dd, HH:mm");
+    }
+
+    static string GetReactionDisplay(string reactionType) => reactionType switch
+    {
+        "thumbsup" => "+1",
+        "heart" => "<3",
+        "laugh" => ":D",
+        "rocket" => ">>",
+        "eyes" => "oo",
+        _ => reactionType
+    };
+}
