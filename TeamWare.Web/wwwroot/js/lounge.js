@@ -7,6 +7,7 @@
     var projectIdStr = roomEl.dataset.projectId;
     var projectId = projectIdStr ? parseInt(projectIdStr, 10) : null;
     var lastReadId = roomEl.dataset.lastReadId ? parseInt(roomEl.dataset.lastReadId, 10) : null;
+    var currentUserId = roomEl.dataset.currentUserId || "";
 
     var messageArea = document.getElementById("message-area");
     var messageList = document.getElementById("message-list");
@@ -50,8 +51,8 @@
     function formatTimestamp(dateStr) {
         var d = new Date(dateStr);
         var now = new Date();
-        var hours = d.getUTCHours().toString().padStart(2, "0");
-        var mins = d.getUTCMinutes().toString().padStart(2, "0");
+        var hours = d.getHours().toString().padStart(2, "0");
+        var mins = d.getMinutes().toString().padStart(2, "0");
         var time = hours + ":" + mins;
 
         if (d.toDateString() === now.toDateString()) {
@@ -65,16 +66,23 @@
         }
 
         var months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-        return months[d.getUTCMonth()] + " " + d.getUTCDate() + ", " + time;
+        return months[d.getMonth()] + " " + d.getDate() + ", " + time;
+    }
+
+    function convertServerTimestamps(container) {
+        var spans = (container || document).querySelectorAll(".message-timestamp[data-utc]");
+        spans.forEach(function (span) {
+            span.textContent = formatTimestamp(span.getAttribute("data-utc"));
+        });
     }
 
     function getReactionDisplay(type) {
         switch (type) {
-            case "thumbsup": return "+1";
-            case "heart": return "<3";
-            case "laugh": return ":D";
-            case "rocket": return ">>";
-            case "eyes": return "oo";
+            case "thumbsup": return "\uD83D\uDC4D";
+            case "heart": return "\u2764\uFE0F";
+            case "laugh": return "\uD83D\uDE02";
+            case "rocket": return "\uD83D\uDE80";
+            case "eyes": return "\uD83D\uDC40";
             default: return type;
         }
     }
@@ -124,7 +132,7 @@
             '<div class="min-w-0 flex-1">' +
                 '<div class="flex items-baseline gap-2">' +
                     '<span class="text-sm font-semibold text-gray-900 dark:text-white">' + authorName + '</span>' +
-                    '<span class="text-xs text-gray-500 dark:text-gray-400">' + timestamp + '</span>' +
+                    '<span class="message-timestamp text-xs text-gray-500 dark:text-gray-400" data-utc="' + msg.createdAt + '">' + timestamp + '</span>' +
                 '</div>' +
                 '<div class="message-content markdown-body mt-1 text-sm text-gray-700 dark:text-gray-300" data-content="' + escapeHtml(msg.content) + '">' + renderContent(msg.content) + '</div>' +
                 '<div class="mt-1 flex flex-wrap gap-1" data-reactions></div>' +
@@ -199,10 +207,29 @@
         var reactionsEl = el.querySelector("[data-reactions]");
         if (!reactionsEl) return;
 
+        // Track current user's own reaction state
+        var actorIsMe = data.actorUserId === currentUserId;
+
+        // Build a set of types the current user has reacted to.
+        // Start from existing state and toggle if the current user was the actor.
+        var myReactions = {};
+        reactionsEl.querySelectorAll(".reaction-btn").forEach(function (btn) {
+            if (btn.classList.contains("border-blue-300")) {
+                myReactions[btn.dataset.reactionType] = true;
+            }
+        });
+        if (actorIsMe && data.toggledType) {
+            myReactions[data.toggledType] = !myReactions[data.toggledType];
+        }
+
         var html = "";
         if (data.reactions) {
             data.reactions.forEach(function (r) {
-                html += '<button type="button" class="reaction-btn inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600" data-message-id="' + data.messageId + '" data-reaction-type="' + r.reactionType + '">' +
+                var userReacted = !!myReactions[r.reactionType];
+                var activeClass = userReacted
+                    ? "border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-600 dark:bg-blue-900/30 dark:text-blue-300"
+                    : "border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600";
+                html += '<button type="button" class="reaction-btn inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs ' + activeClass + '" data-message-id="' + data.messageId + '" data-reaction-type="' + r.reactionType + '">' +
                     '<span class="reaction-emoji">' + getReactionDisplay(r.reactionType) + '</span>' +
                     '<span class="reaction-count">' + r.count + '</span>' +
                 '</button>';
@@ -272,16 +299,14 @@
             if (!firstMsg) return;
 
             var oldestId = firstMsg.dataset.messageId;
-            var oldestTimestamp = firstMsg.querySelector(".text-xs.text-gray-500");
-            // Use the created-at from the first message element's title attr
-            var beforeParam = oldestTimestamp ? oldestTimestamp.getAttribute("title") : null;
+            var oldestTimestamp = firstMsg.querySelector(".message-timestamp[data-utc]");
+            // Use the ISO datetime from the data-utc attribute
+            var beforeParam = oldestTimestamp ? oldestTimestamp.getAttribute("data-utc") : null;
 
             var url = "/Lounge/Messages?count=50";
             if (projectId !== null) url += "&projectId=" + projectId;
             if (beforeParam) {
-                // Extract the UTC timestamp from title attribute (format: "yyyy-MM-dd HH:mm:ss UTC")
-                var cleanDate = beforeParam.replace(" UTC", "").replace(" ", "T") + "Z";
-                url += "&before=" + encodeURIComponent(cleanDate);
+                url += "&before=" + encodeURIComponent(beforeParam);
             }
 
             fetch(url, { headers: { "HX-Request": "true" } })
@@ -290,6 +315,8 @@
                     if (html.trim()) {
                         var prevScrollHeight = messageArea.scrollHeight;
                         messageList.insertAdjacentHTML("afterbegin", html);
+                        // Convert timestamps in newly loaded messages
+                        convertServerTimestamps(messageList);
                         // Maintain scroll position
                         messageArea.scrollTop = messageArea.scrollHeight - prevScrollHeight;
                     }
@@ -310,6 +337,9 @@
     if (btnTogglePinned) {
         btnTogglePinned.addEventListener("click", function () {
             pinnedArea.classList.toggle("hidden");
+            if (!pinnedArea.classList.contains("hidden")) {
+                convertServerTimestamps(pinnedArea);
+            }
         });
     }
 
@@ -508,6 +538,8 @@
 
     // --- Initial scroll and new messages divider ---
     (function () {
+        // Convert server-rendered UTC timestamps to local time
+        convertServerTimestamps(messageList);
         if (lastReadId) {
             var divider = document.getElementById("new-messages-divider");
             // Find the first message after the last read

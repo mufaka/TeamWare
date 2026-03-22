@@ -22,7 +22,7 @@
         <div class="min-w-0 flex-1">
             <div class="flex items-baseline gap-2">
                 <span class="text-sm font-semibold text-gray-900 dark:text-white">@message.AuthorDisplayName</span>
-                <span class="text-xs text-gray-500 dark:text-gray-400" title="@message.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss") UTC">
+                <span class="message-timestamp text-xs text-gray-500 dark:text-gray-400" data-utc="@message.CreatedAt.ToString("o")" title="@message.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss") UTC">
                     @FormatTimestamp(message.CreatedAt)
                 </span>
                 @if (message.IsEdited)
@@ -169,11 +169,11 @@
 
     static string GetReactionDisplay(string reactionType) => reactionType switch
     {
-        "thumbsup" => "+1",
-        "heart" => "<3",
-        "laugh" => ":D",
-        "rocket" => ">>",
-        "eyes" => "oo",
+        "thumbsup" => "\uD83D\uDC4D",
+        "heart" => "\u2764\uFE0F",
+        "laugh" => "\uD83D\uDE02",
+        "rocket" => "\uD83D\uDE80",
+        "eyes" => "\uD83D\uDC40",
         _ => reactionType
     };
 }

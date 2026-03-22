@@ -8,7 +8,8 @@
 
 <div class="flex h-[calc(100vh-8rem)] flex-col" id="lounge-room"
      data-project-id="@projectIdAttr"
-     data-last-read-id="@lastReadId">
+     data-last-read-id="@lastReadId"
+     data-current-user-id="@User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value">
 
     <!-- Room header -->
     <div class="flex items-center justify-between border-b border-gray-200 px-4 py-3 dark:border-gray-700">

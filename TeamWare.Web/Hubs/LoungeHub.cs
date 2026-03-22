@@ -203,6 +203,8 @@ public class LoungeHub : Hub
         await Clients.Group(groupName).SendAsync("ReactionUpdated", new
         {
             MessageId = messageId,
+            ActorUserId = userId,
+            ToggledType = reactionType,
             Reactions = reactionsResult.Data!.Select(r => new
             {
                 r.ReactionType,
