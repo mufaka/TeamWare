@@ -33,6 +33,12 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 
     public DbSet<ProjectInvitation> ProjectInvitations => Set<ProjectInvitation>();
 
+    public DbSet<LoungeMessage> LoungeMessages => Set<LoungeMessage>();
+
+    public DbSet<LoungeReaction> LoungeReactions => Set<LoungeReaction>();
+
+    public DbSet<LoungeReadPosition> LoungeReadPositions => Set<LoungeReadPosition>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -278,6 +284,85 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             entity.HasIndex(i => new { i.ProjectId, i.InvitedUserId, i.Status });
             entity.HasIndex(i => i.InvitedUserId);
             entity.HasIndex(i => i.Status);
+        });
+
+        builder.Entity<LoungeMessage>(entity =>
+        {
+            entity.HasKey(m => m.Id);
+            entity.Property(m => m.Content).IsRequired().HasMaxLength(4000);
+
+            entity.HasOne(m => m.Project)
+                .WithMany(p => p.LoungeMessages)
+                .HasForeignKey(m => m.ProjectId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(m => m.User)
+                .WithMany(u => u.LoungeMessages)
+                .HasForeignKey(m => m.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(m => m.PinnedByUser)
+                .WithMany()
+                .HasForeignKey(m => m.PinnedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(m => m.CreatedTask)
+                .WithMany()
+                .HasForeignKey(m => m.CreatedTaskId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasIndex(m => new { m.ProjectId, m.CreatedAt })
+                .HasDatabaseName("IX_LoungeMessage_ProjectId_CreatedAt");
+
+            entity.HasIndex(m => m.UserId)
+                .HasDatabaseName("IX_LoungeMessage_UserId");
+        });
+
+        builder.Entity<LoungeReaction>(entity =>
+        {
+            entity.HasKey(r => r.Id);
+            entity.Property(r => r.ReactionType).IsRequired().HasMaxLength(50);
+
+            entity.HasOne(r => r.LoungeMessage)
+                .WithMany(m => m.Reactions)
+                .HasForeignKey(r => r.LoungeMessageId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(r => r.User)
+                .WithMany()
+                .HasForeignKey(r => r.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(r => new { r.LoungeMessageId, r.UserId, r.ReactionType })
+                .IsUnique()
+                .HasDatabaseName("IX_LoungeReaction_MessageId_UserId_Type");
+
+            entity.HasIndex(r => r.LoungeMessageId)
+                .HasDatabaseName("IX_LoungeReaction_MessageId");
+        });
+
+        builder.Entity<LoungeReadPosition>(entity =>
+        {
+            entity.HasKey(rp => rp.Id);
+
+            entity.HasOne(rp => rp.User)
+                .WithMany()
+                .HasForeignKey(rp => rp.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(rp => rp.Project)
+                .WithMany()
+                .HasForeignKey(rp => rp.ProjectId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(rp => rp.LastReadMessage)
+                .WithMany()
+                .HasForeignKey(rp => rp.LastReadMessageId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(rp => new { rp.UserId, rp.ProjectId })
+                .IsUnique()
+                .HasDatabaseName("IX_LoungeReadPosition_UserId_ProjectId");
         });
     }
 }

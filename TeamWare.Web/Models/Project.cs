@@ -24,4 +24,6 @@ public class Project
     public ICollection<TaskItem> Tasks { get; set; } = new List<TaskItem>();
 
     public ICollection<ProjectInvitation> Invitations { get; set; } = new List<ProjectInvitation>();
+
+    public ICollection<LoungeMessage> LoungeMessages { get; set; } = new List<LoungeMessage>();
 }
