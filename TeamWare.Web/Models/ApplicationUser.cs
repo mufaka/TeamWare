@@ -11,4 +11,6 @@ public class ApplicationUser : IdentityUser
     public string ThemePreference { get; set; } = "system";
 
     public DateTime? LastActiveAt { get; set; }
+
+    public ICollection<LoungeMessage> LoungeMessages { get; set; } = new List<LoungeMessage>();
 }
