@@ -9,7 +9,7 @@ This document defines the phased implementation plan for the TeamWare Project Lo
 | Phase | Description | Status |
 |-------|------------|--------|
 | 15 | Lounge Data Layer | Complete |
-| 16 | Lounge Service Layer | Not Started |
+| 16 | Lounge Service Layer | Complete |
 | 17 | Lounge SignalR Hub | Not Started |
 | 18 | Lounge Controllers and Views | Not Started |
 | 19 | Lounge Notifications and Mentions | Not Started |
@@ -111,49 +111,49 @@ Create the service interfaces and implementations for lounge messaging, reaction
 
 ### 16.1 Lounge Message Services
 
-- [ ] Create `ILoungeService` interface
-- [ ] Create `LoungeService` implementation
-  - [ ] `SendMessage(int? projectId, string userId, string content)` — Validates content length, persists, returns the message (LOUNGE-04, LOUNGE-05, LOUNGE-07)
-  - [ ] `EditMessage(int messageId, string userId, string content)` — Updates content, sets `IsEdited`/`EditedAt`, validates author-only (LOUNGE-11, LOUNGE-12, LOUNGE-13, LOUNGE-64)
-  - [ ] `DeleteMessage(int messageId, string userId)` — Hard delete with cascade to reactions, validates authorization (LOUNGE-15, LOUNGE-16, LOUNGE-17, LOUNGE-18, LOUNGE-65, LOUNGE-66)
-  - [ ] `GetMessages(int? projectId, DateTime? before, int count)` — Paginated history with reactions eager-loaded (LOUNGE-10)
-  - [ ] `GetMessage(int messageId)` — Single message with author and reactions
-- [ ] Write unit tests for all message service methods including authorization rules (TEST-08)
+- [x] Create `ILoungeService` interface
+- [x] Create `LoungeService` implementation
+  - [x] `SendMessage(int? projectId, string userId, string content)` — Validates content length, persists, returns the message (LOUNGE-04, LOUNGE-05, LOUNGE-07)
+  - [x] `EditMessage(int messageId, string userId, string content)` — Updates content, sets `IsEdited`/`EditedAt`, validates author-only (LOUNGE-11, LOUNGE-12, LOUNGE-13, LOUNGE-64)
+  - [x] `DeleteMessage(int messageId, string userId)` — Hard delete with cascade to reactions, validates authorization (LOUNGE-15, LOUNGE-16, LOUNGE-17, LOUNGE-18, LOUNGE-65, LOUNGE-66)
+  - [x] `GetMessages(int? projectId, DateTime? before, int count)` — Paginated history with reactions eager-loaded (LOUNGE-10)
+  - [x] `GetMessage(int messageId)` — Single message with author and reactions
+- [x] Write unit tests for all message service methods including authorization rules (TEST-08)
 
 ### 16.2 Pin Services
 
-- [ ] Add to `ILoungeService` / `LoungeService`:
-  - [ ] `PinMessage(int messageId, string userId)` — Sets `IsPinned`, `PinnedByUserId`, `PinnedAt`, validates authorization (LOUNGE-25, LOUNGE-26, LOUNGE-67, LOUNGE-68)
-  - [ ] `UnpinMessage(int messageId, string userId)` — Clears pin fields, validates authorization (LOUNGE-28, LOUNGE-67, LOUNGE-68)
-  - [ ] `GetPinnedMessages(int? projectId)` — Returns pinned messages for a room (LOUNGE-27)
-- [ ] Write unit tests for pin/unpin including authorization rules (TEST-08)
+- [x] Add to `ILoungeService` / `LoungeService`:
+  - [x] `PinMessage(int messageId, string userId)` — Sets `IsPinned`, `PinnedByUserId`, `PinnedAt`, validates authorization (LOUNGE-25, LOUNGE-26, LOUNGE-67, LOUNGE-68)
+  - [x] `UnpinMessage(int messageId, string userId)` — Clears pin fields, validates authorization (LOUNGE-28, LOUNGE-67, LOUNGE-68)
+  - [x] `GetPinnedMessages(int? projectId)` — Returns pinned messages for a room (LOUNGE-27)
+- [x] Write unit tests for pin/unpin including authorization rules (TEST-08)
 
 ### 16.3 Reaction Services
 
-- [ ] Add to `ILoungeService` / `LoungeService`:
-  - [ ] `ToggleReaction(int messageId, string userId, string reactionType)` — Adds or removes a reaction, validates type is in the allowed set, validates room membership (LOUNGE-31, LOUNGE-32, LOUNGE-33, LOUNGE-34, LOUNGE-69, LOUNGE-70)
-  - [ ] `GetReactionsForMessage(int messageId)` — Returns reaction counts and current user's reactions (LOUNGE-35)
-- [ ] Write unit tests for reaction toggle including uniqueness constraint (TEST-08)
+- [x] Add to `ILoungeService` / `LoungeService`:
+  - [x] `ToggleReaction(int messageId, string userId, string reactionType)` — Adds or removes a reaction, validates type is in the allowed set, validates room membership (LOUNGE-31, LOUNGE-32, LOUNGE-33, LOUNGE-34, LOUNGE-69, LOUNGE-70)
+  - [x] `GetReactionsForMessage(int messageId)` — Returns reaction counts and current user's reactions (LOUNGE-35)
+- [x] Write unit tests for reaction toggle including uniqueness constraint (TEST-08)
 
 ### 16.4 Unread Tracking Services
 
-- [ ] Add to `ILoungeService` / `LoungeService`:
-  - [ ] `UpdateReadPosition(string userId, int? projectId, int lastReadMessageId)` — Creates or updates the read position (LOUNGE-37, LOUNGE-40, LOUNGE-41)
-  - [ ] `GetUnreadCounts(string userId)` — Returns a dictionary of room (projectId) to unread message count (LOUNGE-38)
-  - [ ] `GetReadPosition(string userId, int? projectId)` — Returns the last-read message ID for a room (LOUNGE-39)
-- [ ] Write unit tests for read position tracking and unread count calculation (TEST-08)
+- [x] Add to `ILoungeService` / `LoungeService`:
+  - [x] `UpdateReadPosition(string userId, int? projectId, int lastReadMessageId)` — Creates or updates the read position (LOUNGE-37, LOUNGE-40, LOUNGE-41)
+  - [x] `GetUnreadCounts(string userId)` — Returns a dictionary of room (projectId) to unread message count (LOUNGE-38)
+  - [x] `GetReadPosition(string userId, int? projectId)` — Returns the last-read message ID for a room (LOUNGE-39)
+- [x] Write unit tests for read position tracking and unread count calculation (TEST-08)
 
 ### 16.5 Message-to-Task Conversion
 
-- [ ] Add to `ILoungeService` / `LoungeService`:
-  - [ ] `CreateTaskFromMessage(int messageId, string userId)` — Validates project room, validates project membership, creates a `TaskItem` pre-populated from the message content, sets `CreatedTaskId` on the message, returns the created task (LOUNGE-42, LOUNGE-44, LOUNGE-45, LOUNGE-46, LOUNGE-47, LOUNGE-48, LOUNGE-71)
-- [ ] Write unit tests for task creation including pre-population logic and authorization (TEST-08)
+- [x] Add to `ILoungeService` / `LoungeService`:
+  - [x] `CreateTaskFromMessage(int messageId, string userId)` — Validates project room, validates project membership, creates a `TaskItem` pre-populated from the message content, sets `CreatedTaskId` on the message, returns the created task (LOUNGE-42, LOUNGE-44, LOUNGE-45, LOUNGE-46, LOUNGE-47, LOUNGE-48, LOUNGE-71)
+- [x] Write unit tests for task creation including pre-population logic and authorization (TEST-08)
 
 ### 16.6 Message Retention
 
-- [ ] Add to `ILoungeService` / `LoungeService`:
-  - [ ] `CleanupExpiredMessages()` — Deletes non-pinned messages older than 30 days, cascades to reactions, cleans up orphaned read positions (LOUNGE-50, LOUNGE-51, LOUNGE-53, LOUNGE-54, LOUNGE-55)
-- [ ] Write unit tests verifying retention logic: 30-day cutoff, pinned message exemption, cascade behavior, orphaned read position cleanup (TEST-08, TEST-11)
+- [x] Add to `ILoungeService` / `LoungeService`:
+  - [x] `CleanupExpiredMessages()` — Deletes non-pinned messages older than 30 days, cascades to reactions, cleans up orphaned read positions (LOUNGE-50, LOUNGE-51, LOUNGE-53, LOUNGE-54, LOUNGE-55)
+- [x] Write unit tests verifying retention logic: 30-day cutoff, pinned message exemption, cascade behavior, orphaned read position cleanup (TEST-08, TEST-11)
 
 ---
 
