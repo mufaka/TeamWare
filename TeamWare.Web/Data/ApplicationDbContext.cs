@@ -39,6 +39,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 
     public DbSet<LoungeReadPosition> LoungeReadPositions => Set<LoungeReadPosition>();
 
+    public DbSet<GlobalConfiguration> GlobalConfigurations => Set<GlobalConfiguration>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -363,6 +365,21 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             entity.HasIndex(rp => new { rp.UserId, rp.ProjectId })
                 .IsUnique()
                 .HasDatabaseName("IX_LoungeReadPosition_UserId_ProjectId");
+        });
+
+        builder.Entity<GlobalConfiguration>(entity =>
+        {
+            entity.HasKey(gc => gc.Id);
+            entity.Property(gc => gc.Key).IsRequired().HasMaxLength(100);
+            entity.Property(gc => gc.Value).IsRequired().HasMaxLength(2000);
+            entity.Property(gc => gc.Description).HasMaxLength(500);
+
+            entity.HasOne(gc => gc.UpdatedByUser)
+                .WithMany()
+                .HasForeignKey(gc => gc.UpdatedByUserId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasIndex(gc => gc.Key).IsUnique();
         });
     }
 }

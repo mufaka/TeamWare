@@ -57,5 +57,23 @@ public static class SeedData
                 await userManager.AddToRoleAsync(adminUser, UserRoleName);
             }
         }
+
+        await SeedGlobalConfigurationAsync(context);
+    }
+
+    private static async Task SeedGlobalConfigurationAsync(ApplicationDbContext context)
+    {
+        if (!await context.GlobalConfigurations.AnyAsync(gc => gc.Key == "ATTACHMENT_DIR"))
+        {
+            context.GlobalConfigurations.Add(new GlobalConfiguration
+            {
+                Key = "ATTACHMENT_DIR",
+                Value = "./Attachments",
+                Description = "Base directory for file attachment storage",
+                UpdatedAt = DateTime.UtcNow
+            });
+
+            await context.SaveChangesAsync();
+        }
     }
 }
