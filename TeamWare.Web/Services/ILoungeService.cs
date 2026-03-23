@@ -30,6 +30,7 @@ public interface ILoungeService
 
     // Retention (16.6)
     Task<int> CleanupExpiredMessages();
+    Task<List<int>> GetExpiredMessageIds();
 }
 
 public class ReactionSummary
