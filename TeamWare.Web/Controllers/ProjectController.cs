@@ -17,6 +17,8 @@ public class ProjectController : Controller
     private readonly IActivityLogService _activityLogService;
     private readonly IProgressService _progressService;
     private readonly IProjectInvitationService _invitationService;
+    private readonly IAttachmentService _attachmentService;
+    private readonly IFileStorageService _fileStorageService;
     private readonly UserManager<ApplicationUser> _userManager;
 
     public ProjectController(
@@ -25,6 +27,8 @@ public class ProjectController : Controller
         IActivityLogService activityLogService,
         IProgressService progressService,
         IProjectInvitationService invitationService,
+        IAttachmentService attachmentService,
+        IFileStorageService fileStorageService,
         UserManager<ApplicationUser> userManager)
     {
         _projectService = projectService;
@@ -32,6 +36,8 @@ public class ProjectController : Controller
         _activityLogService = activityLogService;
         _progressService = progressService;
         _invitationService = invitationService;
+        _attachmentService = attachmentService;
+        _fileStorageService = fileStorageService;
         _userManager = userManager;
     }
 
@@ -218,6 +224,30 @@ public class ProjectController : Controller
             }
         }
 
+        var attachmentsResult = await _attachmentService.GetAttachmentsAsync(AttachmentEntityType.Project, id);
+        var isProjectOwner = currentUserMember?.Role == ProjectRole.Owner;
+        viewModel.Attachments = new AttachmentListViewModel
+        {
+            EntityType = AttachmentEntityType.Project,
+            EntityId = id,
+            UploadUrl = Url.Action("UploadAttachment", "Project", new { projectId = id })!,
+            DownloadUrlTemplate = Url.Action("DownloadAttachment", "Project", new { projectId = id, attachmentId = "__ID__" })!,
+            DeleteUrlTemplate = Url.Action("DeleteAttachment", "Project", new { projectId = id, attachmentId = "__ID__" })!,
+            CanUpload = currentUserMember != null,
+            Attachments = attachmentsResult.Succeeded
+                ? attachmentsResult.Data!.Select(a => new AttachmentViewModel
+                {
+                    Id = a.Id,
+                    FileName = a.FileName,
+                    ContentType = a.ContentType,
+                    FileSizeBytes = a.FileSizeBytes,
+                    UploadedByDisplayName = a.UploadedByUser?.DisplayName ?? string.Empty,
+                    UploadedAt = a.UploadedAt,
+                    CanDelete = a.UploadedByUserId == userId || isProjectOwner
+                }).ToList()
+                : []
+        };
+
         return View(viewModel);
     }
 
@@ -357,5 +387,100 @@ public class ProjectController : Controller
         }
 
         return RedirectToAction(nameof(Details), new { id = model.ProjectId });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> UploadAttachment(int projectId, IFormFile file)
+    {
+        if (file == null || file.Length == 0)
+        {
+            TempData["ErrorMessage"] = "Please select a file to upload.";
+            return RedirectToAction(nameof(Details), new { id = projectId });
+        }
+
+        var userId = GetUserId();
+        var memberCheck = await _memberService.GetMemberUserIds(projectId);
+        if (!memberCheck.Contains(userId) && !IsAdmin())
+        {
+            TempData["ErrorMessage"] = "You must be a project member to upload attachments.";
+            return RedirectToAction(nameof(Details), new { id = projectId });
+        }
+
+        using var stream = file.OpenReadStream();
+        var result = await _attachmentService.UploadAsync(
+            stream, file.FileName, file.ContentType, file.Length,
+            AttachmentEntityType.Project, projectId, userId);
+
+        if (!result.Succeeded)
+        {
+            TempData["ErrorMessage"] = result.Errors.FirstOrDefault();
+        }
+        else
+        {
+            TempData["SuccessMessage"] = "File uploaded successfully.";
+        }
+
+        return RedirectToAction(nameof(Details), new { id = projectId });
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> DownloadAttachment(int projectId, int attachmentId)
+    {
+        var userId = GetUserId();
+        var memberCheck = await _memberService.GetMemberUserIds(projectId);
+        if (!memberCheck.Contains(userId) && !IsAdmin())
+        {
+            TempData["ErrorMessage"] = "You must be a project member to download attachments.";
+            return RedirectToAction(nameof(Details), new { id = projectId });
+        }
+
+        var result = await _attachmentService.GetByIdAsync(attachmentId);
+        if (!result.Succeeded || result.Data!.EntityType != AttachmentEntityType.Project || result.Data.EntityId != projectId)
+        {
+            TempData["ErrorMessage"] = "Attachment not found.";
+            return RedirectToAction(nameof(Details), new { id = projectId });
+        }
+
+        var attachment = result.Data;
+        var stream = await _fileStorageService.GetFileStreamAsync(attachment.StoredFileName);
+        return File(stream, attachment.ContentType, attachment.FileName);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteAttachment(int projectId, int attachmentId)
+    {
+        var userId = GetUserId();
+
+        var attachmentResult = await _attachmentService.GetByIdAsync(attachmentId);
+        if (!attachmentResult.Succeeded || attachmentResult.Data!.EntityType != AttachmentEntityType.Project || attachmentResult.Data.EntityId != projectId)
+        {
+            TempData["ErrorMessage"] = "Attachment not found.";
+            return RedirectToAction(nameof(Details), new { id = projectId });
+        }
+
+        var attachment = attachmentResult.Data;
+        var dashboardResult = await _projectService.GetProjectDashboard(projectId, userId, IsAdmin());
+        var currentMember = dashboardResult.Data?.Project.Members.FirstOrDefault(m => m.UserId == userId);
+        var isProjectOwner = currentMember?.Role == ProjectRole.Owner;
+
+        if (attachment.UploadedByUserId != userId && !isProjectOwner && !IsAdmin())
+        {
+            TempData["ErrorMessage"] = "You do not have permission to delete this attachment.";
+            return RedirectToAction(nameof(Details), new { id = projectId });
+        }
+
+        var result = await _attachmentService.DeleteAsync(attachmentId, userId);
+        if (!result.Succeeded)
+        {
+            TempData["ErrorMessage"] = result.Errors.FirstOrDefault();
+        }
+        else
+        {
+            TempData["SuccessMessage"] = "Attachment deleted.";
+        }
+
+        return RedirectToAction(nameof(Details), new { id = projectId });
     }
 }
