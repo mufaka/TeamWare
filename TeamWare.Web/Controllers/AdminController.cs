@@ -13,15 +13,18 @@ public class AdminController : Controller
 {
     private readonly IAdminService _adminService;
     private readonly IAdminActivityLogService _activityLogService;
+    private readonly IGlobalConfigurationService _configService;
     private readonly UserManager<ApplicationUser> _userManager;
 
     public AdminController(
         IAdminService adminService,
         IAdminActivityLogService activityLogService,
+        IGlobalConfigurationService configService,
         UserManager<ApplicationUser> userManager)
     {
         _adminService = adminService;
         _activityLogService = activityLogService;
+        _configService = configService;
         _userManager = userManager;
     }
 
@@ -225,5 +228,74 @@ public class AdminController : Controller
         };
 
         return View(viewModel);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> Configuration()
+    {
+        var result = await _configService.GetAllAsync();
+        if (!result.Succeeded)
+        {
+            TempData["ErrorMessage"] = result.Errors.FirstOrDefault();
+            return RedirectToAction(nameof(Dashboard));
+        }
+
+        var viewModel = new GlobalConfigurationListViewModel
+        {
+            Items = result.Data!.Select(gc => new GlobalConfigurationItemViewModel
+            {
+                Key = gc.Key,
+                Value = gc.Value,
+                Description = gc.Description,
+                UpdatedAt = gc.UpdatedAt,
+                UpdatedByDisplayName = gc.UpdatedByUser?.DisplayName
+            }).ToList()
+        };
+
+        return View(viewModel);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> EditConfiguration(string key)
+    {
+        var result = await _configService.GetByKeyAsync(key);
+        if (!result.Succeeded)
+        {
+            TempData["ErrorMessage"] = result.Errors.FirstOrDefault();
+            return RedirectToAction(nameof(Configuration));
+        }
+
+        var config = result.Data!;
+        var viewModel = new GlobalConfigurationEditViewModel
+        {
+            Key = config.Key,
+            Description = config.Description,
+            Value = config.Value
+        };
+
+        return View(viewModel);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> EditConfiguration(GlobalConfigurationEditViewModel model)
+    {
+        if (!ModelState.IsValid)
+        {
+            return View(model);
+        }
+
+        var result = await _configService.UpdateAsync(model.Key, model.Value, GetUserId());
+        if (!result.Succeeded)
+        {
+            foreach (var error in result.Errors)
+            {
+                ModelState.AddModelError(string.Empty, error);
+            }
+            return View(model);
+        }
+
+        TempData["SuccessMessage"] = $"Configuration '{model.Key}' has been updated.";
+        return RedirectToAction(nameof(Configuration));
     }
 }
