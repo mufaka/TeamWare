@@ -412,6 +412,20 @@
         }
     });
 
+    // --- Attachment upload ---
+    var attachmentForm = document.getElementById("attachment-upload-form");
+    if (attachmentForm) {
+        attachmentForm.addEventListener("submit", function () {
+            var contentField = document.getElementById("attachment-content");
+            if (contentField) {
+                var text = messageInput.value.trim();
+                contentField.value = text || "";
+                // Clear the message input since the server will create the message
+                messageInput.value = "";
+            }
+        });
+    }
+
     // --- Mention Autocomplete (18.5) ---
     messageInput.addEventListener("input", function () {
         var val = messageInput.value;

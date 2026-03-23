@@ -320,39 +320,60 @@ public class LoungeController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> UploadAttachment(int messageId, IFormFile file)
+    public async Task<IActionResult> UploadAttachment(int? projectId, string? content, IFormFile file)
     {
-        var message = await _dbContext.LoungeMessages.FindAsync(messageId);
-        if (message is null)
-        {
-            TempData["ErrorMessage"] = "Message not found.";
-            return RedirectToAction("Room");
-        }
-
         if (file == null || file.Length == 0)
         {
             TempData["ErrorMessage"] = "Please select a file to upload.";
-            return RedirectToAction("Room", new { projectId = message.ProjectId });
+            return RedirectToAction("Room", new { projectId });
         }
 
         var userId = GetUserId();
 
         // Authorization: project members for project rooms, any authenticated user for #general
-        if (message.ProjectId.HasValue)
+        if (projectId.HasValue)
         {
             var isMember = await _dbContext.ProjectMembers
-                .AnyAsync(pm => pm.ProjectId == message.ProjectId.Value && pm.UserId == userId);
+                .AnyAsync(pm => pm.ProjectId == projectId.Value && pm.UserId == userId);
             if (!isMember && !IsAdmin())
             {
                 TempData["ErrorMessage"] = "You must be a project member to upload attachments.";
-                return RedirectToAction("Room", new { projectId = message.ProjectId });
+                return RedirectToAction("Room", new { projectId });
             }
         }
 
+        // Create a message to attach the file to
+        var messageContent = string.IsNullOrWhiteSpace(content) ? "Attached a file" : content.Trim();
+        var messageResult = await _loungeService.SendMessage(projectId, userId, messageContent);
+        if (!messageResult.Succeeded)
+        {
+            TempData["ErrorMessage"] = messageResult.Errors.FirstOrDefault();
+            return RedirectToAction("Room", new { projectId });
+        }
+
+        var message = messageResult.Data!;
+
+        // Broadcast the new message via SignalR
+        var groupName = LoungeHub.GetRoomGroupName(projectId);
+        await _hubContext.Clients.Group(groupName).SendAsync("ReceiveMessage", new
+        {
+            message.Id,
+            message.ProjectId,
+            message.Content,
+            message.CreatedAt,
+            Author = new
+            {
+                message.User.Id,
+                message.User.DisplayName,
+                message.User.AvatarUrl
+            }
+        });
+
+        // Upload the file and attach it to the new message
         using var stream = file.OpenReadStream();
         var result = await _attachmentService.UploadAsync(
             stream, file.FileName, file.ContentType, file.Length,
-            AttachmentEntityType.LoungeMessage, messageId, userId);
+            AttachmentEntityType.LoungeMessage, message.Id, userId);
 
         if (!result.Succeeded)
         {
@@ -362,13 +383,12 @@ public class LoungeController : Controller
         {
             TempData["SuccessMessage"] = "File uploaded successfully.";
 
-            // Broadcast attachment event to other users in the room
-            var groupName = LoungeHub.GetRoomGroupName(message.ProjectId);
+            // Broadcast attachment event so other users see the attachment in real time
             var attachment = result.Data!;
             var user = await _userManager.FindByIdAsync(userId);
             await _hubContext.Clients.Group(groupName).SendAsync("AttachmentUploaded", new
             {
-                MessageId = messageId,
+                MessageId = message.Id,
                 AttachmentId = attachment.Id,
                 attachment.FileName,
                 attachment.ContentType,
@@ -378,7 +398,7 @@ public class LoungeController : Controller
             });
         }
 
-        return RedirectToAction("Room", new { projectId = message.ProjectId });
+        return RedirectToAction("Room", new { projectId });
     }
 
     [HttpGet]

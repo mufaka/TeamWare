@@ -101,12 +101,13 @@
         <!-- File attachment upload -->
         <form id="attachment-upload-form" method="post" action="@Url.Action("UploadAttachment", "Lounge")" enctype="multipart/form-data" class="mt-2 flex items-center gap-2">
             @Html.AntiForgeryToken()
-            <input type="hidden" name="messageId" id="attachment-message-id" value="" />
+            <input type="hidden" name="projectId" value="@(Model.ProjectId.HasValue ? Model.ProjectId.Value.ToString() : "")" />
+            <input type="hidden" name="content" id="attachment-content" value="" />
             <input type="file" name="file" id="attachment-file-input"
                    class="block w-full text-xs text-gray-500 file:mr-2 file:rounded file:border-0 file:bg-gray-100 file:px-3 file:py-1 file:text-xs file:font-medium file:text-gray-700 hover:file:bg-gray-200 dark:text-gray-400 dark:file:bg-gray-700 dark:file:text-gray-300 dark:hover:file:bg-gray-600" />
             <button type="submit" id="btn-upload-attachment"
                     class="whitespace-nowrap rounded bg-gray-200 px-3 py-1 text-xs font-medium text-gray-700 hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-300 dark:hover:bg-gray-500"
-                    title="Upload file to the most recent message">
+                    title="Upload file and send message">
                 <svg class="inline-block h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
                 </svg>

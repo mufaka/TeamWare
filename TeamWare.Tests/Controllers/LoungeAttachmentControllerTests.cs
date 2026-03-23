@@ -177,7 +177,7 @@ public class LoungeAttachmentControllerTests : IClassFixture<TeamWareWebApplicat
         var content = new MultipartFormDataContent();
         content.Add(new ByteArrayContent([1, 2, 3]), "file", "test.txt");
 
-        var response = await _client.PostAsync("/Lounge/UploadAttachment?messageId=1", content);
+        var response = await _client.PostAsync("/Lounge/UploadAttachment?projectId=1", content);
 
         Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
         Assert.Contains("/Account/Login", response.Headers.Location?.ToString());
@@ -187,7 +187,7 @@ public class LoungeAttachmentControllerTests : IClassFixture<TeamWareWebApplicat
     public async Task UploadAttachment_AsMember_Succeeds()
     {
         var (userId, cookie) = await CreateAndLoginUser("lounge-upload-member@test.com", "Lounge Upload Member");
-        var (projectId, messageId) = await CreateProjectAndMessage(userId);
+        var (projectId, _) = await CreateProjectAndMessage(userId);
 
         var token = await GetAntiForgeryToken(cookie, $"/Lounge/Room?projectId={projectId}");
 
@@ -196,9 +196,10 @@ public class LoungeAttachmentControllerTests : IClassFixture<TeamWareWebApplicat
 
         var formContent = new MultipartFormDataContent();
         formContent.Add(fileContent, "file", "lounge-file.txt");
+        formContent.Add(new StringContent("Here is my file"), "content");
         formContent.Add(new StringContent(token), "__RequestVerificationToken");
 
-        var request = new HttpRequestMessage(HttpMethod.Post, $"/Lounge/UploadAttachment?messageId={messageId}");
+        var request = new HttpRequestMessage(HttpMethod.Post, $"/Lounge/UploadAttachment?projectId={projectId}");
         request.Headers.Add("Cookie", cookie);
         request.Content = formContent;
 
@@ -208,7 +209,12 @@ public class LoungeAttachmentControllerTests : IClassFixture<TeamWareWebApplicat
 
         using var scope = _factory.Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        var attachment = await context.Attachments.FirstOrDefaultAsync(a => a.EntityId == messageId && a.EntityType == AttachmentEntityType.LoungeMessage);
+        // A new message should have been created with the attachment
+        var newMessage = await context.LoungeMessages
+            .Where(m => m.ProjectId == projectId && m.Content == "Here is my file")
+            .FirstOrDefaultAsync();
+        Assert.NotNull(newMessage);
+        var attachment = await context.Attachments.FirstOrDefaultAsync(a => a.EntityId == newMessage.Id && a.EntityType == AttachmentEntityType.LoungeMessage);
         Assert.NotNull(attachment);
         Assert.Equal("lounge-file.txt", attachment.FileName);
     }
@@ -217,7 +223,6 @@ public class LoungeAttachmentControllerTests : IClassFixture<TeamWareWebApplicat
     public async Task UploadAttachment_GeneralRoom_Succeeds()
     {
         var (userId, cookie) = await CreateAndLoginUser("lounge-upload-general@test.com", "Lounge Upload General");
-        var messageId = await CreateGeneralMessage(userId);
 
         var token = await GetAntiForgeryToken(cookie, "/Lounge/Room");
 
@@ -227,8 +232,9 @@ public class LoungeAttachmentControllerTests : IClassFixture<TeamWareWebApplicat
         var formContent = new MultipartFormDataContent();
         formContent.Add(fileContent, "file", "general-file.txt");
         formContent.Add(new StringContent(token), "__RequestVerificationToken");
+        // No content field — should default to "Attached a file"
 
-        var request = new HttpRequestMessage(HttpMethod.Post, $"/Lounge/UploadAttachment?messageId={messageId}");
+        var request = new HttpRequestMessage(HttpMethod.Post, "/Lounge/UploadAttachment");
         request.Headers.Add("Cookie", cookie);
         request.Content = formContent;
 
@@ -238,7 +244,12 @@ public class LoungeAttachmentControllerTests : IClassFixture<TeamWareWebApplicat
 
         using var scope = _factory.Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        var attachment = await context.Attachments.FirstOrDefaultAsync(a => a.EntityId == messageId && a.EntityType == AttachmentEntityType.LoungeMessage);
+        // A new message with default content should have been created
+        var newMessage = await context.LoungeMessages
+            .Where(m => m.ProjectId == null && m.Content == "Attached a file" && m.UserId == userId)
+            .FirstOrDefaultAsync();
+        Assert.NotNull(newMessage);
+        var attachment = await context.Attachments.FirstOrDefaultAsync(a => a.EntityId == newMessage.Id && a.EntityType == AttachmentEntityType.LoungeMessage);
         Assert.NotNull(attachment);
         Assert.Equal("general-file.txt", attachment.FileName);
     }
