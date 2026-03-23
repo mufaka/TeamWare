@@ -39,6 +39,10 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 
     public DbSet<LoungeReadPosition> LoungeReadPositions => Set<LoungeReadPosition>();
 
+    public DbSet<GlobalConfiguration> GlobalConfigurations => Set<GlobalConfiguration>();
+
+    public DbSet<Attachment> Attachments => Set<Attachment>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -363,6 +367,38 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             entity.HasIndex(rp => new { rp.UserId, rp.ProjectId })
                 .IsUnique()
                 .HasDatabaseName("IX_LoungeReadPosition_UserId_ProjectId");
+        });
+
+        builder.Entity<GlobalConfiguration>(entity =>
+        {
+            entity.HasKey(gc => gc.Id);
+            entity.Property(gc => gc.Key).IsRequired().HasMaxLength(100);
+            entity.Property(gc => gc.Value).IsRequired().HasMaxLength(2000);
+            entity.Property(gc => gc.Description).HasMaxLength(500);
+
+            entity.HasOne(gc => gc.UpdatedByUser)
+                .WithMany()
+                .HasForeignKey(gc => gc.UpdatedByUserId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasIndex(gc => gc.Key).IsUnique();
+        });
+
+        builder.Entity<Attachment>(entity =>
+        {
+            entity.HasKey(a => a.Id);
+            entity.Property(a => a.FileName).IsRequired().HasMaxLength(255);
+            entity.Property(a => a.StoredFileName).IsRequired().HasMaxLength(255);
+            entity.Property(a => a.ContentType).IsRequired().HasMaxLength(100);
+            entity.Property(a => a.EntityType).HasConversion<string>().HasMaxLength(20);
+
+            entity.HasOne(a => a.UploadedByUser)
+                .WithMany()
+                .HasForeignKey(a => a.UploadedByUserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(a => new { a.EntityType, a.EntityId });
+            entity.HasIndex(a => a.UploadedByUserId);
         });
     }
 }

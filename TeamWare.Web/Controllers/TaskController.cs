@@ -15,22 +15,70 @@ public class TaskController : Controller
     private readonly IProjectMemberService _memberService;
     private readonly IActivityLogService _activityLogService;
     private readonly ICommentService _commentService;
+    private readonly IAttachmentService _attachmentService;
 
     public TaskController(
         ITaskService taskService,
         IProjectService projectService,
         IProjectMemberService memberService,
         IActivityLogService activityLogService,
-        ICommentService commentService)
+        ICommentService commentService,
+        IAttachmentService attachmentService)
     {
         _taskService = taskService;
         _projectService = projectService;
         _memberService = memberService;
         _activityLogService = activityLogService;
         _commentService = commentService;
+        _attachmentService = attachmentService;
     }
 
     private string GetUserId() => User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+
+    private async Task<List<CommentViewModel>> BuildCommentViewModels(ServiceResult<List<Comment>> commentsResult, string userId)
+    {
+        if (!commentsResult.Succeeded) return [];
+
+        var viewModels = new List<CommentViewModel>();
+        foreach (var c in commentsResult.Data!)
+        {
+            var attachmentsResult = await _attachmentService.GetAttachmentsAsync(AttachmentEntityType.Comment, c.Id);
+            viewModels.Add(new CommentViewModel
+            {
+                Id = c.Id,
+                TaskItemId = c.TaskItemId,
+                AuthorId = c.AuthorId,
+                AuthorDisplayName = c.Author.DisplayName,
+                Content = c.Content,
+                CreatedAt = c.CreatedAt,
+                UpdatedAt = c.UpdatedAt,
+                CanEditOrDelete = c.AuthorId == userId,
+                Attachments = new AttachmentListViewModel
+                {
+                    EntityType = AttachmentEntityType.Comment,
+                    EntityId = c.Id,
+                    UploadUrl = Url.Action("UploadAttachment", "Comment", new { commentId = c.Id })!,
+                    DownloadUrlTemplate = Url.Action("DownloadAttachment", "Comment", new { commentId = c.Id, attachmentId = "__ID__" })!,
+                    DeleteUrlTemplate = Url.Action("DeleteAttachment", "Comment", new { commentId = c.Id, attachmentId = "__ID__" })!,
+                    CanUpload = true,
+                    Attachments = attachmentsResult.Succeeded
+                        ? attachmentsResult.Data!.Select(a => new AttachmentViewModel
+                        {
+                            Id = a.Id,
+                            FileName = a.FileName,
+                            ContentType = a.ContentType,
+                            FileSizeBytes = a.FileSizeBytes,
+                            UploadedByDisplayName = a.UploadedByUser?.DisplayName ?? string.Empty,
+                            UploadedAt = a.UploadedAt,
+                            CanDelete = a.UploadedByUserId == userId || c.AuthorId == userId
+                        }).ToList()
+                        : []
+                }
+            });
+        }
+
+        return viewModels;
+    }
 
     [HttpGet]
     public async Task<IActionResult> Index(int projectId, TaskItemStatus? status, TaskItemPriority? priority,
@@ -245,19 +293,7 @@ public class TaskController : Controller
                 NewValue = a.NewValue,
                 CreatedAt = a.CreatedAt
             }).ToList(),
-            Comments = commentsResult.Succeeded
-                ? commentsResult.Data!.Select(c => new CommentViewModel
-                {
-                    Id = c.Id,
-                    TaskItemId = c.TaskItemId,
-                    AuthorId = c.AuthorId,
-                    AuthorDisplayName = c.Author.DisplayName,
-                    Content = c.Content,
-                    CreatedAt = c.CreatedAt,
-                    UpdatedAt = c.UpdatedAt,
-                    CanEditOrDelete = c.AuthorId == userId
-                }).ToList()
-                : new(),
+            Comments = await BuildCommentViewModels(commentsResult, userId),
             Assignees = task.Assignments.Select(a => new TaskAssigneeViewModel
             {
                 UserId = a.UserId,

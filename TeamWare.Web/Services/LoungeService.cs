@@ -632,6 +632,16 @@ public partial class LoungeService : ILoungeService
 
     // --- 16.6 Message Retention ---
 
+    public async Task<List<int>> GetExpiredMessageIds()
+    {
+        var cutoffDate = DateTime.UtcNow.AddDays(-30);
+
+        return await _context.LoungeMessages
+            .Where(m => m.CreatedAt < cutoffDate && !m.IsPinned)
+            .Select(m => m.Id)
+            .ToListAsync();
+    }
+
     public async Task<int> CleanupExpiredMessages()
     {
         var cutoffDate = DateTime.UtcNow.AddDays(-30);

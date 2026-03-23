@@ -55,6 +55,9 @@ builder.Services.AddScoped<IPresenceService, PresenceService>();
 builder.Services.AddScoped<IGlobalActivityService, GlobalActivityService>();
 builder.Services.AddScoped<IProjectInvitationService, ProjectInvitationService>();
 builder.Services.AddScoped<ILoungeService, LoungeService>();
+builder.Services.AddScoped<IGlobalConfigurationService, GlobalConfigurationService>();
+builder.Services.AddScoped<IFileStorageService, FileStorageService>();
+builder.Services.AddScoped<IAttachmentService, AttachmentService>();
 
 builder.Services.AddHangfire(configuration => configuration
     .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)

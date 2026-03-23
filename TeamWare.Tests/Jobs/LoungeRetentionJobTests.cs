@@ -15,6 +15,8 @@ public class LoungeRetentionJobTests : IDisposable
     private readonly ApplicationDbContext _context;
     private readonly LoungeService _loungeService;
     private readonly NotificationService _notificationService;
+    private readonly AttachmentService _attachmentService;
+    private readonly FileStorageService _fileStorageService;
     private readonly LoungeRetentionJob _retentionJob;
 
     public LoungeRetentionJobTests()
@@ -32,10 +34,24 @@ public class LoungeRetentionJobTests : IDisposable
         _notificationService = new NotificationService(_context);
         _loungeService = new LoungeService(_context, _notificationService);
 
+        // Seed ATTACHMENT_DIR for FileStorageService
+        _context.GlobalConfigurations.Add(new GlobalConfiguration
+        {
+            Key = "ATTACHMENT_DIR",
+            Value = Path.GetTempPath(),
+            Description = "Test attachment directory"
+        });
+        _context.SaveChanges();
+
+        var activityLogService = new AdminActivityLogService(_context);
+        var configService = new GlobalConfigurationService(_context, activityLogService);
+        _fileStorageService = new FileStorageService(configService);
+        _attachmentService = new AttachmentService(_context, _fileStorageService);
+
         var loggerFactory = LoggerFactory.Create(builder => builder.AddDebug());
         var logger = loggerFactory.CreateLogger<LoungeRetentionJob>();
 
-        _retentionJob = new LoungeRetentionJob(_loungeService, logger);
+        _retentionJob = new LoungeRetentionJob(_loungeService, _attachmentService, _fileStorageService, logger);
     }
 
     public void Dispose()

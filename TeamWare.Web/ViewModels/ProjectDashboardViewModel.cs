@@ -38,6 +38,8 @@ public class ProjectDashboardViewModel
     public List<ActivityLogEntryViewModel> RecentActivity { get; set; } = new();
 
     public List<ProjectInvitationViewModel> PendingInvitations { get; set; } = new();
+
+    public AttachmentListViewModel Attachments { get; set; } = new();
 }
 
 public class ProjectMemberViewModel

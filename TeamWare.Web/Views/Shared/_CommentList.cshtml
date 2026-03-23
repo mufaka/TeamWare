@@ -46,6 +46,12 @@
                 <div x-show="!editing" class="mt-2">
                     <p class="whitespace-pre-wrap text-sm text-gray-700 dark:text-gray-300">@comment.Content</p>
                 </div>
+                @if (comment.Attachments != null && (comment.Attachments.Attachments.Any() || comment.Attachments.CanUpload))
+                {
+                    <div class="mt-3 border-t border-gray-200 pt-3 dark:border-gray-600" x-show="!editing">
+                        @await Html.PartialAsync("_AttachmentList", comment.Attachments)
+                    </div>
+                }
                 @if (comment.CanEditOrDelete)
                 {
                     <div x-show="editing" x-cloak class="mt-2">

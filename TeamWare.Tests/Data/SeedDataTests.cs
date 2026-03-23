@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using TeamWare.Web.Data;
 using TeamWare.Web.Models;
@@ -54,5 +55,31 @@ public class SeedDataTests : IClassFixture<TeamWareWebApplicationFactory>
 
         Assert.NotNull(admin);
         Assert.True(await userManager.IsInRoleAsync(admin, SeedData.UserRoleName));
+    }
+
+    [Fact]
+    public async Task Seed_CreatesAttachmentDirConfiguration()
+    {
+        using var scope = _factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+        var config = await context.GlobalConfigurations
+            .FirstOrDefaultAsync(gc => gc.Key == "ATTACHMENT_DIR");
+
+        Assert.NotNull(config);
+        Assert.Equal("./Attachments", config.Value);
+        Assert.Equal("Base directory for file attachment storage", config.Description);
+    }
+
+    [Fact]
+    public async Task Seed_AttachmentDirIsNotDuplicated()
+    {
+        using var scope = _factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+        var count = await context.GlobalConfigurations
+            .CountAsync(gc => gc.Key == "ATTACHMENT_DIR");
+
+        Assert.Equal(1, count);
     }
 }

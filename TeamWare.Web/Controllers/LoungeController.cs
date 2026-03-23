@@ -19,17 +19,23 @@ public class LoungeController : Controller
     private readonly ApplicationDbContext _dbContext;
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly IHubContext<LoungeHub> _hubContext;
+    private readonly IAttachmentService _attachmentService;
+    private readonly IFileStorageService _fileStorageService;
 
     public LoungeController(
         ILoungeService loungeService,
         ApplicationDbContext dbContext,
         UserManager<ApplicationUser> userManager,
-        IHubContext<LoungeHub> hubContext)
+        IHubContext<LoungeHub> hubContext,
+        IAttachmentService attachmentService,
+        IFileStorageService fileStorageService)
     {
         _loungeService = loungeService;
         _dbContext = dbContext;
         _userManager = userManager;
         _hubContext = hubContext;
+        _attachmentService = attachmentService;
+        _fileStorageService = fileStorageService;
     }
 
     private string GetUserId() => User.FindFirstValue(ClaimTypes.NameIdentifier)!;
@@ -84,8 +90,8 @@ public class LoungeController : Controller
         {
             ProjectId = projectId,
             RoomName = roomName,
-            Messages = MapMessages(messagesResult.Data ?? new List<LoungeMessage>(), userId, isProjectAdminOrOwner, isSiteAdmin, projectId.HasValue),
-            PinnedMessages = MapMessages(pinnedResult.Data ?? new List<LoungeMessage>(), userId, isProjectAdminOrOwner, isSiteAdmin, projectId.HasValue),
+            Messages = await MapMessagesAsync(messagesResult.Data ?? new List<LoungeMessage>(), userId, isProjectAdminOrOwner, isSiteAdmin, projectId.HasValue),
+            PinnedMessages = await MapMessagesAsync(pinnedResult.Data ?? new List<LoungeMessage>(), userId, isProjectAdminOrOwner, isSiteAdmin, projectId.HasValue),
             LastReadMessageId = readPositionResult.Data,
             CanCreateTask = projectId.HasValue,
             Members = members
@@ -128,7 +134,7 @@ public class LoungeController : Controller
         }
         var isSiteAdmin = IsAdmin();
 
-        var viewModels = MapMessages(result.Data!, userId, isProjectAdminOrOwner, isSiteAdmin, projectId.HasValue);
+        var viewModels = await MapMessagesAsync(result.Data!, userId, isProjectAdminOrOwner, isSiteAdmin, projectId.HasValue);
 
         return PartialView("_MessageList", viewModels);
     }
@@ -164,7 +170,7 @@ public class LoungeController : Controller
         }
         var isSiteAdmin = IsAdmin();
 
-        var viewModels = MapMessages(result.Data!, userId, isProjectAdminOrOwner, isSiteAdmin, projectId.HasValue);
+        var viewModels = await MapMessagesAsync(result.Data!, userId, isProjectAdminOrOwner, isSiteAdmin, projectId.HasValue);
 
         return PartialView("_PinnedMessages", viewModels);
     }
@@ -312,40 +318,221 @@ public class LoungeController : Controller
         return Json(filtered);
     }
 
-    private List<LoungeMessageViewModel> MapMessages(
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> UploadAttachment(int messageId, IFormFile file)
+    {
+        var message = await _dbContext.LoungeMessages.FindAsync(messageId);
+        if (message is null)
+        {
+            TempData["ErrorMessage"] = "Message not found.";
+            return RedirectToAction("Room");
+        }
+
+        if (file == null || file.Length == 0)
+        {
+            TempData["ErrorMessage"] = "Please select a file to upload.";
+            return RedirectToAction("Room", new { projectId = message.ProjectId });
+        }
+
+        var userId = GetUserId();
+
+        // Authorization: project members for project rooms, any authenticated user for #general
+        if (message.ProjectId.HasValue)
+        {
+            var isMember = await _dbContext.ProjectMembers
+                .AnyAsync(pm => pm.ProjectId == message.ProjectId.Value && pm.UserId == userId);
+            if (!isMember && !IsAdmin())
+            {
+                TempData["ErrorMessage"] = "You must be a project member to upload attachments.";
+                return RedirectToAction("Room", new { projectId = message.ProjectId });
+            }
+        }
+
+        using var stream = file.OpenReadStream();
+        var result = await _attachmentService.UploadAsync(
+            stream, file.FileName, file.ContentType, file.Length,
+            AttachmentEntityType.LoungeMessage, messageId, userId);
+
+        if (!result.Succeeded)
+        {
+            TempData["ErrorMessage"] = result.Errors.FirstOrDefault();
+        }
+        else
+        {
+            TempData["SuccessMessage"] = "File uploaded successfully.";
+
+            // Broadcast attachment event to other users in the room
+            var groupName = LoungeHub.GetRoomGroupName(message.ProjectId);
+            var attachment = result.Data!;
+            var user = await _userManager.FindByIdAsync(userId);
+            await _hubContext.Clients.Group(groupName).SendAsync("AttachmentUploaded", new
+            {
+                MessageId = messageId,
+                AttachmentId = attachment.Id,
+                attachment.FileName,
+                attachment.ContentType,
+                attachment.FileSizeBytes,
+                UploadedByDisplayName = user?.DisplayName ?? "Unknown",
+                attachment.UploadedAt
+            });
+        }
+
+        return RedirectToAction("Room", new { projectId = message.ProjectId });
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> DownloadAttachment(int messageId, int attachmentId)
+    {
+        var message = await _dbContext.LoungeMessages.FindAsync(messageId);
+        if (message is null)
+        {
+            TempData["ErrorMessage"] = "Message not found.";
+            return RedirectToAction("Room");
+        }
+
+        var userId = GetUserId();
+
+        // Authorization: project members for project rooms, any authenticated user for #general
+        if (message.ProjectId.HasValue)
+        {
+            var isMember = await _dbContext.ProjectMembers
+                .AnyAsync(pm => pm.ProjectId == message.ProjectId.Value && pm.UserId == userId);
+            if (!isMember && !IsAdmin())
+            {
+                TempData["ErrorMessage"] = "You must be a project member to download attachments.";
+                return RedirectToAction("Room", new { projectId = message.ProjectId });
+            }
+        }
+
+        var result = await _attachmentService.GetByIdAsync(attachmentId);
+        if (!result.Succeeded || result.Data!.EntityType != AttachmentEntityType.LoungeMessage || result.Data.EntityId != messageId)
+        {
+            TempData["ErrorMessage"] = "Attachment not found.";
+            return RedirectToAction("Room", new { projectId = message.ProjectId });
+        }
+
+        var attachment = result.Data;
+        var stream = await _fileStorageService.GetFileStreamAsync(attachment.StoredFileName);
+        return File(stream, attachment.ContentType, attachment.FileName);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteAttachment(int messageId, int attachmentId)
+    {
+        var message = await _dbContext.LoungeMessages.FindAsync(messageId);
+        if (message is null)
+        {
+            TempData["ErrorMessage"] = "Message not found.";
+            return RedirectToAction("Room");
+        }
+
+        var userId = GetUserId();
+        var attachmentResult = await _attachmentService.GetByIdAsync(attachmentId);
+        if (!attachmentResult.Succeeded || attachmentResult.Data!.EntityType != AttachmentEntityType.LoungeMessage || attachmentResult.Data.EntityId != messageId)
+        {
+            TempData["ErrorMessage"] = "Attachment not found.";
+            return RedirectToAction("Room", new { projectId = message.ProjectId });
+        }
+
+        var attachment = attachmentResult.Data;
+        var isProjectAdminOrOwner = false;
+        if (message.ProjectId.HasValue)
+        {
+            var member = await _dbContext.ProjectMembers
+                .FirstOrDefaultAsync(pm => pm.ProjectId == message.ProjectId.Value && pm.UserId == userId);
+            isProjectAdminOrOwner = member != null && (member.Role == ProjectRole.Admin || member.Role == ProjectRole.Owner);
+        }
+
+        if (attachment.UploadedByUserId != userId && !isProjectAdminOrOwner && !IsAdmin())
+        {
+            TempData["ErrorMessage"] = "You do not have permission to delete this attachment.";
+            return RedirectToAction("Room", new { projectId = message.ProjectId });
+        }
+
+        var result = await _attachmentService.DeleteAsync(attachmentId, userId);
+        if (!result.Succeeded)
+        {
+            TempData["ErrorMessage"] = result.Errors.FirstOrDefault();
+        }
+        else
+        {
+            TempData["SuccessMessage"] = "Attachment deleted.";
+
+            // Broadcast deletion event
+            var groupName = LoungeHub.GetRoomGroupName(message.ProjectId);
+            await _hubContext.Clients.Group(groupName).SendAsync("AttachmentDeleted", new
+            {
+                MessageId = messageId,
+                AttachmentId = attachmentId
+            });
+        }
+
+        return RedirectToAction("Room", new { projectId = message.ProjectId });
+    }
+
+    private async Task<List<LoungeMessageViewModel>> MapMessagesAsync(
         List<LoungeMessage> messages,
         string currentUserId,
         bool isProjectAdminOrOwner,
         bool isSiteAdmin,
         bool isProjectRoom)
     {
-        return messages.Select(m => new LoungeMessageViewModel
+        var viewModels = new List<LoungeMessageViewModel>();
+        foreach (var m in messages)
         {
-            Id = m.Id,
-            ProjectId = m.ProjectId,
-            AuthorId = m.UserId,
-            AuthorDisplayName = m.User?.DisplayName ?? "Unknown",
-            AuthorAvatarUrl = m.User?.AvatarUrl,
-            Content = m.Content,
-            CreatedAt = m.CreatedAt,
-            IsEdited = m.IsEdited,
-            EditedAt = m.EditedAt,
-            IsPinned = m.IsPinned,
-            PinnedByDisplayName = m.PinnedByUser?.DisplayName,
-            PinnedAt = m.PinnedAt,
-            CreatedTaskId = m.CreatedTaskId,
-            Reactions = m.Reactions?.GroupBy(r => r.ReactionType)
-                .Select(g => new ReactionSummary
+            var attachmentsResult = await _attachmentService.GetAttachmentsAsync(AttachmentEntityType.LoungeMessage, m.Id);
+            viewModels.Add(new LoungeMessageViewModel
+            {
+                Id = m.Id,
+                ProjectId = m.ProjectId,
+                AuthorId = m.UserId,
+                AuthorDisplayName = m.User?.DisplayName ?? "Unknown",
+                AuthorAvatarUrl = m.User?.AvatarUrl,
+                Content = m.Content,
+                CreatedAt = m.CreatedAt,
+                IsEdited = m.IsEdited,
+                EditedAt = m.EditedAt,
+                IsPinned = m.IsPinned,
+                PinnedByDisplayName = m.PinnedByUser?.DisplayName,
+                PinnedAt = m.PinnedAt,
+                CreatedTaskId = m.CreatedTaskId,
+                Reactions = m.Reactions?.GroupBy(r => r.ReactionType)
+                    .Select(g => new ReactionSummary
+                    {
+                        ReactionType = g.Key,
+                        Count = g.Count(),
+                        CurrentUserReacted = g.Any(r => r.UserId == currentUserId)
+                    }).ToList() ?? new List<ReactionSummary>(),
+                CanEdit = m.UserId == currentUserId,
+                CanDelete = m.UserId == currentUserId || isProjectAdminOrOwner || isSiteAdmin,
+                CanPin = isProjectAdminOrOwner || isSiteAdmin,
+                CanCreateTask = isProjectRoom && m.CreatedTaskId == null,
+                Attachments = new AttachmentListViewModel
                 {
-                    ReactionType = g.Key,
-                    Count = g.Count(),
-                    CurrentUserReacted = g.Any(r => r.UserId == currentUserId)
-                }).ToList() ?? new List<ReactionSummary>(),
-            CanEdit = m.UserId == currentUserId,
-            CanDelete = m.UserId == currentUserId || isProjectAdminOrOwner || isSiteAdmin,
-            CanPin = isProjectAdminOrOwner || isSiteAdmin,
-            CanCreateTask = isProjectRoom && m.CreatedTaskId == null
-        }).ToList();
+                    EntityType = AttachmentEntityType.LoungeMessage,
+                    EntityId = m.Id,
+                    UploadUrl = Url.Action("UploadAttachment", "Lounge", new { messageId = m.Id })!,
+                    DownloadUrlTemplate = Url.Action("DownloadAttachment", "Lounge", new { messageId = m.Id, attachmentId = "__ID__" })!,
+                    DeleteUrlTemplate = Url.Action("DeleteAttachment", "Lounge", new { messageId = m.Id, attachmentId = "__ID__" })!,
+                    CanUpload = false, // Upload is handled via the room input area, not per-message
+                    Attachments = attachmentsResult.Succeeded
+                        ? attachmentsResult.Data!.Select(a => new AttachmentViewModel
+                        {
+                            Id = a.Id,
+                            FileName = a.FileName,
+                            ContentType = a.ContentType,
+                            FileSizeBytes = a.FileSizeBytes,
+                            UploadedByDisplayName = a.UploadedByUser?.DisplayName ?? string.Empty,
+                            UploadedAt = a.UploadedAt,
+                            CanDelete = a.UploadedByUserId == currentUserId || isProjectAdminOrOwner || isSiteAdmin
+                        }).ToList()
+                        : []
+                }
+            });
+        }
+        return viewModels;
     }
 
     private async Task<List<LoungeMemberViewModel>> GetRoomMembers(int? projectId)

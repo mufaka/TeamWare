@@ -39,4 +39,6 @@ public class LoungeMessageViewModel
     public bool CanPin { get; set; }
 
     public bool CanCreateTask { get; set; }
+
+    public AttachmentListViewModel? Attachments { get; set; }
 }

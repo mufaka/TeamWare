@@ -19,4 +19,6 @@ public class CommentViewModel
     public bool IsEdited => UpdatedAt > CreatedAt.AddSeconds(1);
 
     public bool CanEditOrDelete { get; set; }
+
+    public AttachmentListViewModel? Attachments { get; set; }
 }
