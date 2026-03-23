@@ -41,6 +41,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 
     public DbSet<GlobalConfiguration> GlobalConfigurations => Set<GlobalConfiguration>();
 
+    public DbSet<Attachment> Attachments => Set<Attachment>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -380,6 +382,23 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
                 .OnDelete(DeleteBehavior.SetNull);
 
             entity.HasIndex(gc => gc.Key).IsUnique();
+        });
+
+        builder.Entity<Attachment>(entity =>
+        {
+            entity.HasKey(a => a.Id);
+            entity.Property(a => a.FileName).IsRequired().HasMaxLength(255);
+            entity.Property(a => a.StoredFileName).IsRequired().HasMaxLength(255);
+            entity.Property(a => a.ContentType).IsRequired().HasMaxLength(100);
+            entity.Property(a => a.EntityType).HasConversion<string>().HasMaxLength(20);
+
+            entity.HasOne(a => a.UploadedByUser)
+                .WithMany()
+                .HasForeignKey(a => a.UploadedByUserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(a => new { a.EntityType, a.EntityId });
+            entity.HasIndex(a => a.UploadedByUserId);
         });
     }
 }
