@@ -128,6 +128,11 @@ recurringJobManager.AddOrUpdate<LoungeRetentionJob>(
     job => job.Execute(),
     Cron.Daily);
 
+recurringJobManager.AddOrUpdate<TaskDueDateJob>(
+    "task-due-date-promotion",
+    job => job.Execute(),
+    Cron.Daily);
+
 app.Run();
 
 // Make the implicit Program class accessible to the test project
