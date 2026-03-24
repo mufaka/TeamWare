@@ -5,10 +5,12 @@ using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
+using ModelContextProtocol.AspNetCore;
 using TeamWare.Web.Authentication;
 using TeamWare.Web.Data;
 using TeamWare.Web.Hubs;
 using TeamWare.Web.Jobs;
+using TeamWare.Web.Middleware;
 using TeamWare.Web.Models;
 using TeamWare.Web.Services;
 
@@ -97,6 +99,10 @@ builder.Services.AddResponseCompression(options =>
     options.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(["text/html"]);
 });
 
+builder.Services.AddMcpServer()
+    .WithHttpTransport()
+    .WithToolsFromAssembly();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -106,6 +112,7 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
+app.UseMiddleware<McpEnabledMiddleware>();
 app.UseStatusCodePagesWithReExecute("/Home/StatusCode/{0}");
 app.UseHttpsRedirection();
 app.UseResponseCompression();
@@ -123,6 +130,8 @@ app.MapControllerRoute(
 
 app.MapHub<PresenceHub>("/hubs/presence");
 app.MapHub<LoungeHub>("/hubs/lounge");
+
+app.MapMcp("/mcp");
 
 app.UseHangfireDashboard("/hangfire", new DashboardOptions
 {
