@@ -16,6 +16,7 @@ public class AiAssistantServiceTests : IDisposable
     private readonly ApplicationDbContext _context;
     private readonly IMemoryCache _cache;
     private readonly GlobalConfigurationService _configService;
+    private readonly string _testUserId;
 
     public AiAssistantServiceTests()
     {
@@ -37,6 +38,8 @@ public class AiAssistantServiceTests : IDisposable
         };
         _context.Users.Add(adminUser);
         _context.SaveChanges();
+
+        _testUserId = adminUser.Id;
 
         _cache = new MemoryCache(new MemoryCacheOptions());
         var activityLogService = new AdminActivityLogService(_context);
@@ -68,7 +71,7 @@ public class AiAssistantServiceTests : IDisposable
         var factory = new FakeHttpClientFactory(httpClient);
         var ollamaService = new OllamaService(_configService, factory, _cache);
 
-        return new AiAssistantService(ollamaService);
+        return CreateAiAssistantService(ollamaService);
     }
 
     private AiAssistantService CreateUnconfiguredService()
@@ -86,7 +89,49 @@ public class AiAssistantServiceTests : IDisposable
         var factory = new FakeHttpClientFactory(httpClient);
         var ollamaService = new OllamaService(_configService, factory, _cache);
 
-        return new AiAssistantService(ollamaService);
+        return CreateAiAssistantService(ollamaService);
+    }
+
+    private AiAssistantService CreateAiAssistantService(OllamaService ollamaService)
+    {
+        var activityLogService = new ActivityLogService(_context);
+        var notificationService = new NotificationService(_context);
+        var taskService = new TaskService(_context, activityLogService, notificationService);
+        var inboxService = new InboxService(_context, taskService, notificationService);
+        var progressService = new ProgressService(_context);
+        var projectService = new ProjectService(_context);
+
+        return new AiAssistantService(
+            ollamaService,
+            activityLogService,
+            progressService,
+            taskService,
+            inboxService,
+            projectService);
+    }
+
+    private int CreateProjectWithMember(string userId)
+    {
+        var project = new Project
+        {
+            Name = "Test Project",
+            Status = ProjectStatus.Active,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+        _context.Projects.Add(project);
+        _context.SaveChanges();
+
+        _context.ProjectMembers.Add(new ProjectMember
+        {
+            ProjectId = project.Id,
+            UserId = userId,
+            Role = ProjectRole.Owner,
+            JoinedAt = DateTime.UtcNow
+        });
+        _context.SaveChanges();
+
+        return project.Id;
     }
 
     [Fact]
@@ -190,33 +235,138 @@ public class AiAssistantServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task GenerateProjectSummary_ReturnsStubFailure()
+    public async Task GenerateProjectSummary_ReturnsSuccess_WithActivityData()
     {
-        var service = CreateService();
-        var result = await service.GenerateProjectSummary(1, "user-id", SummaryPeriod.ThisWeek);
+        var service = CreateService("Project is on track with 2 tasks completed.");
+        var projectId = CreateProjectWithMember(_testUserId);
 
-        Assert.False(result.Succeeded);
-        Assert.Contains("not yet implemented", result.Errors[0], StringComparison.OrdinalIgnoreCase);
+        // Add a task and activity
+        var task = new TaskItem
+        {
+            Title = "Test Task",
+            ProjectId = projectId,
+            CreatedByUserId = _testUserId,
+            Status = TaskItemStatus.Done,
+            Priority = TaskItemPriority.Medium,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+        _context.TaskItems.Add(task);
+        _context.SaveChanges();
+
+        _context.ActivityLogEntries.Add(new ActivityLogEntry
+        {
+            TaskItemId = task.Id,
+            ProjectId = projectId,
+            UserId = _testUserId,
+            ChangeType = ActivityChangeType.StatusChanged,
+            NewValue = "Done",
+            CreatedAt = DateTime.UtcNow
+        });
+        _context.SaveChanges();
+
+        var result = await service.GenerateProjectSummary(projectId, _testUserId, SummaryPeriod.ThisWeek);
+
+        Assert.True(result.Succeeded);
+        Assert.Equal("Project is on track with 2 tasks completed.", result.Data);
     }
 
     [Fact]
-    public async Task GeneratePersonalDigest_ReturnsStubFailure()
+    public async Task GenerateProjectSummary_PropagatesFailure_WhenNotConfigured()
     {
-        var service = CreateService();
-        var result = await service.GeneratePersonalDigest("user-id");
+        var service = CreateUnconfiguredService();
+        var result = await service.GenerateProjectSummary(1, _testUserId, SummaryPeriod.ThisWeek);
 
         Assert.False(result.Succeeded);
-        Assert.Contains("not yet implemented", result.Errors[0], StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
-    public async Task GenerateReviewPreparation_ReturnsStubFailure()
+    public async Task GeneratePersonalDigest_ReturnsSuccess_WithUserData()
     {
-        var service = CreateService();
-        var result = await service.GenerateReviewPreparation("user-id");
+        var service = CreateService("You completed 3 tasks today.");
+        var projectId = CreateProjectWithMember(_testUserId);
+
+        var task = new TaskItem
+        {
+            Title = "Completed Task",
+            ProjectId = projectId,
+            CreatedByUserId = _testUserId,
+            Status = TaskItemStatus.Done,
+            IsNextAction = true,
+            Priority = TaskItemPriority.High,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+        _context.TaskItems.Add(task);
+        _context.SaveChanges();
+
+        _context.ActivityLogEntries.Add(new ActivityLogEntry
+        {
+            TaskItemId = task.Id,
+            ProjectId = projectId,
+            UserId = _testUserId,
+            ChangeType = ActivityChangeType.StatusChanged,
+            NewValue = "Done",
+            CreatedAt = DateTime.UtcNow
+        });
+        _context.SaveChanges();
+
+        var result = await service.GeneratePersonalDigest(_testUserId);
+
+        Assert.True(result.Succeeded);
+        Assert.Equal("You completed 3 tasks today.", result.Data);
+    }
+
+    [Fact]
+    public async Task GeneratePersonalDigest_PropagatesFailure_WhenNotConfigured()
+    {
+        var service = CreateUnconfiguredService();
+        var result = await service.GeneratePersonalDigest(_testUserId);
 
         Assert.False(result.Succeeded);
-        Assert.Contains("not yet implemented", result.Errors[0], StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task GenerateReviewPreparation_ReturnsSuccess_WithReviewData()
+    {
+        var service = CreateService("You have 2 inbox items and 1 overdue task.");
+        var projectId = CreateProjectWithMember(_testUserId);
+
+        _context.InboxItems.Add(new InboxItem
+        {
+            Title = "Unprocessed idea",
+            UserId = _testUserId,
+            Status = InboxItemStatus.Unprocessed,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        });
+
+        _context.TaskItems.Add(new TaskItem
+        {
+            Title = "Someday task",
+            ProjectId = projectId,
+            CreatedByUserId = _testUserId,
+            Status = TaskItemStatus.ToDo,
+            IsSomedayMaybe = true,
+            Priority = TaskItemPriority.Low,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        });
+        _context.SaveChanges();
+
+        var result = await service.GenerateReviewPreparation(_testUserId);
+
+        Assert.True(result.Succeeded);
+        Assert.Equal("You have 2 inbox items and 1 overdue task.", result.Data);
+    }
+
+    [Fact]
+    public async Task GenerateReviewPreparation_PropagatesFailure_WhenNotConfigured()
+    {
+        var service = CreateUnconfiguredService();
+        var result = await service.GenerateReviewPreparation(_testUserId);
+
+        Assert.False(result.Succeeded);
     }
 
     public void Dispose()
