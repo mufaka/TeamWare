@@ -1,9 +1,11 @@
 ﻿using Hangfire;
 using Hangfire.MemoryStorage;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
+using TeamWare.Web.Authentication;
 using TeamWare.Web.Data;
 using TeamWare.Web.Hubs;
 using TeamWare.Web.Jobs;
@@ -37,6 +39,10 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.LogoutPath = "/Account/Logout";
     options.AccessDeniedPath = "/Account/AccessDenied";
 });
+
+builder.Services.AddAuthentication()
+    .AddScheme<AuthenticationSchemeOptions, PatAuthenticationHandler>(
+        PatAuthenticationHandler.SchemeName, null);
 
 builder.Services.AddScoped<IProjectService, ProjectService>();
 builder.Services.AddScoped<IProjectMemberService, ProjectMemberService>();
