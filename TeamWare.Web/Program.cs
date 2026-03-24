@@ -58,6 +58,10 @@ builder.Services.AddScoped<ILoungeService, LoungeService>();
 builder.Services.AddScoped<IGlobalConfigurationService, GlobalConfigurationService>();
 builder.Services.AddScoped<IFileStorageService, FileStorageService>();
 builder.Services.AddScoped<IAttachmentService, AttachmentService>();
+builder.Services.AddScoped<IOllamaService, OllamaService>();
+
+builder.Services.AddMemoryCache();
+builder.Services.AddHttpClient("Ollama");
 
 builder.Services.AddHangfire(configuration => configuration
     .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
