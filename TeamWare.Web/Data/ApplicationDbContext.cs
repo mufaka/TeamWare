@@ -43,6 +43,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 
     public DbSet<Attachment> Attachments => Set<Attachment>();
 
+    public DbSet<PersonalAccessToken> PersonalAccessTokens => Set<PersonalAccessToken>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -399,6 +401,22 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 
             entity.HasIndex(a => new { a.EntityType, a.EntityId });
             entity.HasIndex(a => a.UploadedByUserId);
+        });
+
+        builder.Entity<PersonalAccessToken>(entity =>
+        {
+            entity.HasKey(pat => pat.Id);
+            entity.Property(pat => pat.Name).IsRequired().HasMaxLength(100);
+            entity.Property(pat => pat.TokenHash).IsRequired().HasMaxLength(128);
+            entity.Property(pat => pat.TokenPrefix).IsRequired().HasMaxLength(10);
+
+            entity.HasOne(pat => pat.User)
+                .WithMany(u => u.PersonalAccessTokens)
+                .HasForeignKey(pat => pat.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(pat => pat.TokenHash).IsUnique();
+            entity.HasIndex(pat => pat.UserId);
         });
     }
 }
