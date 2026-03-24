@@ -39,8 +39,8 @@ public class OllamaServiceTests : IDisposable
         _context.SaveChanges();
 
         var activityLogService = new AdminActivityLogService(_context);
-        _configService = new GlobalConfigurationService(_context, activityLogService);
         _cache = new MemoryCache(new MemoryCacheOptions());
+        _configService = new GlobalConfigurationService(_context, activityLogService, _cache);
     }
 
     private async Task SeedConfigAsync(string key, string value)
@@ -205,6 +205,24 @@ public class OllamaServiceTests : IDisposable
 
         Assert.False(result.Succeeded);
         Assert.Contains("Could not generate", result.Errors[0], StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task ConfigCache_IsInvalidated_WhenGlobalConfigurationIsUpdated()
+    {
+        await SeedConfigAsync("OLLAMA_URL", "");
+        var response = CreateOllamaResponse("Result.");
+        var service = CreateService(response);
+
+        // Initially not configured (empty URL is cached)
+        Assert.False(await service.IsConfigured());
+
+        // Update the config via GlobalConfigurationService (which invalidates cache)
+        var adminUser = _context.Users.First();
+        await _configService.UpdateAsync("OLLAMA_URL", "http://localhost:11434", adminUser.Id);
+
+        // Now the service should pick up the new value
+        Assert.True(await service.IsConfigured());
     }
 
     public void Dispose()

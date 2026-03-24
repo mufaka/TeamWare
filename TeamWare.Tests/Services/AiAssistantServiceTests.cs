@@ -38,9 +38,9 @@ public class AiAssistantServiceTests : IDisposable
         _context.Users.Add(adminUser);
         _context.SaveChanges();
 
-        var activityLogService = new AdminActivityLogService(_context);
-        _configService = new GlobalConfigurationService(_context, activityLogService);
         _cache = new MemoryCache(new MemoryCacheOptions());
+        var activityLogService = new AdminActivityLogService(_context);
+        _configService = new GlobalConfigurationService(_context, activityLogService, _cache);
     }
 
     private AiAssistantService CreateService(string ollamaResponse = "AI generated text.")

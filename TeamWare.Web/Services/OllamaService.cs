@@ -8,8 +8,8 @@ public class OllamaService : IOllamaService
 {
     private const string DefaultModel = "llama3.1";
     private const int DefaultTimeoutSeconds = 60;
-    private const string CacheKeyPrefix = "OllamaConfig_";
-    private static readonly TimeSpan CacheDuration = TimeSpan.FromSeconds(60);
+    internal const string CacheKeyPrefix = "OllamaConfig_";
+    private static readonly TimeSpan CacheDuration = TimeSpan.FromMinutes(30);
 
     private readonly IGlobalConfigurationService _configService;
     private readonly IHttpClientFactory _httpClientFactory;

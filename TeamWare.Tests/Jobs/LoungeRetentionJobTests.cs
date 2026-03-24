@@ -1,5 +1,6 @@
 ﻿using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using TeamWare.Web.Data;
@@ -44,7 +45,7 @@ public class LoungeRetentionJobTests : IDisposable
         _context.SaveChanges();
 
         var activityLogService = new AdminActivityLogService(_context);
-        var configService = new GlobalConfigurationService(_context, activityLogService);
+        var configService = new GlobalConfigurationService(_context, activityLogService, new MemoryCache(new MemoryCacheOptions()));
         _fileStorageService = new FileStorageService(configService);
         _attachmentService = new AttachmentService(_context, _fileStorageService);
 

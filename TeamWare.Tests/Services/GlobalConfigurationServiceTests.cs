@@ -1,5 +1,6 @@
 ﻿using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using TeamWare.Web.Data;
 using TeamWare.Web.Models;
 using TeamWare.Web.Services;
@@ -12,6 +13,7 @@ public class GlobalConfigurationServiceTests : IDisposable
     private readonly ApplicationDbContext _context;
     private readonly GlobalConfigurationService _service;
     private readonly ApplicationUser _adminUser;
+    private readonly IMemoryCache _cache;
 
     public GlobalConfigurationServiceTests()
     {
@@ -35,8 +37,9 @@ public class GlobalConfigurationServiceTests : IDisposable
         _context.Users.Add(_adminUser);
         _context.SaveChanges();
 
+        _cache = new MemoryCache(new MemoryCacheOptions());
         var activityLogService = new AdminActivityLogService(_context);
-        _service = new GlobalConfigurationService(_context, activityLogService);
+        _service = new GlobalConfigurationService(_context, activityLogService, _cache);
     }
 
     private async Task SeedConfigAsync(string key = "TEST_KEY", string value = "test_value", string? description = null)
@@ -172,6 +175,7 @@ public class GlobalConfigurationServiceTests : IDisposable
 
     public void Dispose()
     {
+        _cache.Dispose();
         _context.Dispose();
         _connection.Dispose();
     }
