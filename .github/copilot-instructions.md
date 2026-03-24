@@ -4,7 +4,7 @@
 - TeamWare is an ASP.NET Core MVC application. It should not use Razor Pages. Use Controllers and Views instead.
 - One type per file (MAINT-01).
 - Tests accompany every feature. No phase is complete without its test cases.
-- Follow the implementation plan in `TeamWare.Web/Specifications/ImplementationPlan.md`, `TeamWare.Web/Specifications/SocialFeaturesImplementationPlan.md`, and `TeamWare.Web/Specifications/ProjectLoungeImplementationPlan.md`.
+- Follow the implementation plan in `TeamWare.Web/Specifications/ImplementationPlan.md`, `TeamWare.Web/Specifications/SocialFeaturesImplementationPlan.md`, `TeamWare.Web/Specifications/ProjectLoungeImplementationPlan.md`, and `TeamWare.Web/Specifications/OllamaIntegrationImplementationPlan.md`.
 
 ---
 
@@ -38,6 +38,10 @@ Each phase in the implementation plan gets its own branch created from `master`.
 | Phase 19 | `phase-19/lounge-notifications-mentions` |
 | Phase 20 | `phase-20/lounge-background-jobs` |
 | Phase 21 | `phase-21/lounge-polish-hardening` |
+| Phase 22 | `phase-22/ai-foundation` |
+| Phase 23 | `phase-23/ai-content-rewriting` |
+| Phase 24 | `phase-24/ai-summary-generation` |
+| Phase 25 | `phase-25/ai-polish-hardening` |
 
 When starting a phase:
 1. Create the phase branch from `master` in GitHub.
@@ -86,207 +90,49 @@ Closes #2
 
 ## GitHub Issue Map
 
-The following maps implementation plan work items to their canonical GitHub issues. Use the **Canonical Issue** when committing code. Duplicates should be closed.
+The following maps implementation plan work items to their canonical GitHub issues. Use the **Canonical Issue** when committing code.
 
-### Phase 0: Foundation (label: `Phase 0: Foundation`)
+> **Phases 0-21 (Complete):** All issue mappings for Phases 0-21 have been archived. These phases are fully merged to `master`. For historical reference, see the closed issues in GitHub or the individual implementation plans:
+> - Phases 0-9: `TeamWare.Web/Specifications/ImplementationPlan.md`
+> - Phases 10-14: `TeamWare.Web/Specifications/SocialFeaturesImplementationPlan.md`
+> - Phases 15-21: `TeamWare.Web/Specifications/ProjectLoungeImplementationPlan.md`
 
-| Work Item | Canonical Issue | Duplicate Issues |
-|-----------|----------------|-----------------|
-| 0.1 Solution and Project Structure | #1 | — |
-| 0.2 Data Layer (SQLite + EF Core) | #2 | — |
-| 0.3 Authentication and Identity | #3 | — |
-| 0.4 Frontend Stack Replacement | #4 | — |
-| 0.5 Shared Infrastructure | #6 | #5, #10 |
-
-### Phase 1: Project Management (label: `Phase 1: Project Management`)
-
-| Work Item | Canonical Issue | Duplicate Issues |
-|-----------|----------------|-----------------|
-| 1.1 Project Domain Models | #12 | #8 |
-| 1.2 Project Services | #11 | #7 |
-| 1.3 Membership Services | #13 | #9 |
-| 1.4 Project Controllers and Views | #14 | #21 |
-
-### Phase 2: Task Management (label: `Phase 2: Task Management`)
-
-| Work Item | Canonical Issue | Duplicate Issues |
-|-----------|----------------|-----------------|
-| 2.1 Task Domain Models | #20 | #17 |
-| 2.2 Task Services | #18 | #15 |
-| 2.3 Task Controllers and Views | #19 | #16 |
-
-### Phase 3: Inbox and GTD (label: `Phase 3: Inbox and GTD`)
-
-| Work Item | Canonical Issue | Duplicate Issues |
-|-----------|----------------|-----------------|
-| 3.1 Inbox Domain Models | #24 | — |
-| 3.2 Inbox Services | #22 | — |
-| 3.3 Inbox Controllers and Views | #23 | — |
-
-### Phase 4: Progress Tracking (label: `Phase 4: Progress Tracking`)
-
-| Work Item | Canonical Issue | Duplicate Issues |
-|-----------|----------------|-----------------|
-| 4.1 Activity Log Domain Models | #26 | — |
-| 4.2 Activity Log and Progress Services | #27 | — |
-| 4.3 Progress Tracking Controllers and Views | #29 | — |
-
-### Phase 5: Comments (label: `Phase 5: Comments`)
-
-| Work Item | Canonical Issue | Duplicate Issues |
-|-----------|----------------|-----------------|
-| 5.1 Comment Domain Models | #30 | — |
-| 5.2 Comment Services | #28 | — |
-| 5.3 Comment Controllers and Views | #25 | — |
-
-### Phase 6: Notifications (label: `Phase 6: Notifications`)
-
-| Work Item | Canonical Issue | Duplicate Issues |
-|-----------|----------------|-----------------|
-| 6.1 Notification Domain Models | #32 | — |
-| 6.2 Notification Services | #31 | — |
-| 6.3 Notification Controllers and Views | #33 | — |
-
-### Phase 7: Review Workflow (label: `Phase 7: Review Workflow`)
-
-| Work Item | Canonical Issue | Duplicate Issues |
-|-----------|----------------|-----------------|
-| 7.1 Review Domain Models | #35 | — |
-| 7.2 Review Services | #34 | — |
-| 7.3 Review Controllers and Views | #36 | — |
-
-### Phase 8: User Profile (label: `Phase 8: User Profile`)
-
-| Work Item | Canonical Issue | Duplicate Issues |
-|-----------|----------------|-----------------|
-| 8.1 User Profile Services | #37 | — |
-| 8.2 User Profile and Dashboard Controllers and Views | #39 | — |
-
-### Phase 9: Polish (label: `Phase 9: Polish`)
-
-| Work Item | Canonical Issue | Duplicate Issues |
-|-----------|----------------|-----------------|
-| 9.1 Security Hardening | #38 | — |
-| 9.2 Performance | #41 | — |
-| 9.3 UI/UX Polish | #40 | — |
-| 9.4 Documentation | #42 | — |
-
-### Duplicate Issues to Close
-
-The following issues are duplicates and should be closed in favor of their canonical counterparts:
-- #5 (duplicate of #6 — Phase 0.5)
-- #10 (duplicate of #6 — Phase 0.5)
-- #8 (duplicate of #12 — Phase 1.1)
-- #7 (duplicate of #11 — Phase 1.2)
-- #9 (duplicate of #13 — Phase 1.3)
-- #21 (duplicate of #14 — Phase 1.4)
-- #17 (duplicate of #20 — Phase 2.1)
-- #15 (duplicate of #18 — Phase 2.2)
-- #16 (duplicate of #19 — Phase 2.3)
-
-### Phase 10: System Administration (label: `Phase 10: System Administration`)
-
-| Work Item | Canonical Issue | Duplicate Issues |
-|-----------|----------------|-----------------|
-| 10.1 Identity Roles and Seeding | #66 | — |
-| 10.2 Admin Activity Log Domain Model | #64 | — |
-| 10.3 Admin Services | #63 | — |
-| 10.4 Admin Controllers and Views | #65 | — |
-
-### Phase 11: User Directory (label: `Phase 11: User Directory`)
-
-| Work Item | Canonical Issue | Duplicate Issues |
-|-----------|----------------|-----------------|
-| 11.1 Directory Services | #68 | — |
-| 11.2 Directory Controllers and Views | #67 | — |
-
-### Phase 12: User Activity and Presence (label: `Phase 12: User Activity and Presence`)
-
-| Work Item | Canonical Issue | Duplicate Issues |
-|-----------|----------------|-----------------|
-| 12.1 SignalR Infrastructure | #70 | — |
-| 12.2 Activity and Presence Services | #69 | — |
-| 12.3 Activity and Presence Controllers and Views | #71 | — |
-
-### Phase 13: Project Invitation Improvements (label: `Phase 13: Project Invitation Improvements`)
-
-| Work Item | Canonical Issue | Duplicate Issues |
-|-----------|----------------|-----------------|
-| 13.1 Invitation Domain Model | #72 | — |
-| 13.2 Invitation Services | #74 | — |
-| 13.3 Invitation Controllers and Views | #73 | — |
-
-### Phase 14: Social Features Polish (label: `Phase 14: Social Features Polish`)
-
-| Work Item | Canonical Issue | Duplicate Issues |
-|-----------|----------------|-----------------|
-| 14.1 Security and Authorization | #76 | — |
-| 14.2 Performance | #75 | — |
-| 14.3 UI/UX Consistency | #78 | — |
-| 14.4 Documentation | #77 | — |
-
-### Phase 15: Lounge Data Layer (label: `Phase 15: Lounge Data Layer`)
+### Phase 22: AI Foundation and Configuration (label: `Phase 22: AI Foundation`)
 
 | Work Item | Canonical Issue | Duplicate Issues |
 |-----------|----------------|------------------|
-| 15.1 LoungeMessage Entity | #84 | — |
-| 15.2 LoungeReaction Entity | #85 | — |
-| 15.3 LoungeReadPosition Entity | #86 | — |
-| 15.4 Notification Type Extension | #87 | — |
-| 15.5 EF Core Migration | #88 | — |
+| 22.1 GlobalConfiguration Seeding | TBD | — |
+| 22.2 OllamaService | TBD | — |
+| 22.3 AiAssistantService | TBD | — |
+| 22.4 AiController Skeleton | TBD | — |
 
-### Phase 16: Lounge Service Layer (label: `Phase 16: Lounge Service Layer`)
-
-| Work Item | Canonical Issue | Duplicate Issues |
-|-----------|----------------|------------------|
-| 16.1 Lounge Message Services | #89 | — |
-| 16.2 Pin Services | #90 | — |
-| 16.3 Reaction Services | #91 | — |
-| 16.4 Unread Tracking Services | #92 | — |
-| 16.5 Message-to-Task Conversion | #93 | — |
-| 16.6 Message Retention | #94 | — |
-
-### Phase 17: Lounge SignalR Hub (label: `Phase 17: Lounge SignalR Hub`)
+### Phase 23: Content Rewriting (label: `Phase 23: Content Rewriting`)
 
 | Work Item | Canonical Issue | Duplicate Issues |
 |-----------|----------------|------------------|
-| 17.1 LoungeHub Implementation | #95 | — |
-| 17.2 Hub Registration | #96 | — |
-| 17.3 Hub Tests | #97 | — |
+| 23.1 Rewrite Controller Actions | TBD | — |
+| 23.2 Rewrite UI - Project Edit Form | TBD | — |
+| 23.3 Rewrite UI - Task Edit Form | TBD | — |
+| 23.4 Rewrite UI - Comment Form | TBD | — |
+| 23.5 Rewrite UI - Inbox Clarify Form | TBD | — |
+| 23.6 Shared AI JavaScript | TBD | — |
 
-### Phase 18: Lounge Controllers and Views (label: `Phase 18: Lounge Controllers and Views`)
-
-| Work Item | Canonical Issue | Duplicate Issues |
-|-----------|----------------|------------------|
-| 18.1 LoungeController | #98 | — |
-| 18.2 Room View | #99 | — |
-| 18.3 Sidebar Integration | #100 | — |
-| 18.4 Client-Side JavaScript | #101 | — |
-| 18.5 Mention Autocomplete UI | #102 | — |
-| 18.6 Controller Tests | #103 | — |
-
-### Phase 19: Lounge Notifications and Mentions (label: `Phase 19: Lounge Notifications and Mentions`)
+### Phase 24: Summary Generation (label: `Phase 24: Summary Generation`)
 
 | Work Item | Canonical Issue | Duplicate Issues |
 |-----------|----------------|------------------|
-| 19.1 Mention Parsing | #104 | — |
-| 19.2 Notification Integration | #105 | — |
-| 19.3 Notification Tests | #106 | — |
+| 24.1 Summary Data Gathering | TBD | — |
+| 24.2 Summary Controller Actions | TBD | — |
+| 24.3 Summary UI - Project Dashboard | TBD | — |
+| 24.4 Summary UI - Personal Dashboard | TBD | — |
+| 24.5 Summary UI - GTD Review Page | TBD | — |
+| 24.6 Shared AI Summary JavaScript | TBD | — |
 
-### Phase 20: Lounge Background Jobs (label: `Phase 20: Lounge Background Jobs`)
-
-| Work Item | Canonical Issue | Duplicate Issues |
-|-----------|----------------|------------------|
-| 20.1 Hangfire Setup | #107 | — |
-| 20.2 LoungeRetentionJob | #108 | — |
-| 20.3 Retention Job Tests | #109 | — |
-
-### Phase 21: Lounge Polish and Hardening (label: `Phase 21: Lounge Polish and Hardening`)
+### Phase 25: AI Polish and Hardening (label: `Phase 25: AI Polish`)
 
 | Work Item | Canonical Issue | Duplicate Issues |
 |-----------|----------------|------------------|
-| 21.1 Security and Authorization | #110 | — |
-| 21.2 Performance | #111 | — |
-| 21.3 UI/UX Consistency | #112 | — |
-| 21.4 Accessibility | #113 | — |
-| 21.5 Documentation | #114 | — |
+| 25.1 Error Handling and Resilience | TBD | — |
+| 25.2 UI/UX Consistency | TBD | — |
+| 25.3 Security Review | TBD | — |
+| 25.4 Documentation | TBD | — |

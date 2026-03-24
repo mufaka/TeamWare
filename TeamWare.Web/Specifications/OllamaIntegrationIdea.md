@@ -174,8 +174,8 @@ AI features appear as progressive enhancements:
 
 - [x] Narrow focus to 5 core ideas (removed lounge summarization, tone check, smart search, review assistant, announcement drafting)
 - [x] Resolve open questions (see Decisions table above)
-- [ ] Decide which ideas make the cut for a first iteration
-- [ ] Test Ollama API connectivity from the TeamWare deployment environment
-- [ ] Prototype the `IOllamaService` wrapper with a simple rewrite endpoint
-- [ ] Write a formal specification for the selected features
-- [ ] Create an implementation plan with phases and GitHub issues
+- [x] Decide which ideas make the cut for a first iteration (Ideas 1 and 3: Content Rewriting and Summary Generation)
+- [ ] ~~Test Ollama API connectivity from the TeamWare deployment environment~~ (confirmed working via existing applications on the same network)
+- [ ] ~~Prototype the `IOllamaService` wrapper with a simple rewrite endpoint~~ (skipped; proceeding directly to implementation)
+- [x] Write a formal specification for the selected features (see [OllamaIntegrationSpecification.md](OllamaIntegrationSpecification.md))
+- [x] Create an implementation plan with phases and GitHub issues (see [OllamaIntegrationImplementationPlan.md](OllamaIntegrationImplementationPlan.md))
