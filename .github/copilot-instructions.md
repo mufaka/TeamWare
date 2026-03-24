@@ -4,7 +4,8 @@
 - TeamWare is an ASP.NET Core MVC application. It should not use Razor Pages. Use Controllers and Views instead.
 - One type per file (MAINT-01).
 - Tests accompany every feature. No phase is complete without its test cases.
-- Follow the implementation plan in `TeamWare.Web/Specifications/ImplementationPlan.md`, `TeamWare.Web/Specifications/SocialFeaturesImplementationPlan.md`, `TeamWare.Web/Specifications/ProjectLoungeImplementationPlan.md`, and `TeamWare.Web/Specifications/OllamaIntegrationImplementationPlan.md`.
+- Follow the implementation plan in `TeamWare.Web/Specifications/ImplementationPlan.md`, `TeamWare.Web/Specifications/SocialFeaturesImplementationPlan.md`, `TeamWare.Web/Specifications/ProjectLoungeImplementationPlan.md`, `TeamWare.Web/Specifications/OllamaIntegrationImplementationPlan.md`, and `TeamWare.Web/Specifications/McpServerImplementationPlan.md`.
+- In `_DashboardProjects.cshtml`, ensure the link to project details is correctly implemented using `asp-controller="Project" asp-action="Details" asp-route-id="@project.Id"`.
 
 ---
 
@@ -42,6 +43,12 @@ Each phase in the implementation plan gets its own branch created from `master`.
 | Phase 23 | `phase-23/ai-content-rewriting` |
 | Phase 24 | `phase-24/ai-summary-generation` |
 | Phase 25 | `phase-25/ai-polish-hardening` |
+| Phase 26 | `phase-26/mcp-foundation` |
+| Phase 27 | `phase-27/mcp-read-tools` |
+| Phase 28 | `phase-28/mcp-write-tools` |
+| Phase 29 | `phase-29/mcp-prompts-resources` |
+| Phase 30 | `phase-30/mcp-lounge-tools` |
+| Phase 31 | `phase-31/mcp-polish-hardening` |
 
 When starting a phase:
 1. Create the phase branch from `master` in GitHub.
@@ -136,3 +143,60 @@ The following maps implementation plan work items to their canonical GitHub issu
 | 25.2 UI/UX Consistency | #153 | — |
 | 25.3 Security Review | #154 | — |
 | 25.4 Documentation | #155 | — |
+
+### Phase 26: MCP Foundation (label: `Phase 26: MCP Foundation`)
+
+| Work Item | Canonical Issue | Duplicate Issues |
+|-----------|----------------|------------------|
+| 26.1 PersonalAccessToken Entity and Migration | — | — |
+| 26.2 PersonalAccessTokenService | — | — |
+| 26.3 PAT Authentication Handler | — | — |
+| 26.4 GlobalConfiguration Seeding and MCP Endpoint | — | — |
+| 26.5 PAT Management UI | — | — |
+| 26.6 Admin PAT Management | — | — |
+
+### Phase 27: Read-Only MCP Tools (label: `Phase 27: MCP Read Tools`)
+
+| Work Item | Canonical Issue | Duplicate Issues |
+|-----------|----------------|------------------|
+| 27.1 ProjectTools | — | — |
+| 27.2 TaskTools (Read) | — | — |
+| 27.3 InboxTools (Read) | — | — |
+| 27.4 ActivityTools | — | — |
+| 27.5 Cross-Cutting Read Tool Tests | — | — |
+
+### Phase 28: Write MCP Tools (label: `Phase 28: MCP Write Tools`)
+
+| Work Item | Canonical Issue | Duplicate Issues |
+|-----------|----------------|------------------|
+| 28.1 TaskTools (Write) | — | — |
+| 28.2 InboxTools (Write) | — | — |
+| 28.3 Cross-Cutting Write Tool Tests | — | — |
+
+### Phase 29: MCP Prompts and Resources (label: `Phase 29: MCP Prompts Resources`)
+
+| Work Item | Canonical Issue | Duplicate Issues |
+|-----------|----------------|------------------|
+| 29.1 Project Context Prompt | — | — |
+| 29.2 Task Breakdown Prompt | — | — |
+| 29.3 Standup Prompt | — | — |
+| 29.4 Dashboard Resource | — | — |
+| 29.5 Project Summary Resource | — | — |
+| 29.6 Cross-Cutting Prompt and Resource Tests | — | — |
+
+### Phase 30: Lounge MCP Tools (label: `Phase 30: MCP Lounge Tools`)
+
+| Work Item | Canonical Issue | Duplicate Issues |
+|-----------|----------------|------------------|
+| 30.1 LoungeTools | — | — |
+| 30.2 Cross-Cutting Lounge Tests | — | — |
+
+### Phase 31: MCP Polish and Hardening (label: `Phase 31: MCP Polish`)
+
+| Work Item | Canonical Issue | Duplicate Issues |
+|-----------|----------------|------------------|
+| 31.1 Error Handling and Resilience | — | — |
+| 31.2 Security Review | — | — |
+| 31.3 JSON Response Consistency | — | — |
+| 31.4 UI/UX Consistency | — | — |
+| 31.5 Documentation | — | — |
