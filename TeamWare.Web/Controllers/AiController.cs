@@ -159,26 +159,56 @@ public class AiController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public IActionResult ProjectSummary()
+    public async Task<IActionResult> ProjectSummary(int projectId, string period)
     {
-        // Implemented in Phase 24
-        return Json(new { success = false, error = "Not implemented." });
+        if (!Enum.TryParse<SummaryPeriod>(period, ignoreCase: true, out var summaryPeriod))
+        {
+            return Json(new { success = false, error = "Invalid period. Use Today, ThisWeek, or ThisMonth." });
+        }
+
+        var userId = GetUserId();
+
+        if (!await IsProjectMember(projectId, userId))
+        {
+            return Json(new { success = false, error = "Access denied." });
+        }
+
+        var result = await _aiAssistantService.GenerateProjectSummary(projectId, userId, summaryPeriod);
+
+        if (!result.Succeeded)
+        {
+            return Json(new { success = false, error = result.Errors.FirstOrDefault() });
+        }
+
+        return Json(new { success = true, summary = result.Data });
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public IActionResult PersonalDigest()
+    public async Task<IActionResult> PersonalDigest()
     {
-        // Implemented in Phase 24
-        return Json(new { success = false, error = "Not implemented." });
+        var result = await _aiAssistantService.GeneratePersonalDigest(GetUserId());
+
+        if (!result.Succeeded)
+        {
+            return Json(new { success = false, error = result.Errors.FirstOrDefault() });
+        }
+
+        return Json(new { success = true, summary = result.Data });
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public IActionResult ReviewPreparation()
+    public async Task<IActionResult> ReviewPreparation()
     {
-        // Implemented in Phase 24
-        return Json(new { success = false, error = "Not implemented." });
+        var result = await _aiAssistantService.GenerateReviewPreparation(GetUserId());
+
+        if (!result.Succeeded)
+        {
+            return Json(new { success = false, error = result.Errors.FirstOrDefault() });
+        }
+
+        return Json(new { success = true, summary = result.Data });
     }
 
     private async Task<bool> IsProjectMember(int projectId, string userId)

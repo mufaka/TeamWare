@@ -525,6 +525,90 @@ public class AiControllerTests : IClassFixture<TeamWareWebApplicationFactory>, I
         Assert.Contains("required", json, StringComparison.OrdinalIgnoreCase);
     }
 
+    // --- ProjectSummary authorization ---
+
+    [Fact]
+    public async Task ProjectSummary_NonMember_ReturnsAccessDenied()
+    {
+        var (cookie, token) = await GetAuthenticatedRequestParts();
+
+        var response = await PostWithAuth("/Ai/ProjectSummary", new Dictionary<string, string>
+        {
+            ["projectId"] = "999999",
+            ["period"] = "ThisWeek"
+        }, cookie, token);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var json = await response.Content.ReadAsStringAsync();
+        Assert.Contains("\"success\":false", json);
+        Assert.Contains("Access denied", json);
+    }
+
+    [Fact]
+    public async Task ProjectSummary_InvalidPeriod_ReturnsError()
+    {
+        var (cookie, token) = await GetAuthenticatedRequestParts();
+
+        var response = await PostWithAuth("/Ai/ProjectSummary", new Dictionary<string, string>
+        {
+            ["projectId"] = "1",
+            ["period"] = "InvalidPeriod"
+        }, cookie, token);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var json = await response.Content.ReadAsStringAsync();
+        Assert.Contains("\"success\":false", json);
+        Assert.Contains("Invalid period", json);
+    }
+
+    [Fact]
+    public async Task ProjectSummary_Member_OllamaNotConfigured_ReturnsFailure()
+    {
+        var (cookie, token) = await GetAuthenticatedRequestParts();
+        var (projectId, _) = await CreateProjectAndTask();
+
+        var response = await PostWithAuth("/Ai/ProjectSummary", new Dictionary<string, string>
+        {
+            ["projectId"] = projectId.ToString(),
+            ["period"] = "ThisWeek"
+        }, cookie, token);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var json = await response.Content.ReadAsStringAsync();
+        Assert.Contains("\"success\":false", json);
+        Assert.Contains("not configured", json, StringComparison.OrdinalIgnoreCase);
+    }
+
+    // --- PersonalDigest behavior ---
+
+    [Fact]
+    public async Task PersonalDigest_OllamaNotConfigured_ReturnsFailure()
+    {
+        var (cookie, token) = await GetAuthenticatedRequestParts();
+
+        var response = await PostWithAuth("/Ai/PersonalDigest", new Dictionary<string, string>(), cookie, token);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var json = await response.Content.ReadAsStringAsync();
+        Assert.Contains("\"success\":false", json);
+        Assert.Contains("not configured", json, StringComparison.OrdinalIgnoreCase);
+    }
+
+    // --- ReviewPreparation behavior ---
+
+    [Fact]
+    public async Task ReviewPreparation_OllamaNotConfigured_ReturnsFailure()
+    {
+        var (cookie, token) = await GetAuthenticatedRequestParts();
+
+        var response = await PostWithAuth("/Ai/ReviewPreparation", new Dictionary<string, string>(), cookie, token);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var json = await response.Content.ReadAsStringAsync();
+        Assert.Contains("\"success\":false", json);
+        Assert.Contains("not configured", json, StringComparison.OrdinalIgnoreCase);
+    }
+
     public void Dispose()
     {
         _client.Dispose();
