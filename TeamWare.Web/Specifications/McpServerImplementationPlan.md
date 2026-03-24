@@ -8,7 +8,7 @@ This document defines the phased implementation plan for the TeamWare MCP Server
 
 | Phase | Description | Status |
 |-------|------------|--------|
-| 26 | MCP Foundation and PAT Authentication | Not Started |
+| 26 | MCP Foundation and PAT Authentication | In Progress |
 | 27 | Read-Only MCP Tools | Not Started |
 | 28 | Write MCP Tools | Not Started |
 | 29 | MCP Prompts and Resources | Not Started |
@@ -64,77 +64,76 @@ Establish the Personal Access Token authentication system, MCP NuGet packages, e
 
 ### 26.1 PersonalAccessToken Entity and Migration
 
-- [ ] Create `PersonalAccessToken` model class with properties: `Id`, `Name`, `TokenHash`, `TokenPrefix`, `UserId`, `CreatedAt`, `ExpiresAt`, `LastUsedAt`, `RevokedAt` (Spec Section 4.1)
-- [ ] Add navigation property `User` (`ApplicationUser`) to `PersonalAccessToken`
-- [ ] Add `PersonalAccessTokens` collection navigation property to `ApplicationUser` (Spec Section 4.2)
-- [ ] Add `PersonalAccessToken` `DbSet` to `ApplicationDbContext`
-- [ ] Configure entity in `ApplicationDbContext.OnModelCreating`:
-  - [ ] Unique index on `TokenHash` for fast authentication lookup (PAT-12, MCP-NF-02)
-  - [ ] Index on `UserId` for listing a user's tokens
-  - [ ] Required `Name` with max length 100
-  - [ ] Required `TokenHash` with max length 128
-  - [ ] Required `TokenPrefix` with max length 10
-  - [ ] Foreign key relationship to `ApplicationUser`
-- [ ] Create EF Core migration
-- [ ] Write tests verifying entity configuration, indexes, and relationships
+- [x] Create `PersonalAccessToken` model class with properties: `Id`, `Name`, `TokenHash`, `TokenPrefix`, `UserId`, `CreatedAt`, `ExpiresAt`, `LastUsedAt`, `RevokedAt` (Spec Section 4.1)
+- [x] Add navigation property `User` (`ApplicationUser`) to `PersonalAccessToken`
+- [x] Add `PersonalAccessTokens` collection navigation property to `ApplicationUser` (Spec Section 4.2)
+- [x] Add `PersonalAccessToken` `DbSet` to `ApplicationDbContext`
+- [x] Configure entity in `ApplicationDbContext.OnModelCreating`:
+  - [x] Unique index on `TokenHash` for fast authentication lookup (PAT-12, MCP-NF-02)
+  - [x] Index on `UserId` for listing a user's tokens
+  - [x] Required `Name` with max length 100
+  - [x] Required `TokenHash` with max length 128
+  - [x] Required `TokenPrefix` with max length 10
+  - [x] Foreign key relationship to `ApplicationUser`
+- [x] Create EF Core migration
+- [x] Write tests verifying entity configuration, indexes, and relationships
 
 ### 26.2 PersonalAccessTokenService
 
-- [ ] Create `IPersonalAccessTokenService` interface with methods: `CreateToken`, `ValidateToken`, `GetTokensForUser`, `RevokeToken`, `RevokeAllTokensForUser` (Spec Section 5.1)
-- [ ] Create `PersonalAccessTokenService` implementation:
-  - [ ] `CreateToken`:
-    - [ ] Validate user has fewer than 10 active (non-expired, non-revoked) tokens (PAT-15)
-    - [ ] Generate 32 cryptographically random bytes using `RandomNumberGenerator.GetBytes` (PAT-03, MCP-NF-06)
-    - [ ] Encode as URL-safe Base64 and prefix with `tw_` (PAT-03)
-    - [ ] Compute SHA-256 hash of the raw token string (PAT-05, MCP-NF-06)
-    - [ ] Store the hash (`TokenHash`), first 6 characters (`TokenPrefix`), name, user ID, expiration date (PAT-04, PAT-05)
-    - [ ] Return the raw token value in `ServiceResult<string>.Success(rawToken)` (PAT-04)
-  - [ ] `ValidateToken`:
-    - [ ] Compute SHA-256 hash of the presented raw token
-    - [ ] Look up the hash in the database via the unique index (PAT-12, MCP-NF-02)
-    - [ ] Verify `RevokedAt` is null (PAT-09)
-    - [ ] Verify `ExpiresAt` is null or in the future (PAT-09)
-    - [ ] Update `LastUsedAt` to `DateTime.UtcNow` (PAT-10)
-    - [ ] Return the owning `ApplicationUser` in `ServiceResult<ApplicationUser>.Success(user)`
-    - [ ] Return failure for: no matching hash, expired, revoked
-  - [ ] `GetTokensForUser`: Return all non-revoked tokens for the user, ordered by `CreatedAt` descending (PAT-06)
-  - [ ] `RevokeToken`: Set `RevokedAt` to `DateTime.UtcNow`. Verify user owns the token or is a site admin (PAT-07, PAT-08)
-  - [ ] `RevokeAllTokensForUser`: Set `RevokedAt` on all active tokens for the user (PAT-08)
-- [ ] Register `IPersonalAccessTokenService` / `PersonalAccessTokenService` in DI
-- [ ] Write unit tests for: creation success, 10-token limit, validation success, invalid token, expired token, revoked token, revoke own token, revoke as admin, revoke all (MCP-TEST-01)
+- [x] Create `IPersonalAccessTokenService` interface with methods: `CreateToken`, `ValidateToken`, `GetTokensForUser`, `RevokeToken`, `RevokeAllTokensForUser` (Spec Section 5.1)
+- [x] Create `PersonalAccessTokenService` implementation:
+  - [x] `CreateToken`:
+    - [x] Validate user has fewer than 10 active (non-expired, non-revoked) tokens (PAT-15)
+    - [x] Generate 32 cryptographically random bytes using `RandomNumberGenerator.GetBytes` (PAT-03, MCP-NF-06)
+    - [x] Encode as URL-safe Base64 and prefix with `tw_` (PAT-03)
+    - [x] Compute SHA-256 hash of the raw token string (PAT-05, MCP-NF-06)
+    - [x] Store the hash (`TokenHash`), first 6 characters (`TokenPrefix`), name, user ID, expiration date (PAT-04, PAT-05)
+    - [x] Return the raw token value in `ServiceResult<string>.Success(rawToken)` (PAT-04)
+  - [x] `ValidateToken`:
+    - [x] Compute SHA-256 hash of the presented raw token
+    - [x] Look up the hash in the database via the unique index (PAT-12, MCP-NF-02)
+    - [x] Verify `RevokedAt` is null (PAT-09)
+    - [x] Verify `ExpiresAt` is null or in the future (PAT-09)
+    - [x] Update `LastUsedAt` to `DateTime.UtcNow` (PAT-10)
+    - [x] Return the owning `ApplicationUser` in `ServiceResult<ApplicationUser>.Success(user)`
+    - [x] Return failure for: no matching hash, expired, revoked
+  - [x] `GetTokensForUser`: Return all non-revoked tokens for the user, ordered by `CreatedAt` descending (PAT-06)
+  - [x] `RevokeToken`: Set `RevokedAt` to `DateTime.UtcNow`. Verify user owns the token or is a site admin (PAT-07, PAT-08)
+  - [x] `RevokeAllTokensForUser`: Set `RevokedAt` on all active tokens for the user (PAT-08)
+- [x] Register `IPersonalAccessTokenService` / `PersonalAccessTokenService` in DI
+- [x] Write unit tests for: creation success, 10-token limit, validation success, invalid token, expired token, revoked token, revoke own token, revoke as admin, revoke all (MCP-TEST-01)
 
 ### 26.3 PAT Authentication Handler
 
-- [ ] Create `PatAuthenticationHandler` extending `AuthenticationHandler<AuthenticationSchemeOptions>` (Spec Section 5.2)
-  - [ ] In `HandleAuthenticateAsync`:
-    - [ ] Extract `Authorization: Bearer <token>` header
-    - [ ] If no Bearer token present, return `AuthenticateResult.NoResult()` to allow cookie auth to proceed (MCP-NF-07, PAT-14)
-    - [ ] Call `IPersonalAccessTokenService.ValidateToken(rawToken)`
-    - [ ] On success, build `ClaimsPrincipal` with the user's claims (user ID, name, email, roles) matching the claims produced by cookie authentication (PAT-13)
-    - [ ] Return `AuthenticateResult.Success(ticket)`
-    - [ ] On failure (invalid/expired/revoked), return `AuthenticateResult.Fail(errorMessage)` (PAT-11, MCP-71)
-- [ ] Register the authentication scheme as `"PersonalAccessToken"` alongside existing Identity cookie authentication (PAT-14, Spec Section 6.3)
-- [ ] Write unit tests for: successful auth, no bearer header, invalid token, expired token, revoked token (MCP-TEST-02)
+- [x] Create `PatAuthenticationHandler` extending `AuthenticationHandler<AuthenticationSchemeOptions>` (Spec Section 5.2)
+  - [x] In `HandleAuthenticateAsync`:
+    - [x] Extract `Authorization: Bearer <token>` header
+    - [x] If no Bearer token present, return `AuthenticateResult.NoResult()` to allow cookie auth to proceed (MCP-NF-07, PAT-14)
+    - [x] Call `IPersonalAccessTokenService.ValidateToken(rawToken)`
+    - [x] On success, build `ClaimsPrincipal` with the user's claims (user ID, name, email, roles) matching the claims produced by cookie authentication (PAT-13)
+    - [x] Return `AuthenticateResult.Success(ticket)`
+    - [x] On failure (invalid/expired/revoked), return `AuthenticateResult.Fail(errorMessage)` (PAT-11, MCP-71)
+- [x] Register the authentication scheme as `"PersonalAccessToken"` alongside existing Identity cookie authentication (PAT-14, Spec Section 6.3)
+- [x] Write unit tests for: successful auth, no bearer header, invalid token, expired token, revoked token (MCP-TEST-02)
 
 ### 26.4 GlobalConfiguration Seeding and MCP Endpoint
 
-- [ ] Seed `MCP_ENABLED` key with value `false` and description: "Enable the MCP (Model Context Protocol) server endpoint at /mcp. Set to true to allow AI agents and MCP clients to connect." (MCP-01, MCP-02, MCP-03)
-- [ ] Add `ModelContextProtocol` and `ModelContextProtocol.AspNetCore` NuGet packages to `TeamWare.Web.csproj` (Spec Section 2)
-- [ ] Register MCP server services in `Program.cs` (Spec Section 6.1):
+- [x] Seed `MCP_ENABLED` key with value `false` and description: "Enable the MCP (Model Context Protocol) server endpoint at /mcp. Set to true to allow AI agents and MCP clients to connect." (MCP-01, MCP-02, MCP-03)
+- [x] Add `ModelContextProtocol` and `ModelContextProtocol.AspNetCore` NuGet packages to `TeamWare.Web.csproj` (Spec Section 2)
+- [x] Register MCP server services in `Program.cs` (Spec Section 6.1):
   ```csharp
   builder.Services.AddMcpServer()
       .WithHttpTransport()
-      .AddAuthorizationFilters()
       .WithToolsFromAssembly();
   ```
-- [ ] Map the MCP endpoint at `/mcp` (Spec Section 6.2):
+- [x] Map the MCP endpoint at `/mcp` (Spec Section 6.2):
   ```csharp
   app.MapMcp("/mcp");
   ```
-- [ ] Create MCP endpoint middleware that checks `MCP_ENABLED` from cached `IGlobalConfigurationService` and returns HTTP 404 when disabled (MCP-02, MCP-70, MCP-NF-03)
-- [ ] Write tests verifying `MCP_ENABLED` seed key is created on first run with value `false` (MCP-TEST-09)
-- [ ] Write integration tests verifying the MCP endpoint returns 404 when `MCP_ENABLED` is `false` (MCP-TEST-08)
-- [ ] Write integration tests verifying end-to-end PAT authentication with the MCP endpoint (MCP-TEST-07)
+- [x] Create MCP endpoint middleware that checks `MCP_ENABLED` from cached `IGlobalConfigurationService` and returns HTTP 404 when disabled (MCP-02, MCP-70, MCP-NF-03)
+- [x] Write tests verifying `MCP_ENABLED` seed key is created on first run with value `false` (MCP-TEST-09)
+- [x] Write integration tests verifying the MCP endpoint returns 404 when `MCP_ENABLED` is `false` (MCP-TEST-08)
+- [x] Write integration tests verifying end-to-end PAT authentication with the MCP endpoint (MCP-TEST-07)
 
 ### 26.5 PAT Management UI
 

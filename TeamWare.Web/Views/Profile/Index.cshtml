@@ -77,4 +77,7 @@
             <div id="theme-result" class="mt-2 text-sm text-green-600 dark:text-green-400"></div>
         </form>
     </div>
+
+    <!-- Personal Access Tokens -->
+    @await Html.PartialAsync("_PersonalAccessTokens", (TeamWare.Web.ViewModels.PersonalAccessTokenListViewModel)ViewBag.TokenList)
 </div>
