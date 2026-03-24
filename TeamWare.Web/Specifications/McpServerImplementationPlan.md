@@ -10,9 +10,9 @@ This document defines the phased implementation plan for the TeamWare MCP Server
 |-------|------------|--------|
 | 26 | MCP Foundation and PAT Authentication | Complete |
 | 27 | Read-Only MCP Tools | Complete |
-| 28 | Write MCP Tools | Not Started |
+| 28 | Write MCP Tools | Complete |
 | 29 | MCP Prompts and Resources | Complete |
-| 30 | Lounge MCP Tools | Not Started |
+| 30 | Lounge MCP Tools | Complete |
 | 31 | MCP Polish and Hardening | Not Started |
 
 ---
@@ -346,30 +346,30 @@ Expose the Project Lounge messaging system to MCP clients.
 
 ### 30.1 LoungeTools
 
-- [ ] Create `TeamWare.Web/Mcp/Tools/LoungeTools.cs` with `[McpServerToolType]` and `[Authorize]` (Spec Section 8)
-- [ ] Implement `list_lounge_messages` tool:
-  - [ ] Accept optional `projectId: int?` (null for global lounge) and optional `count: int` (default 20, max 100) (MCP-60)
-  - [ ] If `projectId` provided, verify project membership (MCP-63)
-  - [ ] Call `ILoungeService.GetMessages(projectId, null, count)` (MCP-60)
-  - [ ] Return JSON array: `{ id, authorName, content, createdAt }` (MCP-60, MCP-NF-04)
-- [ ] Implement `post_lounge_message` tool:
-  - [ ] Accept optional `projectId: int?` and `content: string` (MCP-61)
-  - [ ] If `projectId` provided, verify project membership (MCP-63)
-  - [ ] Call `ILoungeService.SendMessage(projectId, userId, content)` (MCP-61)
-  - [ ] Ensure notification and mention processing triggers (MCP-64)
-  - [ ] Return JSON object of created message (MCP-61)
-- [ ] Implement `search_lounge_messages` tool:
-  - [ ] Accept `query: string` and optional `projectId: int?` (MCP-62)
-  - [ ] If `projectId` provided, verify project membership (MCP-63)
-  - [ ] Retrieve messages and filter by query content match (MCP-62)
-  - [ ] Return JSON array of matching messages (MCP-62, MCP-NF-04)
-- [ ] Write unit tests for all three tools (MCP-TEST-03, MCP-TEST-04)
+- [x] Create `TeamWare.Web/Mcp/Tools/LoungeTools.cs` with `[McpServerToolType]` and `[Authorize]` (Spec Section 8)
+- [x] Implement `list_lounge_messages` tool:
+  - [x] Accept optional `projectId: int?` (null for global lounge) and optional `count: int` (default 20, max 100) (MCP-60)
+  - [x] If `projectId` provided, verify project membership (MCP-63)
+  - [x] Call `ILoungeService.GetMessages(projectId, null, count)` (MCP-60)
+  - [x] Return JSON array: `{ id, authorName, content, createdAt }` (MCP-60, MCP-NF-04)
+- [x] Implement `post_lounge_message` tool:
+  - [x] Accept optional `projectId: int?` and `content: string` (MCP-61)
+  - [x] If `projectId` provided, verify project membership (MCP-63)
+  - [x] Call `ILoungeService.SendMessage(projectId, userId, content)` (MCP-61)
+  - [x] Ensure notification and mention processing triggers (MCP-64)
+  - [x] Return JSON object of created message (MCP-61)
+- [x] Implement `search_lounge_messages` tool:
+  - [x] Accept `query: string` and optional `projectId: int?` (MCP-62)
+  - [x] If `projectId` provided, verify project membership (MCP-63)
+  - [x] Retrieve messages and filter by query content match (MCP-62)
+  - [x] Return JSON array of matching messages (MCP-62, MCP-NF-04)
+- [x] Write unit tests for all three tools (MCP-TEST-03, MCP-TEST-04)
 
 ### 30.2 Cross-Cutting Lounge Tests
 
-- [ ] Write integration tests verifying lounge tools require PAT authentication
-- [ ] Write integration tests verifying project membership enforcement for project lounges (MCP-63)
-- [ ] Write integration tests verifying `post_lounge_message` triggers notifications and mention processing (MCP-64)
+- [x] Write integration tests verifying lounge tools require PAT authentication
+- [x] Write integration tests verifying project membership enforcement for project lounges (MCP-63)
+- [x] Write integration tests verifying `post_lounge_message` triggers notifications and mention processing (MCP-64)
 
 ---
 
