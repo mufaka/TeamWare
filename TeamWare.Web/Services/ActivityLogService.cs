@@ -42,6 +42,26 @@ public class ActivityLogService : IActivityLogService
             .ToListAsync();
     }
 
+    public async Task<List<ActivityLogEntry>> GetActivityForProject(int projectId, DateTime since)
+    {
+        return await _context.ActivityLogEntries
+            .Where(a => a.ProjectId == projectId && a.CreatedAt >= since)
+            .Include(a => a.User)
+            .Include(a => a.TaskItem)
+            .OrderByDescending(a => a.CreatedAt)
+            .ToListAsync();
+    }
+
+    public async Task<List<ActivityLogEntry>> GetActivityForUser(string userId, DateTime since)
+    {
+        return await _context.ActivityLogEntries
+            .Where(a => a.UserId == userId && a.CreatedAt >= since)
+            .Include(a => a.User)
+            .Include(a => a.TaskItem)
+            .OrderByDescending(a => a.CreatedAt)
+            .ToListAsync();
+    }
+
     public async Task<List<ActivityLogEntry>> GetActivityForTask(int taskItemId)
     {
         return await _context.ActivityLogEntries

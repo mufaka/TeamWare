@@ -1,9 +1,28 @@
-﻿@{
+﻿@inject TeamWare.Web.Services.IAiAssistantService AiAssistantService
+@{
     ViewData["Title"] = "Dashboard";
+    var aiAvailable = await AiAssistantService.IsAvailable();
 }
 
 <div class="mx-auto max-w-5xl">
-    <h1 class="mb-6 text-2xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
+    <div class="mb-6 flex items-center justify-between">
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
+        @if (aiAvailable)
+        {
+            <form>
+                @Html.AntiForgeryToken()
+                <div data-ai-summary
+                     data-ai-url="@Url.Action("PersonalDigest", "Ai")"
+                     data-ai-label="Generate Summary">
+                </div>
+            </form>
+        }
+    </div>
+
+    @if (aiAvailable)
+    {
+        <div id="ai-personal-summary-target" class="mb-6"></div>
+    }
 
     <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <!-- Inbox -->
@@ -77,3 +96,10 @@
         </div>
     </div>
 </div>
+
+@if (aiAvailable)
+{
+    @section Scripts {
+        <script src="~/js/ai-summary.js" asp-append-version="true"></script>
+    }
+}

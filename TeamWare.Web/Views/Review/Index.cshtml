@@ -1,24 +1,43 @@
 ﻿@model TeamWare.Web.ViewModels.ReviewViewModel
+@inject TeamWare.Web.Services.IAiAssistantService AiAssistantService
 @{
     ViewData["Title"] = "Weekly Review";
+    var aiAvailable = await AiAssistantService.IsAvailable();
 }
 
 <div class="mx-auto max-w-4xl">
-    <div class="mb-6">
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Weekly Review</h1>
-        @if (Model.LastReviewDate.HasValue)
+    <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Weekly Review</h1>
+            @if (Model.LastReviewDate.HasValue)
+            {
+                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                    Last reviewed: @Html.LocalTime(Model.LastReviewDate.Value)
+                </p>
+            }
+            else
+            {
+                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                    You haven't completed a review yet.
+                </p>
+            }
+        </div>
+        @if (aiAvailable)
         {
-            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                Last reviewed: @Html.LocalTime(Model.LastReviewDate.Value)
-            </p>
-        }
-        else
-        {
-            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                You haven't completed a review yet.
-            </p>
+            <form>
+                @Html.AntiForgeryToken()
+                <div data-ai-summary
+                     data-ai-url="@Url.Action("ReviewPreparation", "Ai")"
+                     data-ai-label="Prepare Review Summary">
+                </div>
+            </form>
         }
     </div>
+
+    @if (aiAvailable)
+    {
+        <div id="ai-review-summary-target" class="mb-6"></div>
+    }
 
     <!-- Step indicator -->
     <nav class="mb-8">
@@ -86,3 +105,10 @@
         }
     </div>
 </div>
+
+@if (aiAvailable)
+{
+    @section Scripts {
+        <script src="~/js/ai-summary.js" asp-append-version="true"></script>
+    }
+}

@@ -9,5 +9,9 @@ public interface IActivityLogService
 
     Task<List<ActivityLogEntry>> GetActivityForProject(int projectId, int count = 20);
 
+    Task<List<ActivityLogEntry>> GetActivityForProject(int projectId, DateTime since);
+
+    Task<List<ActivityLogEntry>> GetActivityForUser(string userId, DateTime since);
+
     Task<List<ActivityLogEntry>> GetActivityForTask(int taskItemId);
 }
