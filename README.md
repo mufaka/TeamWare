@@ -20,6 +20,7 @@ TeamWare is a lightweight, self-hosted project and task management application b
 - **Real-Time Presence** — Online/offline status indicators via SignalR, "last active" timestamps on user profiles, and a global activity feed across all projects
 - **Project Invitations** — Accept/decline invitation workflow with bulk invite support, pending invitation management, and notification integration
 - **Project Lounge** — Real-time chat rooms for each project and a site-wide #general room, with @mentions, emoji reactions, message pinning, message-to-task conversion, and unread tracking
+- **AI Assistant** — Optional Ollama-powered AI features: rewrite project/task descriptions, polish comments, expand inbox items, generate project summaries, personal digests, and GTD review preparation
 
 ## Tech Stack
 
@@ -77,7 +78,7 @@ On first run, the database is automatically created and migrated, and a default 
 dotnet test
 ```
 
-The test suite includes 1050+ tests covering unit tests, integration tests, and security tests.
+The test suite includes 1100+ tests covering unit tests, integration tests, and security tests.
 
 ## Configuration
 
@@ -280,7 +281,7 @@ Items flagged as Someday/Maybe are parked for future consideration. Access them 
 
 ## Development
 
-See the [Implementation Plan](TeamWare.Web/Specifications/ImplementationPlan.md) and the [Social Features Implementation Plan](TeamWare.Web/Specifications/SocialFeaturesImplementationPlan.md) for the phased development roadmap. See the [Specification](TeamWare.Web/Specifications/Specification.md) and [Social Features Specification](TeamWare.Web/Specifications/SocialFeaturesSpecification.md) for formal requirements. Each phase has a corresponding GitHub branch (`phase-X/<name>`) and issues for individual work items.
+See the [Implementation Plan](TeamWare.Web/Specifications/ImplementationPlan.md), the [Social Features Implementation Plan](TeamWare.Web/Specifications/SocialFeaturesImplementationPlan.md), the [Project Lounge Implementation Plan](TeamWare.Web/Specifications/ProjectLoungeImplementationPlan.md), and the [Ollama Integration Implementation Plan](TeamWare.Web/Specifications/OllamaIntegrationImplementationPlan.md) for the phased development roadmap. See the [Specification](TeamWare.Web/Specifications/Specification.md), [Social Features Specification](TeamWare.Web/Specifications/SocialFeaturesSpecification.md), and [Ollama Integration Specification](TeamWare.Web/Specifications/OllamaIntegrationSpecification.md) for formal requirements. Each phase has a corresponding GitHub branch (`phase-X/<name>`) and issues for individual work items.
 
 ### SignalR Configuration
 
@@ -323,6 +324,41 @@ The Project Lounge provides real-time chat rooms for team communication:
 ### Message Retention
 
 Lounge messages are retained for 30 days. After 30 days, non-pinned messages are automatically deleted by the daily retention job. Pinned messages are exempt from cleanup and are retained indefinitely.
+
+## AI Assistant (Ollama Integration)
+
+TeamWare includes an optional AI assistant powered by a self-hosted [Ollama](https://ollama.ai/) instance. All AI features are progressive enhancements — the application is fully functional without Ollama configured.
+
+### Setup
+
+1. Install and run [Ollama](https://ollama.ai/) on your local network.
+2. Pull a model: `ollama pull llama3.1`
+3. Log in to TeamWare as an administrator.
+4. Navigate to **Admin Dashboard > Configuration** (or go to `/Admin/Configuration`).
+5. Set the `OLLAMA_URL` value to your Ollama instance URL (e.g., `http://ollama-host:11434`).
+6. Optionally set `OLLAMA_MODEL` (defaults to `llama3.1` when empty) and `OLLAMA_TIMEOUT` (defaults to `60` seconds when empty).
+
+Once `OLLAMA_URL` is set, AI buttons appear throughout the application within 60 seconds (configuration is cached). To disable AI features, clear the `OLLAMA_URL` value.
+
+### AI Features
+
+| Feature | Location | Description |
+|---------|----------|-------------|
+| AI Rewrite | Project edit form | Rewrites the project description for clarity and professionalism |
+| AI Rewrite | Task edit form | Rewrites the task description for clarity |
+| Polish | Task comment form | Polishes a comment draft for clarity and tone |
+| Expand | Inbox clarify form | Expands a brief inbox note into a fuller task description |
+| Project Summary | Project details page | Generates a summary of project activity for a selected time period |
+| Personal Digest | Dashboard | Generates a summary of the user's recent activity |
+| Review Preparation | GTD review page | Generates a preparation summary for the weekly review |
+
+### How It Works
+
+- AI buttons appear only when Ollama is configured (non-empty `OLLAMA_URL`).
+- All AI operations are asynchronous and never block the UI.
+- AI output is always a **suggestion** — the user reviews and explicitly accepts or discards every result.
+- If Ollama is unreachable, a brief error notification appears; primary actions (saving, posting) are never blocked by AI errors.
+- No data leaves your local network. All inference happens on your Ollama instance.
 
 ## License
 
