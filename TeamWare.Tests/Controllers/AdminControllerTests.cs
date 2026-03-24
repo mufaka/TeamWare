@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 using TeamWare.Web.Data;
 using TeamWare.Web.Models;
+using TeamWare.Web.Services;
 
 namespace TeamWare.Tests.Controllers;
 
@@ -363,6 +364,145 @@ public class AdminControllerTests : IClassFixture<TeamWareWebApplicationFactory>
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var content = await response.Content.ReadAsStringAsync();
         Assert.Contains("Reset Password", content);
+    }
+
+    // --- Admin PAT Management ---
+
+    [Fact]
+    public async Task Users_Admin_ShowsPatColumn()
+    {
+        var adminCookie = await LoginAsAdmin();
+
+        var request = new HttpRequestMessage(HttpMethod.Get, "/Admin/Users");
+        request.Headers.Add("Cookie", adminCookie);
+
+        var response = await _client.SendAsync(request);
+        var html = await response.Content.ReadAsStringAsync();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Contains("PATs", html);
+    }
+
+    [Fact]
+    public async Task UserTokens_Admin_ReturnsSuccess()
+    {
+        var (targetId, _) = await CreateAndLoginUser("admin-tokens@test.com", "Token User");
+        var adminCookie = await LoginAsAdmin();
+
+        var request = new HttpRequestMessage(HttpMethod.Get, $"/Admin/UserTokens?id={targetId}");
+        request.Headers.Add("Cookie", adminCookie);
+
+        var response = await _client.SendAsync(request);
+        var html = await response.Content.ReadAsStringAsync();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Contains("Personal Access Tokens", html);
+        Assert.Contains("Token User", html);
+    }
+
+    [Fact]
+    public async Task UserTokens_Admin_ShowsTokensForUser()
+    {
+        var (targetId, _) = await CreateAndLoginUser("admin-showtokens@test.com", "Show Tokens User");
+        var adminCookie = await LoginAsAdmin();
+
+        // Create a token for the target user
+        using var scope = _factory.Services.CreateScope();
+        var patService = scope.ServiceProvider.GetRequiredService<IPersonalAccessTokenService>();
+        await patService.CreateTokenAsync(targetId, "Admin Visible Token", null);
+
+        var request = new HttpRequestMessage(HttpMethod.Get, $"/Admin/UserTokens?id={targetId}");
+        request.Headers.Add("Cookie", adminCookie);
+
+        var response = await _client.SendAsync(request);
+        var html = await response.Content.ReadAsStringAsync();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Contains("Admin Visible Token", html);
+        Assert.Contains("Revoke", html);
+    }
+
+    [Fact]
+    public async Task UserTokens_NonAdmin_RedirectsToAccessDenied()
+    {
+        var (targetId, cookie) = await CreateAndLoginUser("nonadmin-tokens@test.com", "Non Admin User");
+
+        var request = new HttpRequestMessage(HttpMethod.Get, $"/Admin/UserTokens?id={targetId}");
+        request.Headers.Add("Cookie", cookie);
+
+        var response = await _client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+        Assert.Contains("/Account/AccessDenied", response.Headers.Location?.ToString());
+    }
+
+    [Fact]
+    public async Task RevokeUserToken_Admin_RedirectsToUserTokens()
+    {
+        var (targetId, _) = await CreateAndLoginUser("admin-revoke@test.com", "Revoke Target User");
+        var adminCookie = await LoginAsAdmin();
+
+        // Create a token for the target user
+        using var scope = _factory.Services.CreateScope();
+        var patService = scope.ServiceProvider.GetRequiredService<IPersonalAccessTokenService>();
+        await patService.CreateTokenAsync(targetId, "Token To Admin Revoke", null);
+        var tokens = await patService.GetTokensForUserAsync(targetId);
+        var tokenId = tokens.Data!.First(t => t.Name == "Token To Admin Revoke").Id;
+
+        var (antiForgeryToken, cookies) = await GetFormTokenAndCookies($"/Admin/UserTokens?id={targetId}", adminCookie);
+
+        var request = new HttpRequestMessage(HttpMethod.Post, $"/Admin/RevokeUserToken?userId={targetId}&tokenId={tokenId}");
+        request.Headers.Add("Cookie", cookies);
+        request.Content = new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["__RequestVerificationToken"] = antiForgeryToken
+        });
+
+        var response = await _client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+        Assert.Contains("/Admin/UserTokens", response.Headers.Location?.ToString());
+    }
+
+    [Fact]
+    public async Task RevokeAllUserTokens_Admin_RedirectsToUserTokens()
+    {
+        var (targetId, _) = await CreateAndLoginUser("admin-revokeall@test.com", "Revoke All User");
+        var adminCookie = await LoginAsAdmin();
+
+        // Create tokens for the target user
+        using var scope = _factory.Services.CreateScope();
+        var patService = scope.ServiceProvider.GetRequiredService<IPersonalAccessTokenService>();
+        await patService.CreateTokenAsync(targetId, "Batch Token 1", null);
+        await patService.CreateTokenAsync(targetId, "Batch Token 2", null);
+
+        var (antiForgeryToken, cookies) = await GetFormTokenAndCookies($"/Admin/UserTokens?id={targetId}", adminCookie);
+
+        var request = new HttpRequestMessage(HttpMethod.Post, $"/Admin/RevokeAllUserTokens?userId={targetId}");
+        request.Headers.Add("Cookie", cookies);
+        request.Content = new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["__RequestVerificationToken"] = antiForgeryToken
+        });
+
+        var response = await _client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+        Assert.Contains("/Admin/UserTokens", response.Headers.Location?.ToString());
+    }
+
+    [Fact]
+    public async Task UserTokens_InvalidUserId_RedirectsToUsers()
+    {
+        var adminCookie = await LoginAsAdmin();
+
+        var request = new HttpRequestMessage(HttpMethod.Get, "/Admin/UserTokens?id=nonexistent-id");
+        request.Headers.Add("Cookie", adminCookie);
+
+        var response = await _client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+        Assert.Contains("/Admin/Users", response.Headers.Location?.ToString());
     }
 
     public void Dispose()

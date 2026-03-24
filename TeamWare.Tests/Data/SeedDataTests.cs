@@ -124,4 +124,18 @@ public class SeedDataTests : IClassFixture<TeamWareWebApplicationFactory>
         Assert.Equal("", config.Value);
         Assert.Equal("AI request timeout in seconds. Defaults to 60 when empty.", config.Description);
     }
+
+    [Fact]
+    public async Task Seed_CreatesMcpEnabledConfiguration()
+    {
+        using var scope = _factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+        var config = await context.GlobalConfigurations
+            .FirstOrDefaultAsync(gc => gc.Key == "MCP_ENABLED");
+
+        Assert.NotNull(config);
+        Assert.Equal("false", config.Value);
+        Assert.Equal("Enable the MCP (Model Context Protocol) server endpoint at /mcp. Set to true to allow AI agents and MCP clients to connect.", config.Description);
+    }
 }

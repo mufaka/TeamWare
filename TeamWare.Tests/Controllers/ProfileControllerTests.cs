@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 using TeamWare.Web.Data;
 using TeamWare.Web.Models;
+using TeamWare.Web.Services;
 
 namespace TeamWare.Tests.Controllers;
 
@@ -389,6 +390,202 @@ public class ProfileControllerTests : IClassFixture<TeamWareWebApplicationFactor
         var response = await _client.SendAsync(request);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    // --- PAT Management UI ---
+
+    [Fact]
+    public async Task Index_ShowsPersonalAccessTokensSection()
+    {
+        var loginCookie = await CreateAndLoginUser("pat-section@test.com");
+
+        var request = new HttpRequestMessage(HttpMethod.Get, "/Profile");
+        request.Headers.Add("Cookie", loginCookie);
+
+        var response = await _client.SendAsync(request);
+        var html = await response.Content.ReadAsStringAsync();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Contains("Personal Access Tokens", html);
+        Assert.Contains("Generate New Token", html);
+        Assert.Contains("No active tokens.", html);
+    }
+
+    [Fact]
+    public async Task CreateToken_Post_ValidInput_ShowsNewToken()
+    {
+        var loginCookie = await CreateAndLoginUser("pat-create@test.com");
+
+        var getRequest = new HttpRequestMessage(HttpMethod.Get, "/Profile");
+        getRequest.Headers.Add("Cookie", loginCookie);
+        var getResponse = await _client.SendAsync(getRequest);
+        var getContent = await getResponse.Content.ReadAsStringAsync();
+        var token = ExtractAntiForgeryToken(getContent);
+        var responseCookies = getResponse.Headers.GetValues("Set-Cookie");
+        var allCookies = loginCookie + "; " + string.Join("; ", responseCookies);
+
+        var request = new HttpRequestMessage(HttpMethod.Post, "/Profile/CreateToken");
+        request.Headers.Add("Cookie", allCookies);
+        request.Content = new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["Name"] = "Test Token",
+            ["__RequestVerificationToken"] = token
+        });
+
+        var response = await _client.SendAsync(request);
+        var html = await response.Content.ReadAsStringAsync();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Contains("Token created successfully", html);
+        Assert.Contains("tw_", html);
+        Assert.Contains("Copy", html);
+    }
+
+    [Fact]
+    public async Task CreateToken_Post_EmptyName_ShowsValidationError()
+    {
+        var loginCookie = await CreateAndLoginUser("pat-empty@test.com");
+
+        var getRequest = new HttpRequestMessage(HttpMethod.Get, "/Profile");
+        getRequest.Headers.Add("Cookie", loginCookie);
+        var getResponse = await _client.SendAsync(getRequest);
+        var getContent = await getResponse.Content.ReadAsStringAsync();
+        var token = ExtractAntiForgeryToken(getContent);
+        var responseCookies = getResponse.Headers.GetValues("Set-Cookie");
+        var allCookies = loginCookie + "; " + string.Join("; ", responseCookies);
+
+        var request = new HttpRequestMessage(HttpMethod.Post, "/Profile/CreateToken");
+        request.Headers.Add("Cookie", allCookies);
+        request.Content = new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["Name"] = "",
+            ["__RequestVerificationToken"] = token
+        });
+
+        var response = await _client.SendAsync(request);
+        var html = await response.Content.ReadAsStringAsync();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Contains("Personal Access Tokens", html);
+    }
+
+    [Fact]
+    public async Task CreateToken_ShowsTokenInListAfterCreation()
+    {
+        var loginCookie = await CreateAndLoginUser("pat-list@test.com");
+
+        var getRequest = new HttpRequestMessage(HttpMethod.Get, "/Profile");
+        getRequest.Headers.Add("Cookie", loginCookie);
+        var getResponse = await _client.SendAsync(getRequest);
+        var getContent = await getResponse.Content.ReadAsStringAsync();
+        var token = ExtractAntiForgeryToken(getContent);
+        var responseCookies = getResponse.Headers.GetValues("Set-Cookie");
+        var allCookies = loginCookie + "; " + string.Join("; ", responseCookies);
+
+        var createRequest = new HttpRequestMessage(HttpMethod.Post, "/Profile/CreateToken");
+        createRequest.Headers.Add("Cookie", allCookies);
+        createRequest.Content = new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["Name"] = "My API Token",
+            ["__RequestVerificationToken"] = token
+        });
+
+        var createResponse = await _client.SendAsync(createRequest);
+        var html = await createResponse.Content.ReadAsStringAsync();
+
+        Assert.Equal(HttpStatusCode.OK, createResponse.StatusCode);
+        Assert.Contains("My API Token", html);
+        Assert.Contains("tw_", html);
+        Assert.Contains("Revoke", html);
+    }
+
+    [Fact]
+    public async Task RevokeToken_Post_RemovesTokenFromList()
+    {
+        var loginCookie = await CreateAndLoginUser("pat-revoke@test.com");
+
+        // Create a token first
+        using var scope = _factory.Services.CreateScope();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+        var tokenService = scope.ServiceProvider.GetRequiredService<Web.Services.IPersonalAccessTokenService>();
+        var user = await userManager.FindByEmailAsync("pat-revoke@test.com");
+        var createResult = await tokenService.CreateTokenAsync(user!.Id, "Token To Revoke", null);
+        Assert.True(createResult.Succeeded);
+
+        var tokensResult = await tokenService.GetTokensForUserAsync(user.Id);
+        var patToken = tokensResult.Data!.First(t => t.Name == "Token To Revoke");
+
+        // Get profile page for anti-forgery token
+        var getRequest = new HttpRequestMessage(HttpMethod.Get, "/Profile");
+        getRequest.Headers.Add("Cookie", loginCookie);
+        var getResponse = await _client.SendAsync(getRequest);
+        var getContent = await getResponse.Content.ReadAsStringAsync();
+        var antiForgeryToken = ExtractAntiForgeryToken(getContent);
+        var responseCookies = getResponse.Headers.GetValues("Set-Cookie");
+        var allCookies = loginCookie + "; " + string.Join("; ", responseCookies);
+
+        // Revoke the token
+        var revokeRequest = new HttpRequestMessage(HttpMethod.Post, "/Profile/RevokeToken");
+        revokeRequest.Headers.Add("Cookie", allCookies);
+        revokeRequest.Content = new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["tokenId"] = patToken.Id.ToString(),
+            ["__RequestVerificationToken"] = antiForgeryToken
+        });
+
+        var revokeResponse = await _client.SendAsync(revokeRequest);
+
+        Assert.Equal(HttpStatusCode.Redirect, revokeResponse.StatusCode);
+        Assert.Contains("/Profile", revokeResponse.Headers.Location?.ToString());
+    }
+
+    [Fact]
+    public async Task CreateToken_Unauthenticated_RedirectsToLogin()
+    {
+        var response = await _client.PostAsync("/Profile/CreateToken", null);
+
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+        Assert.Contains("/Account/Login", response.Headers.Location?.ToString());
+    }
+
+    [Fact]
+    public async Task RevokeToken_Unauthenticated_RedirectsToLogin()
+    {
+        var response = await _client.PostAsync("/Profile/RevokeToken", null);
+
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+        Assert.Contains("/Account/Login", response.Headers.Location?.ToString());
+    }
+
+    [Fact]
+    public async Task CreateToken_WithExpirationDate_ShowsExpirationInList()
+    {
+        var loginCookie = await CreateAndLoginUser("pat-expiry@test.com");
+
+        var getRequest = new HttpRequestMessage(HttpMethod.Get, "/Profile");
+        getRequest.Headers.Add("Cookie", loginCookie);
+        var getResponse = await _client.SendAsync(getRequest);
+        var getContent = await getResponse.Content.ReadAsStringAsync();
+        var token = ExtractAntiForgeryToken(getContent);
+        var responseCookies = getResponse.Headers.GetValues("Set-Cookie");
+        var allCookies = loginCookie + "; " + string.Join("; ", responseCookies);
+
+        var expirationDate = DateTime.UtcNow.AddDays(30).ToString("yyyy-MM-dd");
+        var request = new HttpRequestMessage(HttpMethod.Post, "/Profile/CreateToken");
+        request.Headers.Add("Cookie", allCookies);
+        request.Content = new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["Name"] = "Expiring Token",
+            ["ExpiresAt"] = expirationDate,
+            ["__RequestVerificationToken"] = token
+        });
+
+        var response = await _client.SendAsync(request);
+        var html = await response.Content.ReadAsStringAsync();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Contains("Expiring Token", html);
+        Assert.Contains(expirationDate, html);
     }
 
     public void Dispose()

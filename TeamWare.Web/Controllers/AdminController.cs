@@ -15,17 +15,20 @@ public class AdminController : Controller
     private readonly IAdminActivityLogService _activityLogService;
     private readonly IGlobalConfigurationService _configService;
     private readonly UserManager<ApplicationUser> _userManager;
+    private readonly IPersonalAccessTokenService _patService;
 
     public AdminController(
         IAdminService adminService,
         IAdminActivityLogService activityLogService,
         IGlobalConfigurationService configService,
-        UserManager<ApplicationUser> userManager)
+        UserManager<ApplicationUser> userManager,
+        IPersonalAccessTokenService patService)
     {
         _adminService = adminService;
         _activityLogService = activityLogService;
         _configService = configService;
         _userManager = userManager;
+        _patService = patService;
     }
 
     private string GetUserId() => User.FindFirstValue(ClaimTypes.NameIdentifier)!;
@@ -65,13 +68,17 @@ public class AdminController : Controller
 
         foreach (var user in pagedResult.Items)
         {
+            var tokensResult = await _patService.GetTokensForUserAsync(user.Id);
+            var activePatCount = tokensResult.Succeeded ? tokensResult.Data!.Count : 0;
+
             userViewModels.Add(new AdminUserViewModel
             {
                 Id = user.Id,
                 Email = user.Email ?? string.Empty,
                 DisplayName = user.DisplayName,
                 IsLockedOut = user.LockoutEnd != null && user.LockoutEnd > DateTimeOffset.UtcNow,
-                IsAdmin = await _userManager.IsInRoleAsync(user, "Admin")
+                IsAdmin = await _userManager.IsInRoleAsync(user, "Admin"),
+                ActivePatCount = activePatCount
             });
         }
 
@@ -297,5 +304,61 @@ public class AdminController : Controller
 
         TempData["SuccessMessage"] = $"Configuration '{model.Key}' has been updated.";
         return RedirectToAction(nameof(Configuration));
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> UserTokens(string id)
+    {
+        var user = await _userManager.FindByIdAsync(id);
+        if (user == null)
+        {
+            TempData["ErrorMessage"] = "User not found.";
+            return RedirectToAction(nameof(Users));
+        }
+
+        var tokensResult = await _patService.GetTokensForUserAsync(user.Id);
+        var viewModel = new AdminUserTokensViewModel
+        {
+            UserId = user.Id,
+            UserDisplayName = user.DisplayName,
+            UserEmail = user.Email ?? string.Empty,
+            Tokens = tokensResult.Succeeded ? tokensResult.Data! : new List<PersonalAccessToken>()
+        };
+
+        return View(viewModel);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> RevokeUserToken(string userId, int tokenId)
+    {
+        var result = await _patService.RevokeTokenAsync(tokenId, GetUserId(), isAdmin: true);
+        if (!result.Succeeded)
+        {
+            TempData["ErrorMessage"] = result.Errors.FirstOrDefault();
+        }
+        else
+        {
+            TempData["SuccessMessage"] = "Token has been revoked.";
+        }
+
+        return RedirectToAction(nameof(UserTokens), new { id = userId });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> RevokeAllUserTokens(string userId)
+    {
+        var result = await _patService.RevokeAllTokensForUserAsync(userId);
+        if (!result.Succeeded)
+        {
+            TempData["ErrorMessage"] = result.Errors.FirstOrDefault();
+        }
+        else
+        {
+            TempData["SuccessMessage"] = "All tokens have been revoked.";
+        }
+
+        return RedirectToAction(nameof(UserTokens), new { id = userId });
     }
 }

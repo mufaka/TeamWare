@@ -148,55 +148,55 @@ The following maps implementation plan work items to their canonical GitHub issu
 
 | Work Item | Canonical Issue | Duplicate Issues |
 |-----------|----------------|------------------|
-| 26.1 PersonalAccessToken Entity and Migration | — | — |
-| 26.2 PersonalAccessTokenService | — | — |
-| 26.3 PAT Authentication Handler | — | — |
-| 26.4 GlobalConfiguration Seeding and MCP Endpoint | — | — |
-| 26.5 PAT Management UI | — | — |
-| 26.6 Admin PAT Management | — | — |
+| 26.1 PersonalAccessToken Entity and Migration | #160 | — |
+| 26.2 PersonalAccessTokenService | #163 | — |
+| 26.3 PAT Authentication Handler | #161 | — |
+| 26.4 GlobalConfiguration Seeding and MCP Endpoint | #162 | — |
+| 26.5 PAT Management UI | #164 | — |
+| 26.6 Admin PAT Management | #165 | — |
 
 ### Phase 27: Read-Only MCP Tools (label: `Phase 27: MCP Read Tools`)
 
 | Work Item | Canonical Issue | Duplicate Issues |
 |-----------|----------------|------------------|
-| 27.1 ProjectTools | — | — |
-| 27.2 TaskTools (Read) | — | — |
-| 27.3 InboxTools (Read) | — | — |
-| 27.4 ActivityTools | — | — |
-| 27.5 Cross-Cutting Read Tool Tests | — | — |
+| 27.1 ProjectTools | #167 | — |
+| 27.2 TaskTools (Read) | #169 | — |
+| 27.3 InboxTools (Read) | #166 | — |
+| 27.4 ActivityTools | #168 | — |
+| 27.5 Cross-Cutting Read Tool Tests | #170 | — |
 
 ### Phase 28: Write MCP Tools (label: `Phase 28: MCP Write Tools`)
 
 | Work Item | Canonical Issue | Duplicate Issues |
 |-----------|----------------|------------------|
-| 28.1 TaskTools (Write) | — | — |
-| 28.2 InboxTools (Write) | — | — |
-| 28.3 Cross-Cutting Write Tool Tests | — | — |
+| 28.1 TaskTools (Write) | #171 | — |
+| 28.2 InboxTools (Write) | #173 | — |
+| 28.3 Cross-Cutting Write Tool Tests | #172 | — |
 
 ### Phase 29: MCP Prompts and Resources (label: `Phase 29: MCP Prompts Resources`)
 
 | Work Item | Canonical Issue | Duplicate Issues |
 |-----------|----------------|------------------|
-| 29.1 Project Context Prompt | — | — |
-| 29.2 Task Breakdown Prompt | — | — |
-| 29.3 Standup Prompt | — | — |
-| 29.4 Dashboard Resource | — | — |
-| 29.5 Project Summary Resource | — | — |
-| 29.6 Cross-Cutting Prompt and Resource Tests | — | — |
+| 29.1 Project Context Prompt | #178 | — |
+| 29.2 Task Breakdown Prompt | #177 | — |
+| 29.3 Standup Prompt | #174 | — |
+| 29.4 Dashboard Resource | #179 | — |
+| 29.5 Project Summary Resource | #175 | — |
+| 29.6 Cross-Cutting Prompt and Resource Tests | #176 | — |
 
 ### Phase 30: Lounge MCP Tools (label: `Phase 30: MCP Lounge Tools`)
 
 | Work Item | Canonical Issue | Duplicate Issues |
 |-----------|----------------|------------------|
-| 30.1 LoungeTools | — | — |
-| 30.2 Cross-Cutting Lounge Tests | — | — |
+| 30.1 LoungeTools | #186 | — |
+| 30.2 Cross-Cutting Lounge Tests | #185 | — |
 
 ### Phase 31: MCP Polish and Hardening (label: `Phase 31: MCP Polish`)
 
 | Work Item | Canonical Issue | Duplicate Issues |
 |-----------|----------------|------------------|
-| 31.1 Error Handling and Resilience | — | — |
-| 31.2 Security Review | — | — |
-| 31.3 JSON Response Consistency | — | — |
-| 31.4 UI/UX Consistency | — | — |
-| 31.5 Documentation | — | — |
+| 31.1 Error Handling and Resilience | #180 | — |
+| 31.2 Security Review | #184 | — |
+| 31.3 JSON Response Consistency | #181 | — |
+| 31.4 UI/UX Consistency | #183 | — |
+| 31.5 Documentation | #182 | — |

@@ -1,12 +1,16 @@
 ﻿using Hangfire;
 using Hangfire.MemoryStorage;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
+using ModelContextProtocol.AspNetCore;
+using TeamWare.Web.Authentication;
 using TeamWare.Web.Data;
 using TeamWare.Web.Hubs;
 using TeamWare.Web.Jobs;
+using TeamWare.Web.Middleware;
 using TeamWare.Web.Models;
 using TeamWare.Web.Services;
 
@@ -38,6 +42,10 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.AccessDeniedPath = "/Account/AccessDenied";
 });
 
+builder.Services.AddAuthentication()
+    .AddScheme<AuthenticationSchemeOptions, PatAuthenticationHandler>(
+        PatAuthenticationHandler.SchemeName, null);
+
 builder.Services.AddScoped<IProjectService, ProjectService>();
 builder.Services.AddScoped<IProjectMemberService, ProjectMemberService>();
 builder.Services.AddScoped<IActivityLogService, ActivityLogService>();
@@ -60,6 +68,7 @@ builder.Services.AddScoped<IFileStorageService, FileStorageService>();
 builder.Services.AddScoped<IAttachmentService, AttachmentService>();
 builder.Services.AddScoped<IOllamaService, OllamaService>();
 builder.Services.AddScoped<IAiAssistantService, AiAssistantService>();
+builder.Services.AddScoped<IPersonalAccessTokenService, PersonalAccessTokenService>();
 
 builder.Services.AddMemoryCache();
 builder.Services.AddHttpClient("Ollama");
@@ -90,6 +99,10 @@ builder.Services.AddResponseCompression(options =>
     options.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(["text/html"]);
 });
 
+builder.Services.AddMcpServer()
+    .WithHttpTransport()
+    .WithToolsFromAssembly();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -99,6 +112,7 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
+app.UseMiddleware<McpEnabledMiddleware>();
 app.UseStatusCodePagesWithReExecute("/Home/StatusCode/{0}");
 app.UseHttpsRedirection();
 app.UseResponseCompression();
@@ -116,6 +130,8 @@ app.MapControllerRoute(
 
 app.MapHub<PresenceHub>("/hubs/presence");
 app.MapHub<LoungeHub>("/hubs/lounge");
+
+app.MapMcp("/mcp");
 
 app.UseHangfireDashboard("/hangfire", new DashboardOptions
 {

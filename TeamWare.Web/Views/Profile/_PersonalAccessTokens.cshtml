@@ -1,0 +1,127 @@
+﻿@model TeamWare.Web.ViewModels.PersonalAccessTokenListViewModel
+
+<div class="mt-6 rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+    <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-white">Personal Access Tokens</h2>
+    <p class="mb-4 text-sm text-gray-500 dark:text-gray-400">
+        Tokens allow external tools and AI agents to access TeamWare on your behalf via the MCP endpoint.
+    </p>
+
+    @if (Model.NewlyCreatedToken != null)
+    {
+        <div class="mb-4 rounded-md border border-green-200 bg-green-50 p-4 dark:border-green-800 dark:bg-green-900/20">
+            <p class="mb-2 text-sm font-medium text-green-800 dark:text-green-300">
+                Token created successfully. Copy it now -- it will not be shown again.
+            </p>
+            <div class="flex items-center gap-2">
+                <input type="text"
+                       id="new-token-value"
+                       readonly
+                       value="@Model.NewlyCreatedToken"
+                       class="flex-1 rounded-md border border-gray-300 bg-gray-50 px-3 py-2 font-mono text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white" />
+                <button type="button"
+                        onclick="navigator.clipboard.writeText(document.getElementById('new-token-value').value)"
+                        class="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-700">
+                    Copy
+                </button>
+            </div>
+        </div>
+    }
+
+    <!-- Generate New Token Form -->
+    <details class="mb-4">
+        <summary class="cursor-pointer text-sm font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300">
+            Generate New Token
+        </summary>
+        <form asp-controller="Profile" asp-action="CreateToken" method="post" class="mt-3 space-y-3">
+            @Html.AntiForgeryToken()
+            <div>
+                <label for="Name" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Token Name</label>
+                <input type="text"
+                       id="Name"
+                       name="Name"
+                       value="@Model.CreateForm.Name"
+                       required
+                       maxlength="100"
+                       placeholder="e.g., VS Code MCP Client"
+                       class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white" />
+                @if (ViewContext.ViewData.ModelState["Name"]?.Errors.Count > 0)
+                {
+                    <p class="mt-1 text-sm text-red-600 dark:text-red-400">
+                        @ViewContext.ViewData.ModelState["Name"]!.Errors[0].ErrorMessage
+                    </p>
+                }
+            </div>
+            <div>
+                <label for="ExpiresAt" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Expiration Date <span class="text-gray-400">(optional)</span>
+                </label>
+                <input type="date"
+                       id="ExpiresAt"
+                       name="ExpiresAt"
+                       value="@Model.CreateForm.ExpiresAt?.ToString("yyyy-MM-dd")"
+                       min="@DateTime.UtcNow.AddDays(1).ToString("yyyy-MM-dd")"
+                       class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white" />
+            </div>
+            @if (ViewContext.ViewData.ModelState[string.Empty]?.Errors.Count > 0)
+            {
+                <p class="text-sm text-red-600 dark:text-red-400">
+                    @ViewContext.ViewData.ModelState[string.Empty]!.Errors[0].ErrorMessage
+                </p>
+            }
+            <button type="submit"
+                    class="inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700">
+                Generate Token
+            </button>
+        </form>
+    </details>
+
+    <!-- Token List -->
+    @if (Model.Tokens.Count == 0)
+    {
+        <p class="text-sm text-gray-500 dark:text-gray-400">No active tokens.</p>
+    }
+    else
+    {
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead>
+                    <tr>
+                        <th class="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Name</th>
+                        <th class="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Token</th>
+                        <th class="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Created</th>
+                        <th class="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Expires</th>
+                        <th class="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Last Used</th>
+                        <th class="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400"></th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                    @foreach (var token in Model.Tokens)
+                    {
+                        <tr>
+                            <td class="whitespace-nowrap px-3 py-2 text-sm text-gray-900 dark:text-white">@token.Name</td>
+                            <td class="whitespace-nowrap px-3 py-2 font-mono text-sm text-gray-500 dark:text-gray-400">@(token.TokenPrefix)...</td>
+                            <td class="whitespace-nowrap px-3 py-2 text-sm text-gray-500 dark:text-gray-400">@token.CreatedAt.ToString("yyyy-MM-dd")</td>
+                            <td class="whitespace-nowrap px-3 py-2 text-sm text-gray-500 dark:text-gray-400">
+                                @(token.ExpiresAt.HasValue ? token.ExpiresAt.Value.ToString("yyyy-MM-dd") : "Never")
+                            </td>
+                            <td class="whitespace-nowrap px-3 py-2 text-sm text-gray-500 dark:text-gray-400">
+                                @(token.LastUsedAt.HasValue ? token.LastUsedAt.Value.ToString("yyyy-MM-dd") : "Never used")
+                            </td>
+                            <td class="whitespace-nowrap px-3 py-2 text-right text-sm">
+                                <form asp-controller="Profile" asp-action="RevokeToken" method="post" class="inline"
+                                      onsubmit="return confirm('Are you sure you want to revoke this token? This action cannot be undone.');">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="tokenId" value="@token.Id" />
+                                    <button type="submit"
+                                            class="text-sm font-medium text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300">
+                                        Revoke
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

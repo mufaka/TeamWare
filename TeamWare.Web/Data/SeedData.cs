@@ -69,6 +69,7 @@ public static class SeedData
             ("OLLAMA_URL", "", "Base URL of the Ollama instance (e.g., http://ollama-host:11434). Leave empty to disable AI features."),
             ("OLLAMA_MODEL", "", "Ollama model name for AI completions. Defaults to llama3.1 when empty."),
             ("OLLAMA_TIMEOUT", "", "AI request timeout in seconds. Defaults to 60 when empty."),
+            ("MCP_ENABLED", "false", "Enable the MCP (Model Context Protocol) server endpoint at /mcp. Set to true to allow AI agents and MCP clients to connect."),
         };
 
         foreach (var (key, value, description) in keysToSeed)

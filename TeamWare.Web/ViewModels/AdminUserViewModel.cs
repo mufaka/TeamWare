@@ -7,4 +7,5 @@ public class AdminUserViewModel
     public string DisplayName { get; set; } = string.Empty;
     public bool IsLockedOut { get; set; }
     public bool IsAdmin { get; set; }
+    public int ActivePatCount { get; set; }
 }

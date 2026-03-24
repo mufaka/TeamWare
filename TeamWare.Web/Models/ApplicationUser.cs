@@ -13,4 +13,6 @@ public class ApplicationUser : IdentityUser
     public DateTime? LastActiveAt { get; set; }
 
     public ICollection<LoungeMessage> LoungeMessages { get; set; } = new List<LoungeMessage>();
+
+    public ICollection<PersonalAccessToken> PersonalAccessTokens { get; set; } = new List<PersonalAccessToken>();
 }
