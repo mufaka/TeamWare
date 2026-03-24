@@ -63,17 +63,28 @@ public static class SeedData
 
     private static async Task SeedGlobalConfigurationAsync(ApplicationDbContext context)
     {
-        if (!await context.GlobalConfigurations.AnyAsync(gc => gc.Key == "ATTACHMENT_DIR"))
+        var keysToSeed = new (string Key, string Value, string Description)[]
         {
-            context.GlobalConfigurations.Add(new GlobalConfiguration
-            {
-                Key = "ATTACHMENT_DIR",
-                Value = "./Attachments",
-                Description = "Base directory for file attachment storage",
-                UpdatedAt = DateTime.UtcNow
-            });
+            ("ATTACHMENT_DIR", "./Attachments", "Base directory for file attachment storage"),
+            ("OLLAMA_URL", "", "Base URL of the Ollama instance (e.g., http://ollama-host:11434). Leave empty to disable AI features."),
+            ("OLLAMA_MODEL", "", "Ollama model name for AI completions. Defaults to llama3.1 when empty."),
+            ("OLLAMA_TIMEOUT", "", "AI request timeout in seconds. Defaults to 60 when empty."),
+        };
 
-            await context.SaveChangesAsync();
+        foreach (var (key, value, description) in keysToSeed)
+        {
+            if (!await context.GlobalConfigurations.AnyAsync(gc => gc.Key == key))
+            {
+                context.GlobalConfigurations.Add(new GlobalConfiguration
+                {
+                    Key = key,
+                    Value = value,
+                    Description = description,
+                    UpdatedAt = DateTime.UtcNow
+                });
+            }
         }
+
+        await context.SaveChangesAsync();
     }
 }
