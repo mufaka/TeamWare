@@ -1,6 +1,8 @@
 ﻿@model TeamWare.Web.ViewModels.EditTaskViewModel
+@inject TeamWare.Web.Services.IAiAssistantService AiAssistantService
 @{
     ViewData["Title"] = "Edit Task";
+    var aiAvailable = await AiAssistantService.IsAvailable();
 }
 
 <div class="mx-auto max-w-lg">
@@ -27,6 +29,17 @@
             <label asp-for="Description" class="block text-sm font-medium text-gray-700 dark:text-gray-300"></label>
             @{ var editorModel = new MarkdownEditorViewModel { FieldName = "Description", Value = Model.Description }; }
             <partial name="_MarkdownEditor" model="editorModel" />
+            @if (aiAvailable)
+            {
+                <div data-ai-rewrite
+                     data-ai-url="@Url.Action("RewriteTaskDescription", "Ai")"
+                     data-ai-field="#Description"
+                     data-ai-field-param="description"
+                     data-ai-params='{"taskId": @Model.Id}'
+                     data-ai-label="AI Rewrite"
+                     class="mt-2">
+                </div>
+            }
             <span asp-validation-for="Description" class="mt-1 text-sm text-red-600 dark:text-red-400"></span>
         </div>
 
@@ -54,4 +67,8 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    @if (aiAvailable)
+    {
+        <script src="~/js/ai-rewrite.js" asp-append-version="true"></script>
+    }
 }
