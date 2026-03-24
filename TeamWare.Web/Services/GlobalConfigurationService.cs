@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using TeamWare.Web.Data;
 using TeamWare.Web.Models;
 
@@ -8,13 +9,16 @@ public class GlobalConfigurationService : IGlobalConfigurationService
 {
     private readonly ApplicationDbContext _context;
     private readonly IAdminActivityLogService _activityLogService;
+    private readonly IMemoryCache _cache;
 
     public GlobalConfigurationService(
         ApplicationDbContext context,
-        IAdminActivityLogService activityLogService)
+        IAdminActivityLogService activityLogService,
+        IMemoryCache cache)
     {
         _context = context;
         _activityLogService = activityLogService;
+        _cache = cache;
     }
 
     public async Task<ServiceResult<List<GlobalConfiguration>>> GetAllAsync()
@@ -57,6 +61,8 @@ public class GlobalConfigurationService : IGlobalConfigurationService
         config.UpdatedByUserId = userId;
 
         await _context.SaveChangesAsync();
+
+        _cache.Remove(OllamaService.CacheKeyPrefix + key);
 
         await _activityLogService.LogAction(
             userId,

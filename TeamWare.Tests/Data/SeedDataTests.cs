@@ -82,4 +82,46 @@ public class SeedDataTests : IClassFixture<TeamWareWebApplicationFactory>
 
         Assert.Equal(1, count);
     }
+
+    [Fact]
+    public async Task Seed_CreatesOllamaUrlConfiguration()
+    {
+        using var scope = _factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+        var config = await context.GlobalConfigurations
+            .FirstOrDefaultAsync(gc => gc.Key == "OLLAMA_URL");
+
+        Assert.NotNull(config);
+        Assert.Equal("", config.Value);
+        Assert.Equal("Base URL of the Ollama instance (e.g., http://ollama-host:11434). Leave empty to disable AI features.", config.Description);
+    }
+
+    [Fact]
+    public async Task Seed_CreatesOllamaModelConfiguration()
+    {
+        using var scope = _factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+        var config = await context.GlobalConfigurations
+            .FirstOrDefaultAsync(gc => gc.Key == "OLLAMA_MODEL");
+
+        Assert.NotNull(config);
+        Assert.Equal("", config.Value);
+        Assert.Equal("Ollama model name for AI completions. Defaults to llama3.1 when empty.", config.Description);
+    }
+
+    [Fact]
+    public async Task Seed_CreatesOllamaTimeoutConfiguration()
+    {
+        using var scope = _factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+        var config = await context.GlobalConfigurations
+            .FirstOrDefaultAsync(gc => gc.Key == "OLLAMA_TIMEOUT");
+
+        Assert.NotNull(config);
+        Assert.Equal("", config.Value);
+        Assert.Equal("AI request timeout in seconds. Defaults to 60 when empty.", config.Description);
+    }
 }

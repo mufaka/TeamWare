@@ -1,5 +1,6 @@
 ﻿using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using TeamWare.Web.Data;
 using TeamWare.Web.Models;
 using TeamWare.Web.Services;
@@ -37,7 +38,7 @@ public class FileStorageServiceTests : IDisposable
         _context.SaveChanges();
 
         var activityLogService = new AdminActivityLogService(_context);
-        var configService = new GlobalConfigurationService(_context, activityLogService);
+        var configService = new GlobalConfigurationService(_context, activityLogService, new MemoryCache(new MemoryCacheOptions()));
         _service = new FileStorageService(configService);
     }
 

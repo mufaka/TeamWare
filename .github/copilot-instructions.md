@@ -101,38 +101,38 @@ The following maps implementation plan work items to their canonical GitHub issu
 
 | Work Item | Canonical Issue | Duplicate Issues |
 |-----------|----------------|------------------|
-| 22.1 GlobalConfiguration Seeding | TBD | — |
-| 22.2 OllamaService | TBD | — |
-| 22.3 AiAssistantService | TBD | — |
-| 22.4 AiController Skeleton | TBD | — |
+| 22.1 GlobalConfiguration Seeding | #136 | — |
+| 22.2 OllamaService | #138 | — |
+| 22.3 AiAssistantService | #137 | — |
+| 22.4 AiController Skeleton | #139 | — |
 
 ### Phase 23: Content Rewriting (label: `Phase 23: Content Rewriting`)
 
 | Work Item | Canonical Issue | Duplicate Issues |
 |-----------|----------------|------------------|
-| 23.1 Rewrite Controller Actions | TBD | — |
-| 23.2 Rewrite UI - Project Edit Form | TBD | — |
-| 23.3 Rewrite UI - Task Edit Form | TBD | — |
-| 23.4 Rewrite UI - Comment Form | TBD | — |
-| 23.5 Rewrite UI - Inbox Clarify Form | TBD | — |
-| 23.6 Shared AI JavaScript | TBD | — |
+| 23.1 Rewrite Controller Actions | #140 | — |
+| 23.2 Rewrite UI - Project Edit Form | #141 | — |
+| 23.3 Rewrite UI - Task Edit Form | #145 | — |
+| 23.4 Rewrite UI - Comment Form | #143 | — |
+| 23.5 Rewrite UI - Inbox Clarify Form | #142 | — |
+| 23.6 Shared AI JavaScript | #144 | — |
 
 ### Phase 24: Summary Generation (label: `Phase 24: Summary Generation`)
 
 | Work Item | Canonical Issue | Duplicate Issues |
 |-----------|----------------|------------------|
-| 24.1 Summary Data Gathering | TBD | — |
-| 24.2 Summary Controller Actions | TBD | — |
-| 24.3 Summary UI - Project Dashboard | TBD | — |
-| 24.4 Summary UI - Personal Dashboard | TBD | — |
-| 24.5 Summary UI - GTD Review Page | TBD | — |
-| 24.6 Shared AI Summary JavaScript | TBD | — |
+| 24.1 Summary Data Gathering | #146 | — |
+| 24.2 Summary Controller Actions | #147 | — |
+| 24.3 Summary UI - Project Dashboard | #148 | — |
+| 24.4 Summary UI - Personal Dashboard | #149 | — |
+| 24.5 Summary UI - GTD Review Page | #150 | — |
+| 24.6 Shared AI Summary JavaScript | #151 | — |
 
 ### Phase 25: AI Polish and Hardening (label: `Phase 25: AI Polish`)
 
 | Work Item | Canonical Issue | Duplicate Issues |
 |-----------|----------------|------------------|
-| 25.1 Error Handling and Resilience | TBD | — |
-| 25.2 UI/UX Consistency | TBD | — |
-| 25.3 Security Review | TBD | — |
-| 25.4 Documentation | TBD | — |
+| 25.1 Error Handling and Resilience | #152 | — |
+| 25.2 UI/UX Consistency | #153 | — |
+| 25.3 Security Review | #154 | — |
+| 25.4 Documentation | #155 | — |
