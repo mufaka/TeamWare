@@ -60,6 +60,7 @@ builder.Services.AddScoped<IFileStorageService, FileStorageService>();
 builder.Services.AddScoped<IAttachmentService, AttachmentService>();
 builder.Services.AddScoped<IOllamaService, OllamaService>();
 builder.Services.AddScoped<IAiAssistantService, AiAssistantService>();
+builder.Services.AddScoped<IPersonalAccessTokenService, PersonalAccessTokenService>();
 
 builder.Services.AddMemoryCache();
 builder.Services.AddHttpClient("Ollama");
