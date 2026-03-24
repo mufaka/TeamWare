@@ -1,6 +1,8 @@
 ﻿@model TeamWare.Web.ViewModels.InboxClarifyViewModel
+@inject TeamWare.Web.Services.IAiAssistantService AiAssistantService
 @{
     ViewData["Title"] = "Clarify Inbox Item";
+    var aiAvailable = await AiAssistantService.IsAvailable();
 }
 
 <div class="mx-auto max-w-lg">
@@ -27,6 +29,18 @@
             <textarea asp-for="TaskDescription" rows="4"
                       placeholder="Add a detailed description for the task..."
                       class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"></textarea>
+            @if (aiAvailable)
+            {
+                <div id="ai-expand-container"
+                     data-ai-rewrite
+                     data-ai-url="@Url.Action("ExpandInboxItem", "Ai")"
+                     data-ai-field="#TaskDescription"
+                     data-ai-static-params="true"
+                     data-ai-label="Expand"
+                     class="mt-2">
+                    <script type="application/json" id="ai-expand-params">@Html.Raw(System.Text.Json.JsonSerializer.Serialize(new { inboxItemId = Model.InboxItemId, title = Model.Title, description = Model.Description ?? "" }))</script>
+                </div>
+            }
             <span asp-validation-for="TaskDescription" class="mt-1 text-sm text-red-600 dark:text-red-400"></span>
         </div>
 
@@ -99,4 +113,8 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    @if (aiAvailable)
+    {
+        <script src="~/js/ai-rewrite.js" asp-append-version="true"></script>
+    }
 }

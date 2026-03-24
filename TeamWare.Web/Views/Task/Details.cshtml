@@ -1,6 +1,8 @@
 ﻿@model TeamWare.Web.ViewModels.TaskDetailViewModel
+@inject TeamWare.Web.Services.IAiAssistantService AiAssistantService
 @{
     ViewData["Title"] = Model.Title;
+    var aiAvailable = await AiAssistantService.IsAvailable();
     var priorityClass = Model.Priority switch
     {
         TeamWare.Web.Models.TaskItemPriority.Critical => "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300",
@@ -137,10 +139,22 @@
                       hx-on::after-request="if(event.detail.successful) this.reset()">
                     <input type="hidden" name="TaskItemId" value="@Model.Id" />
                     <textarea name="Content"
+                              id="comment-content"
                               rows="3"
                               placeholder="Add a comment..."
                               required
                               class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-500"></textarea>
+                    @if (aiAvailable)
+                    {
+                        <div data-ai-rewrite
+                             data-ai-url="@Url.Action("PolishComment", "Ai")"
+                             data-ai-field="#comment-content"
+                             data-ai-field-param="comment"
+                             data-ai-params='{"taskId": @Model.Id}'
+                             data-ai-label="Polish"
+                             class="mt-2">
+                        </div>
+                    }
                     <div class="mt-2">
                         <button type="submit"
                                 class="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700">
@@ -291,3 +305,10 @@
         </div>
     </div>
 </div>
+
+@if (aiAvailable)
+{
+    @section Scripts {
+        <script src="~/js/ai-rewrite.js" asp-append-version="true"></script>
+    }
+}
