@@ -1,0 +1,101 @@
+﻿@model TeamWare.Web.ViewModels.AdminUserTokensViewModel
+@{
+    ViewData["Title"] = $"Tokens - {Model.UserDisplayName}";
+}
+
+<div class="mx-auto max-w-5xl">
+    <div class="mb-6 flex items-center justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Personal Access Tokens</h1>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                @Model.UserDisplayName (@Model.UserEmail)
+            </p>
+        </div>
+        <a asp-action="Users" class="text-sm text-blue-600 hover:underline dark:text-blue-400">Back to Users</a>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="mb-4 rounded-md bg-green-50 p-4 text-sm text-green-700 dark:bg-green-900/20 dark:text-green-400">
+            @TempData["SuccessMessage"]
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="mb-4 rounded-md bg-red-50 p-4 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-400">
+            @TempData["ErrorMessage"]
+        </div>
+    }
+
+    @if (Model.Tokens.Count > 0)
+    {
+        <div class="mb-4 flex justify-end">
+            <form method="post" asp-action="RevokeAllUserTokens" asp-route-userId="@Model.UserId">
+                <button type="submit" onclick="return confirm('Are you sure you want to revoke all tokens for this user? This cannot be undone.');"
+                        class="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900">
+                    Revoke All Tokens
+                </button>
+            </form>
+        </div>
+
+        <div class="overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700">
+            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead class="bg-gray-50 dark:bg-gray-800">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Name</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Prefix</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Created</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Expires</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Last Used</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200 bg-white dark:divide-gray-700 dark:bg-gray-900">
+                    @foreach (var token in Model.Tokens)
+                    {
+                        <tr>
+                            <td class="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">@token.Name</td>
+                            <td class="whitespace-nowrap px-6 py-4 text-sm font-mono text-gray-700 dark:text-gray-300">@(token.TokenPrefix)...</td>
+                            <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-500 dark:text-gray-400">@token.CreatedAt.ToString("yyyy-MM-dd")</td>
+                            <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
+                                @if (token.ExpiresAt.HasValue)
+                                {
+                                    @token.ExpiresAt.Value.ToString("yyyy-MM-dd")
+                                }
+                                else
+                                {
+                                    <span class="text-gray-400 dark:text-gray-500">Never</span>
+                                }
+                            </td>
+                            <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
+                                @if (token.LastUsedAt.HasValue)
+                                {
+                                    @token.LastUsedAt.Value.ToString("yyyy-MM-dd HH:mm")
+                                }
+                                else
+                                {
+                                    <span class="text-gray-400 dark:text-gray-500">Never used</span>
+                                }
+                            </td>
+                            <td class="whitespace-nowrap px-6 py-4 text-right text-sm">
+                                <form method="post" asp-action="RevokeUserToken" asp-route-userId="@Model.UserId" asp-route-tokenId="@token.Id">
+                                    <button type="submit" onclick="return confirm('Are you sure you want to revoke this token? This cannot be undone.');"
+                                            class="font-medium text-red-600 hover:text-red-500 dark:text-red-400 dark:hover:text-red-300">
+                                        Revoke
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        <div class="rounded-lg border border-gray-200 bg-white p-8 text-center dark:border-gray-700 dark:bg-gray-800">
+            <p class="text-gray-500 dark:text-gray-400">No active tokens for this user.</p>
+        </div>
+    }
+</div>

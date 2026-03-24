@@ -8,7 +8,7 @@ This document defines the phased implementation plan for the TeamWare MCP Server
 
 | Phase | Description | Status |
 |-------|------------|--------|
-| 26 | MCP Foundation and PAT Authentication | In Progress |
+| 26 | MCP Foundation and PAT Authentication | Complete |
 | 27 | Read-Only MCP Tools | Not Started |
 | 28 | Write MCP Tools | Not Started |
 | 29 | MCP Prompts and Resources | Not Started |
@@ -137,20 +137,20 @@ Establish the Personal Access Token authentication system, MCP NuGet packages, e
 
 ### 26.5 PAT Management UI
 
-- [ ] Add "Personal Access Tokens" section to the user profile page (MCP-UI-01)
-- [ ] Display token list with: name, `TokenPrefix` (masked, e.g., `tw_abc...`), creation date, expiration date (or "Never"), last-used date (or "Never used") (MCP-UI-02, PAT-06)
-- [ ] Add "Generate New Token" form with fields: token name (required), expiration date (optional) (MCP-UI-03, PAT-01, PAT-02)
-- [ ] After creation, display raw token in a read-only field with "Copy to Clipboard" button and warning that it will not be shown again (MCP-UI-04, PAT-04)
-- [ ] Add "Revoke" button per token with confirmation dialog (MCP-UI-05, PAT-07)
-- [ ] Style with Tailwind CSS, supporting light/dark theme (MCP-UI-06)
-- [ ] No emoticons or emojis (MCP-UI-07)
-- [ ] Write UI rendering tests for token list and creation flow (MCP-TEST-10)
+- [x] Add "Personal Access Tokens" section to the user profile page (MCP-UI-01)
+- [x] Display token list with: name, `TokenPrefix` (masked, e.g., `tw_abc...`), creation date, expiration date (or "Never"), last-used date (or "Never used") (MCP-UI-02, PAT-06)
+- [x] Add "Generate New Token" form with fields: token name (required), expiration date (optional) (MCP-UI-03, PAT-01, PAT-02)
+- [x] After creation, display raw token in a read-only field with "Copy to Clipboard" button and warning that it will not be shown again (MCP-UI-04, PAT-04)
+- [x] Add "Revoke" button per token with confirmation dialog (MCP-UI-05, PAT-07)
+- [x] Style with Tailwind CSS, supporting light/dark theme (MCP-UI-06)
+- [x] No emoticons or emojis (MCP-UI-07)
+- [x] Write UI rendering tests for token list and creation flow (MCP-TEST-10)
 
 ### 26.6 Admin PAT Management
 
-- [ ] Display active PAT count per user on the admin user management page (MCP-UI-11)
-- [ ] Add ability for admins to view and revoke any user's PATs from the admin user detail page (MCP-UI-12, PAT-08)
-- [ ] Display the `MCP_ENABLED` key with value and description on the admin configuration page (MCP-UI-10)
+- [x] Display active PAT count per user on the admin user management page (MCP-UI-11)
+- [x] Add ability for admins to view and revoke any user's PATs from the admin user detail page (MCP-UI-12, PAT-08)
+- [x] Display the `MCP_ENABLED` key with value and description on the admin configuration page (MCP-UI-10)
 
 ---
 
