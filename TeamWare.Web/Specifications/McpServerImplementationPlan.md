@@ -10,8 +10,8 @@ This document defines the phased implementation plan for the TeamWare MCP Server
 |-------|------------|--------|
 | 26 | MCP Foundation and PAT Authentication | Complete |
 | 27 | Read-Only MCP Tools | Complete |
-| 28 | Write MCP Tools | Complete |
-| 29 | MCP Prompts and Resources | Not Started |
+| 28 | Write MCP Tools | Not Started |
+| 29 | MCP Prompts and Resources | Complete |
 | 30 | Lounge MCP Tools | Not Started |
 | 31 | MCP Polish and Hardening | Not Started |
 
@@ -287,56 +287,56 @@ Deliver MCP Prompts and MCP Resources that provide structured context and dashbo
 
 ### 29.1 Project Context Prompt
 
-- [ ] Create `TeamWare.Web/Mcp/Prompts/ProjectContextPrompt.cs` (Spec Section 8)
-- [ ] Implement `project_context` prompt:
-  - [ ] Accept `projectId: int` (MCP-40)
-  - [ ] Verify project membership (MCP-44)
-  - [ ] Gather: project description, member list via `IProjectMemberService.GetMembers`, task counts via `IProgressService.GetProjectStatistics`, last 10 activity entries via `IActivityLogService.GetActivityForProject` (MCP-40)
-  - [ ] Format as a system message with structured context suitable for AI conversation (MCP-40)
-- [ ] Write unit tests verifying prompt content assembly and data inclusion (MCP-TEST-05)
+- [x] Create `TeamWare.Web/Mcp/Prompts/ProjectContextPrompt.cs` (Spec Section 8)
+- [x] Implement `project_context` prompt:
+  - [x] Accept `projectId: int` (MCP-40)
+  - [x] Verify project membership (MCP-44)
+  - [x] Gather: project description, member list via `IProjectMemberService.GetMembers`, task counts via `IProgressService.GetProjectStatistics`, last 10 activity entries via `IActivityLogService.GetActivityForProject` (MCP-40)
+  - [x] Format as a system message with structured context suitable for AI conversation (MCP-40)
+- [x] Write unit tests verifying prompt content assembly and data inclusion (MCP-TEST-05)
 
 ### 29.2 Task Breakdown Prompt
 
-- [ ] Create `TeamWare.Web/Mcp/Prompts/TaskBreakdownPrompt.cs` (Spec Section 8)
-- [ ] Implement `task_breakdown` prompt:
-  - [ ] Accept `projectId: int` and `taskDescription: string` (MCP-41)
-  - [ ] Verify project membership (MCP-44)
-  - [ ] Gather existing task list via `ITaskService.GetTasksForProject` (MCP-41)
-  - [ ] Format as: user message with the task description, system message listing existing tasks and asking for 3-7 actionable subtask suggestions that avoid duplication (MCP-41)
-- [ ] Write unit tests (MCP-TEST-05)
+- [x] Create `TeamWare.Web/Mcp/Prompts/TaskBreakdownPrompt.cs` (Spec Section 8)
+- [x] Implement `task_breakdown` prompt:
+  - [x] Accept `projectId: int` and `taskDescription: string` (MCP-41)
+  - [x] Verify project membership (MCP-44)
+  - [x] Gather existing task list via `ITaskService.GetTasksForProject` (MCP-41)
+  - [x] Format as: user message with the task description, system message listing existing tasks and asking for 3-7 actionable subtask suggestions that avoid duplication (MCP-41)
+- [x] Write unit tests (MCP-TEST-05)
 
 ### 29.3 Standup Prompt
 
-- [ ] Create `TeamWare.Web/Mcp/Prompts/StandupPrompt.cs` (Spec Section 8)
-- [ ] Implement `standup` prompt:
-  - [ ] Accept no parameters (MCP-42)
-  - [ ] Gather user's activity from last 24 hours via `IActivityLogService.GetActivityForUser` (MCP-42)
-  - [ ] Format as a user message in Yesterday/Today/Blockers standup template (MCP-42)
-- [ ] Write unit tests (MCP-TEST-05)
+- [x] Create `TeamWare.Web/Mcp/Prompts/StandupPrompt.cs` (Spec Section 8)
+- [x] Implement `standup` prompt:
+  - [x] Accept no parameters (MCP-42)
+  - [x] Gather user's activity from last 24 hours via `IActivityLogService.GetActivityForUser` (MCP-42)
+  - [x] Format as a user message in Yesterday/Today/Blockers standup template (MCP-42)
+- [x] Write unit tests (MCP-TEST-05)
 
 ### 29.4 Dashboard Resource
 
-- [ ] Create `TeamWare.Web/Mcp/Resources/DashboardResource.cs` (Spec Section 8)
-- [ ] Implement `teamware://dashboard` resource:
-  - [ ] Gather assigned task count via `ITaskService.GetWhatsNext` (MCP-50)
-  - [ ] Gather unread notification count via `INotificationService.GetUnreadCount` (MCP-50)
-  - [ ] Gather unprocessed inbox count via `IInboxService.GetUnprocessedCount` (MCP-50)
-  - [ ] Return JSON: `{ assignedTaskCount, unreadNotificationCount, unprocessedInboxCount, upcomingDeadlines }` (MCP-50, MCP-NF-04)
-- [ ] Write unit tests verifying data aggregation (MCP-TEST-06)
+- [x] Create `TeamWare.Web/Mcp/Resources/DashboardResource.cs` (Spec Section 8)
+- [x] Implement `teamware://dashboard` resource:
+  - [x] Gather assigned task count via `ITaskService.GetWhatsNext` (MCP-50)
+  - [x] Gather unread notification count via `INotificationService.GetUnreadCount` (MCP-50)
+  - [x] Gather unprocessed inbox count via `IInboxService.GetUnprocessedCount` (MCP-50)
+  - [x] Return JSON: `{ assignedTaskCount, unreadNotificationCount, unprocessedInboxCount, upcomingDeadlines }` (MCP-50, MCP-NF-04)
+- [x] Write unit tests verifying data aggregation (MCP-TEST-06)
 
 ### 29.5 Project Summary Resource
 
-- [ ] Create `TeamWare.Web/Mcp/Resources/ProjectSummaryResource.cs` (Spec Section 8)
-- [ ] Implement `teamware://projects/{projectId}/summary` resource:
-  - [ ] Verify project membership (MCP-53)
-  - [ ] Gather project data via `IProjectService.GetProjectDashboard` and `IProgressService.GetProjectStatistics` (MCP-51)
-  - [ ] Return JSON: `{ name, status, memberCount, taskStats, completionPct }` (MCP-51, MCP-NF-04)
-- [ ] Write unit tests (MCP-TEST-06)
+- [x] Create `TeamWare.Web/Mcp/Resources/ProjectSummaryResource.cs` (Spec Section 8)
+- [x] Implement `teamware://projects/{projectId}/summary` resource:
+  - [x] Verify project membership (MCP-53)
+  - [x] Gather project data via `IProjectService.GetProjectDashboard` and `IProgressService.GetProjectStatistics` (MCP-51)
+  - [x] Return JSON: `{ name, status, memberCount, taskStats, completionPct }` (MCP-51, MCP-NF-04)
+- [x] Write unit tests (MCP-TEST-06)
 
 ### 29.6 Cross-Cutting Prompt and Resource Tests
 
-- [ ] Write integration tests verifying all prompts require PAT authentication (MCP-43, MCP-52)
-- [ ] Write integration tests verifying prompts and resources enforce project membership (MCP-44, MCP-53)
+- [x] Write integration tests verifying all prompts require PAT authentication (MCP-43, MCP-52)
+- [x] Write integration tests verifying prompts and resources enforce project membership (MCP-44, MCP-53)
 
 ---
 

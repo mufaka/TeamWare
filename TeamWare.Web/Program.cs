@@ -102,7 +102,9 @@ builder.Services.AddResponseCompression(options =>
 builder.Services.AddMcpServer()
     .WithHttpTransport()
     .AddAuthorizationFilters()
-    .WithToolsFromAssembly();
+    .WithToolsFromAssembly()
+    .WithPromptsFromAssembly()
+    .WithResourcesFromAssembly();
 
 var app = builder.Build();
 
