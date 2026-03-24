@@ -9,7 +9,7 @@ This document defines the phased implementation plan for the TeamWare MCP Server
 | Phase | Description | Status |
 |-------|------------|--------|
 | 26 | MCP Foundation and PAT Authentication | Complete |
-| 27 | Read-Only MCP Tools | Not Started |
+| 27 | Read-Only MCP Tools | Complete |
 | 28 | Write MCP Tools | Not Started |
 | 29 | MCP Prompts and Resources | Not Started |
 | 30 | Lounge MCP Tools | Not Started |
@@ -160,72 +160,72 @@ Deliver the first set of MCP tools that expose TeamWare data to external AI agen
 
 ### 27.1 ProjectTools
 
-- [ ] Create `TeamWare.Web/Mcp/Tools/ProjectTools.cs` with `[McpServerToolType]` and `[Authorize]` (Spec Section 8)
-- [ ] Implement `list_projects` tool:
-  - [ ] Accept no parameters (MCP-10)
-  - [ ] Resolve authenticated user ID from `ClaimsPrincipal`
-  - [ ] Call `IProjectService.GetProjectsForUser(userId)`
-  - [ ] Return JSON array: `{ id, name, description, status, memberCount }` (MCP-10, MCP-NF-04)
-- [ ] Implement `get_project` tool:
-  - [ ] Accept `projectId: int` parameter (MCP-11)
-  - [ ] Verify project membership (MCP-19)
-  - [ ] Call `IProjectService.GetProjectDashboard(projectId, userId)`
-  - [ ] Call `IProgressService.GetProjectStatistics(projectId)`, `GetOverdueTasks(projectId)`, `GetUpcomingDeadlines(projectId)`
-  - [ ] Return JSON object with project details and task statistics (MCP-11, MCP-NF-04)
-- [ ] Write unit tests for both tools verifying service delegation, authorization, JSON shape (MCP-TEST-03, MCP-TEST-04)
+- [x] Create `TeamWare.Web/Mcp/Tools/ProjectTools.cs` with `[McpServerToolType]` and `[Authorize]` (Spec Section 8)
+- [x] Implement `list_projects` tool:
+  - [x] Accept no parameters (MCP-10)
+  - [x] Resolve authenticated user ID from `ClaimsPrincipal`
+  - [x] Call `IProjectService.GetProjectsForUser(userId)`
+  - [x] Return JSON array: `{ id, name, description, status, memberCount }` (MCP-10, MCP-NF-04)
+- [x] Implement `get_project` tool:
+  - [x] Accept `projectId: int` parameter (MCP-11)
+  - [x] Verify project membership (MCP-19)
+  - [x] Call `IProjectService.GetProjectDashboard(projectId, userId)`
+  - [x] Call `IProgressService.GetProjectStatistics(projectId)`, `GetOverdueTasks(projectId)`, `GetUpcomingDeadlines(projectId)`
+  - [x] Return JSON object with project details and task statistics (MCP-11, MCP-NF-04)
+- [x] Write unit tests for both tools verifying service delegation, authorization, JSON shape (MCP-TEST-03, MCP-TEST-04)
 
 ### 27.2 TaskTools (Read)
 
-- [ ] Create `TeamWare.Web/Mcp/Tools/TaskTools.cs` with `[McpServerToolType]` and `[Authorize]` (Spec Section 8)
-- [ ] Implement `list_tasks` tool:
-  - [ ] Accept `projectId: int` and optional `status`, `priority`, `assigneeId` (MCP-12)
-  - [ ] Verify project membership (MCP-19)
-  - [ ] Parse optional string filters to `TaskItemStatus?` and `TaskItemPriority?` enums
-  - [ ] Call `ITaskService.GetTasksForProject(projectId, userId, statusFilter, priorityFilter, assigneeId)`
-  - [ ] Return JSON array: `{ id, title, status, priority, dueDate, assignees }` (MCP-12, MCP-NF-04)
-- [ ] Implement `get_task` tool:
-  - [ ] Accept `taskId: int` (MCP-13)
-  - [ ] Call `ITaskService.GetTask(taskId, userId)` — service handles membership verification (MCP-20)
-  - [ ] Call `ICommentService.GetCommentsForTask(taskId, userId)` for comments
-  - [ ] Return JSON object with full task detail including comments (MCP-13, MCP-NF-04)
-- [ ] Implement `my_assignments` tool:
-  - [ ] Accept no parameters (MCP-14)
-  - [ ] Call `ITaskService.GetWhatsNext(userId)`
-  - [ ] Return JSON array with project name, task ID, title, status, priority, due date (MCP-14, MCP-NF-04)
-- [ ] Write unit tests for all three tools (MCP-TEST-03, MCP-TEST-04)
+- [x] Create `TeamWare.Web/Mcp/Tools/TaskTools.cs` with `[McpServerToolType]` and `[Authorize]` (Spec Section 8)
+- [x] Implement `list_tasks` tool:
+  - [x] Accept `projectId: int` and optional `status`, `priority`, `assigneeId` (MCP-12)
+  - [x] Verify project membership (MCP-19)
+  - [x] Parse optional string filters to `TaskItemStatus?` and `TaskItemPriority?` enums
+  - [x] Call `ITaskService.GetTasksForProject(projectId, userId, statusFilter, priorityFilter, assigneeId)`
+  - [x] Return JSON array: `{ id, title, status, priority, dueDate, assignees }` (MCP-12, MCP-NF-04)
+- [x] Implement `get_task` tool:
+  - [x] Accept `taskId: int` (MCP-13)
+  - [x] Call `ITaskService.GetTask(taskId, userId)` — service handles membership verification (MCP-20)
+  - [x] Call `ICommentService.GetCommentsForTask(taskId, userId)` for comments
+  - [x] Return JSON object with full task detail including comments (MCP-13, MCP-NF-04)
+- [x] Implement `my_assignments` tool:
+  - [x] Accept no parameters (MCP-14)
+  - [x] Call `ITaskService.GetWhatsNext(userId)`
+  - [x] Return JSON array with project name, task ID, title, status, priority, due date (MCP-14, MCP-NF-04)
+- [x] Write unit tests for all three tools (MCP-TEST-03, MCP-TEST-04)
 
 ### 27.3 InboxTools (Read)
 
-- [ ] Create `TeamWare.Web/Mcp/Tools/InboxTools.cs` with `[McpServerToolType]` and `[Authorize]` (Spec Section 8)
-- [ ] Implement `my_inbox` tool:
-  - [ ] Accept no parameters (MCP-15)
-  - [ ] Call `IInboxService.GetUnprocessedItems(userId)`
-  - [ ] Return JSON array: `{ id, title, description, createdAt }` (MCP-15, MCP-NF-04)
-- [ ] Write unit tests (MCP-TEST-03, MCP-TEST-04)
+- [x] Create `TeamWare.Web/Mcp/Tools/InboxTools.cs` with `[McpServerToolType]` and `[Authorize]` (Spec Section 8)
+- [x] Implement `my_inbox` tool:
+  - [x] Accept no parameters (MCP-15)
+  - [x] Call `IInboxService.GetUnprocessedItems(userId)`
+  - [x] Return JSON array: `{ id, title, description, createdAt }` (MCP-15, MCP-NF-04)
+- [x] Write unit tests (MCP-TEST-03, MCP-TEST-04)
 
 ### 27.4 ActivityTools
 
-- [ ] Create `TeamWare.Web/Mcp/Tools/ActivityTools.cs` with `[McpServerToolType]` and `[Authorize]` (Spec Section 8)
-- [ ] Implement `get_activity` tool:
-  - [ ] Accept optional `projectId: int?` and `period: string` (today, this_week, this_month) (MCP-16)
-  - [ ] Parse `period` to a `DateTime since` value
-  - [ ] If `projectId` provided: verify membership (MCP-19), call `IActivityLogService.GetActivityForProject(projectId, since)` (MCP-16)
-  - [ ] If `projectId` omitted: call `IActivityLogService.GetActivityForUser(userId, since)` (MCP-16)
-  - [ ] Return JSON array: `{ timestamp, user, changeType, taskTitle, oldValue, newValue }` (MCP-16, MCP-NF-04)
-- [ ] Implement `get_project_summary` tool:
-  - [ ] Accept `projectId: int` and `period: string` (MCP-17)
-  - [ ] Verify project membership (MCP-19)
-  - [ ] Call `IProgressService.GetProjectStatistics(projectId)` for current task counts (MCP-17)
-  - [ ] Call `IActivityLogService.GetActivityForProject(projectId, since)` to count tasks completed and created in period (MCP-17)
-  - [ ] Return JSON object: `{ taskStats, completionPct, overdueCount, completedInPeriod, createdInPeriod }` (MCP-17, MCP-NF-04)
-- [ ] Write unit tests for both tools (MCP-TEST-03, MCP-TEST-04)
+- [x] Create `TeamWare.Web/Mcp/Tools/ActivityTools.cs` with `[McpServerToolType]` and `[Authorize]` (Spec Section 8)
+- [x] Implement `get_activity` tool:
+  - [x] Accept optional `projectId: int?` and `period: string` (today, this_week, this_month) (MCP-16)
+  - [x] Parse `period` to a `DateTime since` value
+  - [x] If `projectId` provided: verify membership (MCP-19), call `IActivityLogService.GetActivityForProject(projectId, since)` (MCP-16)
+  - [x] If `projectId` omitted: call `IActivityLogService.GetActivityForUser(userId, since)` (MCP-16)
+  - [x] Return JSON array: `{ timestamp, user, changeType, taskTitle, oldValue, newValue }` (MCP-16, MCP-NF-04)
+- [x] Implement `get_project_summary` tool:
+  - [x] Accept `projectId: int` and `period: string` (MCP-17)
+  - [x] Verify project membership (MCP-19)
+  - [x] Call `IProgressService.GetProjectStatistics(projectId)` for current task counts (MCP-17)
+  - [x] Call `IActivityLogService.GetActivityForProject(projectId, since)` to count tasks completed and created in period (MCP-17)
+  - [x] Return JSON object: `{ taskStats, completionPct, overdueCount, completedInPeriod, createdInPeriod }` (MCP-17, MCP-NF-04)
+- [x] Write unit tests for both tools (MCP-TEST-03, MCP-TEST-04)
 
 ### 27.5 Cross-Cutting Read Tool Tests
 
-- [ ] Write integration tests verifying all read-only tools require PAT authentication (MCP-18)
-- [ ] Write integration tests verifying tools return authorization errors for non-member project access (MCP-19, MCP-20)
-- [ ] Write integration tests verifying tools return descriptive errors for non-existent entities (MCP-73)
-- [ ] Write integration tests verifying tools propagate `ServiceResult` failures (MCP-74)
+- [x] Write integration tests verifying all read-only tools require PAT authentication (MCP-18)
+- [x] Write integration tests verifying tools return authorization errors for non-member project access (MCP-19, MCP-20)
+- [x] Write integration tests verifying tools return descriptive errors for non-existent entities (MCP-73)
+- [x] Write integration tests verifying tools propagate `ServiceResult` failures (MCP-74)
 
 ---
 
