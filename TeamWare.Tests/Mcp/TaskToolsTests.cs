@@ -279,4 +279,281 @@ public class TaskToolsTests : IDisposable
         Assert.Equal(JsonValueKind.Array, doc.RootElement.ValueKind);
         Assert.Equal(0, doc.RootElement.GetArrayLength());
     }
+
+    // --- create_task ---
+
+    [Fact]
+    public async Task CreateTask_ReturnsCreatedTask()
+    {
+        var (project, owner) = await CreateProjectWithOwner();
+        var principal = CreateClaimsPrincipal(owner.Id);
+
+        var result = await TaskTools.create_task(principal, _taskService, project.Id, "New Task", "A description", "High", "2025-12-31");
+
+        using var doc = JsonDocument.Parse(result);
+        var root = doc.RootElement;
+        Assert.Equal("New Task", root.GetProperty("title").GetString());
+        Assert.Equal("A description", root.GetProperty("description").GetString());
+        Assert.Equal("High", root.GetProperty("priority").GetString());
+        Assert.Equal("ToDo", root.GetProperty("status").GetString());
+        Assert.True(root.TryGetProperty("id", out _));
+        Assert.True(root.TryGetProperty("projectId", out _));
+        Assert.True(root.TryGetProperty("createdAt", out _));
+    }
+
+    [Fact]
+    public async Task CreateTask_DefaultsPriorityToMedium()
+    {
+        var (project, owner) = await CreateProjectWithOwner();
+        var principal = CreateClaimsPrincipal(owner.Id);
+
+        var result = await TaskTools.create_task(principal, _taskService, project.Id, "Default Priority Task");
+
+        using var doc = JsonDocument.Parse(result);
+        Assert.Equal("Medium", doc.RootElement.GetProperty("priority").GetString());
+    }
+
+    [Fact]
+    public async Task CreateTask_EmptyTitle_ReturnsError()
+    {
+        var (project, owner) = await CreateProjectWithOwner();
+        var principal = CreateClaimsPrincipal(owner.Id);
+
+        var result = await TaskTools.create_task(principal, _taskService, project.Id, "");
+
+        using var doc = JsonDocument.Parse(result);
+        Assert.True(doc.RootElement.TryGetProperty("error", out var error));
+        Assert.Contains("Title is required", error.GetString());
+    }
+
+    [Fact]
+    public async Task CreateTask_TitleTooLong_ReturnsError()
+    {
+        var (project, owner) = await CreateProjectWithOwner();
+        var principal = CreateClaimsPrincipal(owner.Id);
+        var longTitle = new string('A', 301);
+
+        var result = await TaskTools.create_task(principal, _taskService, project.Id, longTitle);
+
+        using var doc = JsonDocument.Parse(result);
+        Assert.True(doc.RootElement.TryGetProperty("error", out var error));
+        Assert.Contains("300 characters", error.GetString());
+    }
+
+    [Fact]
+    public async Task CreateTask_DescriptionTooLong_ReturnsError()
+    {
+        var (project, owner) = await CreateProjectWithOwner();
+        var principal = CreateClaimsPrincipal(owner.Id);
+        var longDesc = new string('A', 4001);
+
+        var result = await TaskTools.create_task(principal, _taskService, project.Id, "Task", longDesc);
+
+        using var doc = JsonDocument.Parse(result);
+        Assert.True(doc.RootElement.TryGetProperty("error", out var error));
+        Assert.Contains("4000 characters", error.GetString());
+    }
+
+    [Fact]
+    public async Task CreateTask_InvalidPriority_ReturnsError()
+    {
+        var (project, owner) = await CreateProjectWithOwner();
+        var principal = CreateClaimsPrincipal(owner.Id);
+
+        var result = await TaskTools.create_task(principal, _taskService, project.Id, "Task", null, "Extreme");
+
+        using var doc = JsonDocument.Parse(result);
+        Assert.True(doc.RootElement.TryGetProperty("error", out var error));
+        Assert.Contains("Invalid priority", error.GetString());
+    }
+
+    [Fact]
+    public async Task CreateTask_InvalidDueDate_ReturnsError()
+    {
+        var (project, owner) = await CreateProjectWithOwner();
+        var principal = CreateClaimsPrincipal(owner.Id);
+
+        var result = await TaskTools.create_task(principal, _taskService, project.Id, "Task", null, null, "not-a-date");
+
+        using var doc = JsonDocument.Parse(result);
+        Assert.True(doc.RootElement.TryGetProperty("error", out var error));
+        Assert.Contains("Invalid due date", error.GetString());
+    }
+
+    [Fact]
+    public async Task CreateTask_NonMember_ReturnsError()
+    {
+        var (project, _) = await CreateProjectWithOwner();
+        var outsider = CreateUser("outsider-create@test.com", "Outsider");
+        var principal = CreateClaimsPrincipal(outsider.Id);
+
+        var result = await TaskTools.create_task(principal, _taskService, project.Id, "Task");
+
+        using var doc = JsonDocument.Parse(result);
+        Assert.True(doc.RootElement.TryGetProperty("error", out _));
+    }
+
+    // --- update_task_status ---
+
+    [Fact]
+    public async Task UpdateTaskStatus_ChangesStatus()
+    {
+        var (project, owner) = await CreateProjectWithOwner();
+        var createResult = await _taskService.CreateTask(project.Id, "Status Task", null, TaskItemPriority.Medium, null, owner.Id);
+        var principal = CreateClaimsPrincipal(owner.Id);
+
+        var result = await TaskTools.update_task_status(principal, _taskService, createResult.Data!.Id, "InProgress");
+
+        using var doc = JsonDocument.Parse(result);
+        var root = doc.RootElement;
+        Assert.Equal("InProgress", root.GetProperty("status").GetString());
+        Assert.True(root.TryGetProperty("id", out _));
+        Assert.True(root.TryGetProperty("updatedAt", out _));
+    }
+
+    [Fact]
+    public async Task UpdateTaskStatus_InvalidStatus_ReturnsError()
+    {
+        var (project, owner) = await CreateProjectWithOwner();
+        var createResult = await _taskService.CreateTask(project.Id, "Task", null, TaskItemPriority.Medium, null, owner.Id);
+        var principal = CreateClaimsPrincipal(owner.Id);
+
+        var result = await TaskTools.update_task_status(principal, _taskService, createResult.Data!.Id, "Cancelled");
+
+        using var doc = JsonDocument.Parse(result);
+        Assert.True(doc.RootElement.TryGetProperty("error", out var error));
+        Assert.Contains("Invalid status", error.GetString());
+    }
+
+    [Fact]
+    public async Task UpdateTaskStatus_NonExistent_ReturnsError()
+    {
+        var user = CreateUser("user-status@test.com", "User");
+        var principal = CreateClaimsPrincipal(user.Id);
+
+        var result = await TaskTools.update_task_status(principal, _taskService, 99999, "Done");
+
+        using var doc = JsonDocument.Parse(result);
+        Assert.True(doc.RootElement.TryGetProperty("error", out _));
+    }
+
+    [Fact]
+    public async Task UpdateTaskStatus_NonMember_ReturnsError()
+    {
+        var (project, owner) = await CreateProjectWithOwner();
+        var createResult = await _taskService.CreateTask(project.Id, "Task", null, TaskItemPriority.Medium, null, owner.Id);
+        var outsider = CreateUser("outsider-status@test.com", "Outsider");
+        var principal = CreateClaimsPrincipal(outsider.Id);
+
+        var result = await TaskTools.update_task_status(principal, _taskService, createResult.Data!.Id, "Done");
+
+        using var doc = JsonDocument.Parse(result);
+        Assert.True(doc.RootElement.TryGetProperty("error", out _));
+    }
+
+    // --- assign_task ---
+
+    [Fact]
+    public async Task AssignTask_AssignsUsers()
+    {
+        var (project, owner) = await CreateProjectWithOwner();
+        var createResult = await _taskService.CreateTask(project.Id, "Assign Task", null, TaskItemPriority.Medium, null, owner.Id);
+        var principal = CreateClaimsPrincipal(owner.Id);
+
+        var result = await TaskTools.assign_task(principal, _taskService, createResult.Data!.Id, [owner.Id]);
+
+        using var doc = JsonDocument.Parse(result);
+        var root = doc.RootElement;
+        Assert.True(root.GetProperty("success").GetBoolean());
+        Assert.Contains("1 user(s)", root.GetProperty("message").GetString());
+    }
+
+    [Fact]
+    public async Task AssignTask_EmptyUserIds_ReturnsError()
+    {
+        var (project, owner) = await CreateProjectWithOwner();
+        var createResult = await _taskService.CreateTask(project.Id, "Task", null, TaskItemPriority.Medium, null, owner.Id);
+        var principal = CreateClaimsPrincipal(owner.Id);
+
+        var result = await TaskTools.assign_task(principal, _taskService, createResult.Data!.Id, []);
+
+        using var doc = JsonDocument.Parse(result);
+        Assert.True(doc.RootElement.TryGetProperty("error", out var error));
+        Assert.Contains("At least one user ID", error.GetString());
+    }
+
+    [Fact]
+    public async Task AssignTask_NonMember_ReturnsError()
+    {
+        var (project, owner) = await CreateProjectWithOwner();
+        var createResult = await _taskService.CreateTask(project.Id, "Task", null, TaskItemPriority.Medium, null, owner.Id);
+        var outsider = CreateUser("outsider-assign@test.com", "Outsider");
+        var principal = CreateClaimsPrincipal(outsider.Id);
+
+        var result = await TaskTools.assign_task(principal, _taskService, createResult.Data!.Id, [outsider.Id]);
+
+        using var doc = JsonDocument.Parse(result);
+        Assert.True(doc.RootElement.TryGetProperty("error", out _));
+    }
+
+    // --- add_comment ---
+
+    [Fact]
+    public async Task AddComment_ReturnsCreatedComment()
+    {
+        var (project, owner) = await CreateProjectWithOwner();
+        var createResult = await _taskService.CreateTask(project.Id, "Comment Task", null, TaskItemPriority.Medium, null, owner.Id);
+        var principal = CreateClaimsPrincipal(owner.Id);
+
+        var result = await TaskTools.add_comment(principal, _commentService, createResult.Data!.Id, "Test comment");
+
+        using var doc = JsonDocument.Parse(result);
+        var root = doc.RootElement;
+        Assert.Equal("Test comment", root.GetProperty("content").GetString());
+        Assert.True(root.TryGetProperty("id", out _));
+        Assert.True(root.TryGetProperty("taskItemId", out _));
+        Assert.True(root.TryGetProperty("authorId", out _));
+        Assert.True(root.TryGetProperty("createdAt", out _));
+    }
+
+    [Fact]
+    public async Task AddComment_EmptyContent_ReturnsError()
+    {
+        var (project, owner) = await CreateProjectWithOwner();
+        var createResult = await _taskService.CreateTask(project.Id, "Task", null, TaskItemPriority.Medium, null, owner.Id);
+        var principal = CreateClaimsPrincipal(owner.Id);
+
+        var result = await TaskTools.add_comment(principal, _commentService, createResult.Data!.Id, "");
+
+        using var doc = JsonDocument.Parse(result);
+        Assert.True(doc.RootElement.TryGetProperty("error", out var error));
+        Assert.Contains("Content is required", error.GetString());
+    }
+
+    [Fact]
+    public async Task AddComment_ContentTooLong_ReturnsError()
+    {
+        var (project, owner) = await CreateProjectWithOwner();
+        var createResult = await _taskService.CreateTask(project.Id, "Task", null, TaskItemPriority.Medium, null, owner.Id);
+        var principal = CreateClaimsPrincipal(owner.Id);
+        var longContent = new string('A', 4001);
+
+        var result = await TaskTools.add_comment(principal, _commentService, createResult.Data!.Id, longContent);
+
+        using var doc = JsonDocument.Parse(result);
+        Assert.True(doc.RootElement.TryGetProperty("error", out var error));
+        Assert.Contains("4000 characters", error.GetString());
+    }
+
+    [Fact]
+    public async Task AddComment_NonExistentTask_ReturnsError()
+    {
+        var user = CreateUser("user-comment@test.com", "User");
+        var principal = CreateClaimsPrincipal(user.Id);
+
+        var result = await TaskTools.add_comment(principal, _commentService, 99999, "Comment");
+
+        using var doc = JsonDocument.Parse(result);
+        Assert.True(doc.RootElement.TryGetProperty("error", out _));
+    }
 }

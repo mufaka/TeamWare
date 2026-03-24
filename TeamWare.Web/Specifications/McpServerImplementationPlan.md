@@ -235,49 +235,49 @@ Add tools that create and modify data in TeamWare.
 
 ### 28.1 TaskTools (Write)
 
-- [ ] Add `create_task` tool to `TaskTools`:
-  - [ ] Accept `projectId: int`, `title: string`, optional `description: string`, optional `priority: string` (default "Medium"), optional `dueDate: string` (MCP-30)
-  - [ ] Validate `title` max 300 characters, `description` max 4000 characters (MCP-SEC-06)
-  - [ ] Parse `priority` to `TaskItemPriority` enum, `dueDate` to `DateTime?` (MCP-NF-04)
-  - [ ] Verify project membership with a role that permits task creation (MCP-37)
-  - [ ] Call `ITaskService.CreateTask(projectId, title, description, priority, dueDate, userId)` (MCP-30)
-  - [ ] Return JSON object of created task (MCP-38)
-- [ ] Add `update_task_status` tool to `TaskTools`:
-  - [ ] Accept `taskId: int`, `status: string` (MCP-31)
-  - [ ] Parse `status` to `TaskItemStatus` enum
-  - [ ] Call `ITaskService.ChangeStatus(taskId, newStatus, userId)` — service handles membership verification (MCP-31)
-  - [ ] Return JSON object of updated task (MCP-38)
-- [ ] Add `assign_task` tool to `TaskTools`:
-  - [ ] Accept `taskId: int`, `userIds: string[]` (MCP-32)
-  - [ ] Call `ITaskService.AssignMembers(taskId, userIds, userId)` (MCP-32)
-  - [ ] Return success/failure message (MCP-38)
-- [ ] Add `add_comment` tool to `TaskTools`:
-  - [ ] Accept `taskId: int`, `content: string` (MCP-33)
-  - [ ] Validate `content` max 4000 characters (MCP-SEC-06)
-  - [ ] Call `ICommentService.AddComment(taskId, content, userId)` (MCP-33)
-  - [ ] Return JSON object of created comment (MCP-38)
-- [ ] Write unit tests for all write tools: successful creation/update, validation errors, authorization errors, service failures (MCP-TEST-03, MCP-TEST-04)
+- [x] Add `create_task` tool to `TaskTools`:
+  - [x] Accept `projectId: int`, `title: string`, optional `description: string`, optional `priority: string` (default "Medium"), optional `dueDate: string` (MCP-30)
+  - [x] Validate `title` max 300 characters, `description` max 4000 characters (MCP-SEC-06)
+  - [x] Parse `priority` to `TaskItemPriority` enum, `dueDate` to `DateTime?` (MCP-NF-04)
+  - [x] Verify project membership with a role that permits task creation (MCP-37)
+  - [x] Call `ITaskService.CreateTask(projectId, title, description, priority, dueDate, userId)` (MCP-30)
+  - [x] Return JSON object of created task (MCP-38)
+- [x] Add `update_task_status` tool to `TaskTools`:
+  - [x] Accept `taskId: int`, `status: string` (MCP-31)
+  - [x] Parse `status` to `TaskItemStatus` enum
+  - [x] Call `ITaskService.ChangeStatus(taskId, newStatus, userId)` — service handles membership verification (MCP-31)
+  - [x] Return JSON object of updated task (MCP-38)
+- [x] Add `assign_task` tool to `TaskTools`:
+  - [x] Accept `taskId: int`, `userIds: string[]` (MCP-32)
+  - [x] Call `ITaskService.AssignMembers(taskId, userIds, userId)` (MCP-32)
+  - [x] Return success/failure message (MCP-38)
+- [x] Add `add_comment` tool to `TaskTools`:
+  - [x] Accept `taskId: int`, `content: string` (MCP-33)
+  - [x] Validate `content` max 4000 characters (MCP-SEC-06)
+  - [x] Call `ICommentService.AddComment(taskId, content, userId)` (MCP-33)
+  - [x] Return JSON object of created comment (MCP-38)
+- [x] Write unit tests for all write tools: successful creation/update, validation errors, authorization errors, service failures (MCP-TEST-03, MCP-TEST-04)
 
 ### 28.2 InboxTools (Write)
 
-- [ ] Add `capture_inbox` tool to `InboxTools`:
-  - [ ] Accept `title: string`, optional `description: string` (MCP-34)
-  - [ ] Validate `title` max 300 characters, `description` max 4000 characters (MCP-SEC-06)
-  - [ ] Call `IInboxService.AddItem(title, description, userId)` (MCP-34)
-  - [ ] Return JSON object of created inbox item (MCP-38)
-- [ ] Add `process_inbox_item` tool to `InboxTools`:
-  - [ ] Accept `inboxItemId: int`, `projectId: int`, `priority: string`, optional `isNextAction: bool`, optional `isSomedayMaybe: bool` (MCP-35)
-  - [ ] Parse `priority` to `TaskItemPriority` enum
-  - [ ] Call `IInboxService.ConvertToTask(inboxItemId, projectId, priority, null, isNextAction, isSomedayMaybe, userId)` (MCP-35)
-  - [ ] Return JSON object of created task (MCP-38)
-- [ ] Write unit tests for both write tools (MCP-TEST-03, MCP-TEST-04)
+- [x] Add `capture_inbox` tool to `InboxTools`:
+  - [x] Accept `title: string`, optional `description: string` (MCP-34)
+  - [x] Validate `title` max 300 characters, `description` max 4000 characters (MCP-SEC-06)
+  - [x] Call `IInboxService.AddItem(title, description, userId)` (MCP-34)
+  - [x] Return JSON object of created inbox item (MCP-38)
+- [x] Add `process_inbox_item` tool to `InboxTools`:
+  - [x] Accept `inboxItemId: int`, `projectId: int`, `priority: string`, optional `isNextAction: bool`, optional `isSomedayMaybe: bool` (MCP-35)
+  - [x] Parse `priority` to `TaskItemPriority` enum
+  - [x] Call `IInboxService.ConvertToTask(inboxItemId, projectId, priority, null, isNextAction, isSomedayMaybe, userId)` (MCP-35)
+  - [x] Return JSON object of created task (MCP-38)
+- [x] Write unit tests for both write tools (MCP-TEST-03, MCP-TEST-04)
 
 ### 28.3 Cross-Cutting Write Tool Tests
 
-- [ ] Write integration tests verifying all write tools require PAT authentication (MCP-36)
-- [ ] Write integration tests verifying authorization enforcement matches web UI behavior (MCP-37)
-- [ ] Write integration tests verifying input validation rejects oversized strings (MCP-SEC-06)
-- [ ] Write integration tests verifying tools return descriptive error messages on failure (MCP-38, MCP-74)
+- [x] Write integration tests verifying all write tools require PAT authentication (MCP-36)
+- [x] Write integration tests verifying authorization enforcement matches web UI behavior (MCP-37)
+- [x] Write integration tests verifying input validation rejects oversized strings (MCP-SEC-06)
+- [x] Write integration tests verifying tools return descriptive error messages on failure (MCP-38, MCP-74)
 
 ---
 
