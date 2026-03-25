@@ -9,7 +9,7 @@ using TeamWare.Web.Services;
 namespace TeamWare.Web.Mcp.Tools;
 
 [McpServerToolType]
-[Authorize]
+[Authorize(AuthenticationSchemes = TeamWare.Web.Authentication.PatAuthenticationHandler.SchemeName)]
 public class TaskTools
 {
     private static readonly JsonSerializerOptions JsonOptions = new()

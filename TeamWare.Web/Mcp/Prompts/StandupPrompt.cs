@@ -9,7 +9,7 @@ using TeamWare.Web.Services;
 namespace TeamWare.Web.Mcp.Prompts;
 
 [McpServerPromptType]
-[Authorize]
+[Authorize(AuthenticationSchemes = TeamWare.Web.Authentication.PatAuthenticationHandler.SchemeName)]
 public class StandupPrompt
 {
     [McpServerPrompt, Description("Generates a standup report template populated with the user's activity from the last 24 hours, formatted as Yesterday/Today/Blockers.")]

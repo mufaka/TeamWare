@@ -9,7 +9,7 @@ using TeamWare.Web.Services;
 namespace TeamWare.Web.Mcp.Prompts;
 
 [McpServerPromptType]
-[Authorize]
+[Authorize(AuthenticationSchemes = TeamWare.Web.Authentication.PatAuthenticationHandler.SchemeName)]
 public class TaskBreakdownPrompt
 {
     [McpServerPrompt, Description("Generates a prompt to break down a task description into 3-7 actionable subtasks, considering the project's existing tasks to avoid duplication.")]
