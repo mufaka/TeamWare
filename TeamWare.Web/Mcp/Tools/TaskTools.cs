@@ -154,6 +154,7 @@ public class TaskTools
             status = t.Status.ToString(),
             priority = t.Priority.ToString(),
             dueDate = t.DueDate?.ToString("O"),
+            isOverdue = t.DueDate.HasValue && t.DueDate.Value.Date < DateTime.UtcNow.Date && t.Status != TaskItemStatus.Done,
             t.IsNextAction
         });
 

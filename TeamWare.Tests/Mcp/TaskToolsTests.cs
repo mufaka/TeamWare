@@ -265,6 +265,8 @@ public class TaskToolsTests : IDisposable
         Assert.True(task.TryGetProperty("status", out _));
         Assert.True(task.TryGetProperty("priority", out _));
         Assert.True(task.TryGetProperty("isNextAction", out _));
+        Assert.True(task.TryGetProperty("isOverdue", out var isOverdue));
+        Assert.False(isOverdue.GetBoolean()); // due in 3 days, not overdue
     }
 
     [Fact]
