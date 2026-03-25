@@ -281,7 +281,7 @@ Items flagged as Someday/Maybe are parked for future consideration. Access them 
 
 ## Development
 
-See the [Implementation Plan](TeamWare.Web/Specifications/ImplementationPlan.md), the [Social Features Implementation Plan](TeamWare.Web/Specifications/SocialFeaturesImplementationPlan.md), the [Project Lounge Implementation Plan](TeamWare.Web/Specifications/ProjectLoungeImplementationPlan.md), and the [Ollama Integration Implementation Plan](TeamWare.Web/Specifications/OllamaIntegrationImplementationPlan.md) for the phased development roadmap. See the [Specification](TeamWare.Web/Specifications/Specification.md), [Social Features Specification](TeamWare.Web/Specifications/SocialFeaturesSpecification.md), and [Ollama Integration Specification](TeamWare.Web/Specifications/OllamaIntegrationSpecification.md) for formal requirements. Each phase has a corresponding GitHub branch (`phase-X/<name>`) and issues for individual work items.
+See the [Implementation Plan](TeamWare.Web/Specifications/ImplementationPlan.md), the [Social Features Implementation Plan](TeamWare.Web/Specifications/SocialFeaturesImplementationPlan.md), the [Project Lounge Implementation Plan](TeamWare.Web/Specifications/ProjectLoungeImplementationPlan.md), the [Ollama Integration Implementation Plan](TeamWare.Web/Specifications/OllamaIntegrationImplementationPlan.md), and the [MCP Server Implementation Plan](TeamWare.Web/Specifications/McpServerImplementationPlan.md) for the phased development roadmap. See the [Specification](TeamWare.Web/Specifications/Specification.md), [Social Features Specification](TeamWare.Web/Specifications/SocialFeaturesSpecification.md), [Ollama Integration Specification](TeamWare.Web/Specifications/OllamaIntegrationSpecification.md), and [MCP Server Specification](TeamWare.Web/Specifications/McpServerSpecification.md) for formal requirements. Each phase has a corresponding GitHub branch (`phase-X/<name>`) and issues for individual work items.
 
 ### SignalR Configuration
 
@@ -359,6 +359,99 @@ Once `OLLAMA_URL` is set, AI buttons appear throughout the application within 60
 - AI output is always a **suggestion** — the user reviews and explicitly accepts or discards every result.
 - If Ollama is unreachable, a brief error notification appears; primary actions (saving, posting) are never blocked by AI errors.
 - No data leaves your local network. All inference happens on your Ollama instance.
+
+## MCP Server (Model Context Protocol)
+
+TeamWare includes an optional MCP server endpoint that allows AI agents and MCP-compatible clients to interact with your projects, tasks, inbox, and lounge. The MCP endpoint is disabled by default and has no effect on normal web usage.
+
+### Setup
+
+1. Log in to TeamWare as an administrator.
+2. Navigate to **Admin Dashboard > Configuration** (or go to `/Admin/Configuration`).
+3. Set the `MCP_ENABLED` value to `true`.
+
+The MCP endpoint becomes available at `/mcp` within 60 seconds (configuration is cached per request). To disable, set `MCP_ENABLED` back to `false`.
+
+### Personal Access Tokens
+
+MCP clients authenticate using Personal Access Tokens (PATs) instead of cookies.
+
+1. Log in to TeamWare and navigate to **Profile > Personal Access Tokens**.
+2. Enter a token name and optional expiration date, then click **Generate**.
+3. Copy the token immediately — it is shown only once.
+
+Tokens are prefixed with `tw_` and hashed with SHA-256 before storage. Each user can have up to 10 active tokens. Administrators can view and revoke any user's tokens from the admin dashboard.
+
+### Configuring MCP Clients
+
+Configure your MCP client with the TeamWare endpoint URL and your PAT. Examples:
+
+**VS Code (`.vscode/mcp.json`)**
+```json
+{
+  "servers": {
+    "teamware": {
+      "type": "http",
+      "url": "https://your-teamware-host/mcp",
+      "headers": {
+        "Authorization": "Bearer tw_your_token_here"
+      }
+    }
+  }
+}
+```
+
+**Claude Desktop (`claude_desktop_config.json`)**
+```json
+{
+  "mcpServers": {
+    "teamware": {
+      "type": "http",
+      "url": "https://your-teamware-host/mcp",
+      "headers": {
+        "Authorization": "Bearer tw_your_token_here"
+      }
+    }
+  }
+}
+```
+
+### Available Tools
+
+| Tool | Description |
+|------|-------------|
+| `list_projects` | List all projects the user is a member of |
+| `get_project` | Get project details with task statistics |
+| `list_tasks` | List tasks in a project with optional filters (status, priority, assignee) |
+| `get_task` | Get full task detail including comments |
+| `my_assignments` | Get the user's assigned tasks across all projects |
+| `create_task` | Create a new task in a project |
+| `update_task_status` | Change a task's status |
+| `assign_task` | Assign users to a task |
+| `add_comment` | Add a comment to a task |
+| `my_inbox` | List unprocessed inbox items |
+| `capture_inbox` | Capture a new item to the inbox |
+| `process_inbox_item` | Convert an inbox item into a project task |
+| `get_activity` | Get activity log entries for a project or the user |
+| `get_project_summary` | Get task statistics and activity summary for a project |
+| `list_lounge_messages` | List recent lounge messages (global or project) |
+| `post_lounge_message` | Post a message to the lounge |
+| `search_lounge_messages` | Search lounge messages by content |
+
+### Available Prompts
+
+| Prompt | Description |
+|--------|-------------|
+| `project_context` | Structured project context for AI conversations |
+| `task_breakdown` | Suggests subtasks for a given task description |
+| `standup` | Generates a standup report from recent activity |
+
+### Available Resources
+
+| Resource | Description |
+|----------|-------------|
+| `teamware://dashboard` | Personal dashboard summary (tasks, notifications, inbox counts) |
+| `teamware://projects/{projectId}/summary` | Project summary with task statistics |
 
 ## License
 
