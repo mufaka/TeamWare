@@ -30,16 +30,12 @@ public class McpWriteToolIntegrationTests : IClassFixture<TeamWareWebApplication
         _client.Dispose();
     }
 
-    private async Task SetMcpEnabled(ApplicationDbContext context, bool enabled)
+    private async Task EnsureSeeded()
     {
+        using var scope = _factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         await context.Database.EnsureCreatedAsync();
-        await SeedData.InitializeAsync(
-            _factory.Services.CreateScope().ServiceProvider);
-
-        var config = await context.GlobalConfigurations
-            .FirstAsync(gc => gc.Key == "MCP_ENABLED");
-        config.Value = enabled ? "true" : "false";
-        await context.SaveChangesAsync();
+        await SeedData.InitializeAsync(scope.ServiceProvider);
     }
 
     private HttpRequestMessage CreateMcpToolRequest(string rawToken, string toolName, object? arguments = null)
@@ -72,9 +68,7 @@ public class McpWriteToolIntegrationTests : IClassFixture<TeamWareWebApplication
     [Fact]
     public async Task CreateTask_WithoutAuth_IsRejected()
     {
-        using var scope = _factory.Services.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        await SetMcpEnabled(context, true);
+        await EnsureSeeded();
 
         var requestBody = """
             {"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"create_task","arguments":{"projectId":1,"title":"Test"}}}
@@ -92,9 +86,7 @@ public class McpWriteToolIntegrationTests : IClassFixture<TeamWareWebApplication
     [Fact]
     public async Task CaptureInbox_WithoutAuth_IsRejected()
     {
-        using var scope = _factory.Services.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        await SetMcpEnabled(context, true);
+        await EnsureSeeded();
 
         var requestBody = """
             {"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"capture_inbox","arguments":{"title":"Test"}}}
@@ -112,9 +104,7 @@ public class McpWriteToolIntegrationTests : IClassFixture<TeamWareWebApplication
     [Fact]
     public async Task UpdateTaskStatus_WithInvalidPat_IsRejected()
     {
-        using var scope = _factory.Services.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        await SetMcpEnabled(context, true);
+        await EnsureSeeded();
 
         var request = CreateMcpToolRequest("tw_invalidtoken123456", "update_task_status", new { taskId = 1, status = "Done" });
 
@@ -126,9 +116,7 @@ public class McpWriteToolIntegrationTests : IClassFixture<TeamWareWebApplication
     [Fact]
     public async Task AssignTask_WithInvalidPat_IsRejected()
     {
-        using var scope = _factory.Services.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        await SetMcpEnabled(context, true);
+        await EnsureSeeded();
 
         var request = CreateMcpToolRequest("tw_invalidtoken123456", "assign_task", new { taskId = 1, userIds = new[] { "user1" } });
 
@@ -140,9 +128,7 @@ public class McpWriteToolIntegrationTests : IClassFixture<TeamWareWebApplication
     [Fact]
     public async Task AddComment_WithInvalidPat_IsRejected()
     {
-        using var scope = _factory.Services.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        await SetMcpEnabled(context, true);
+        await EnsureSeeded();
 
         var request = CreateMcpToolRequest("tw_invalidtoken123456", "add_comment", new { taskId = 1, content = "Test" });
 
@@ -154,9 +140,7 @@ public class McpWriteToolIntegrationTests : IClassFixture<TeamWareWebApplication
     [Fact]
     public async Task ProcessInboxItem_WithInvalidPat_IsRejected()
     {
-        using var scope = _factory.Services.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        await SetMcpEnabled(context, true);
+        await EnsureSeeded();
 
         var request = CreateMcpToolRequest("tw_invalidtoken123456", "process_inbox_item", new { inboxItemId = 1, projectId = 1, priority = "Medium" });
 

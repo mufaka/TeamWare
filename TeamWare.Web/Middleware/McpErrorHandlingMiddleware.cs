@@ -1,14 +1,18 @@
 ﻿using System.Text.Json;
-using TeamWare.Web.Services;
 
 namespace TeamWare.Web.Middleware;
 
-public class McpEnabledMiddleware
+/// <summary>
+/// Wraps MCP requests to catch unhandled exceptions from the MCP SDK
+/// (e.g., malformed JSON-RPC) and return proper JSON-RPC error responses
+/// instead of 500 Internal Server Error (MCP-75).
+/// </summary>
+public class McpErrorHandlingMiddleware
 {
     private readonly RequestDelegate _next;
-    private readonly ILogger<McpEnabledMiddleware> _logger;
+    private readonly ILogger<McpErrorHandlingMiddleware> _logger;
 
-    public McpEnabledMiddleware(RequestDelegate next, ILogger<McpEnabledMiddleware> logger)
+    public McpErrorHandlingMiddleware(RequestDelegate next, ILogger<McpErrorHandlingMiddleware> logger)
     {
         _next = next;
         _logger = logger;
@@ -18,18 +22,6 @@ public class McpEnabledMiddleware
     {
         if (context.Request.Path.StartsWithSegments("/mcp"))
         {
-            var configService = context.RequestServices.GetRequiredService<IGlobalConfigurationService>();
-            var result = await configService.GetByKeyAsync("MCP_ENABLED");
-
-            if (!result.Succeeded || !string.Equals(result.Data?.Value, "true", StringComparison.OrdinalIgnoreCase))
-            {
-                context.Response.StatusCode = StatusCodes.Status404NotFound;
-                return;
-            }
-
-            // Wrap MCP requests to catch unhandled exceptions from the MCP SDK
-            // (e.g., malformed JSON-RPC) and return proper JSON-RPC error responses
-            // instead of 500 Internal Server Error (MCP-75).
             try
             {
                 await _next(context);

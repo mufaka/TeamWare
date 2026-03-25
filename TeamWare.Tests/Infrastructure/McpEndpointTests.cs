@@ -28,82 +28,28 @@ public class McpEndpointTests : IClassFixture<TeamWareWebApplicationFactory>, ID
         _client.Dispose();
     }
 
-    private async Task SetMcpEnabled(ApplicationDbContext context, bool enabled)
+    private async Task EnsureSeeded()
     {
+        using var scope = _factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         await context.Database.EnsureCreatedAsync();
-        await SeedData.InitializeAsync(
-            _factory.Services.CreateScope().ServiceProvider);
-
-        var config = await context.GlobalConfigurations
-            .FirstAsync(gc => gc.Key == "MCP_ENABLED");
-        config.Value = enabled ? "true" : "false";
-        await context.SaveChangesAsync();
+        await SeedData.InitializeAsync(scope.ServiceProvider);
     }
 
     // ---------------------------------------------------------------
-    // MCP-TEST-08: MCP endpoint returns 404 when MCP_ENABLED is false
+    // MCP endpoint is always reachable (PAT-protected, no toggle)
     // ---------------------------------------------------------------
 
     [Fact]
-    public async Task McpEndpoint_WhenDisabled_GetReturns404()
+    public async Task McpEndpoint_IsAlwaysReachable()
     {
-        using var scope = _factory.Services.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        await SetMcpEnabled(context, false);
-
-        var response = await _client.GetAsync("/mcp");
-
-        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
-    }
-
-    [Fact]
-    public async Task McpEndpoint_WhenDisabled_PostReturns404()
-    {
-        using var scope = _factory.Services.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        await SetMcpEnabled(context, false);
-
-        var request = new HttpRequestMessage(HttpMethod.Post, "/mcp");
-        request.Content = new StringContent("{}", System.Text.Encoding.UTF8, "application/json");
-
-        var response = await _client.SendAsync(request);
-
-        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
-    }
-
-    [Fact]
-    public async Task McpEndpoint_WhenDisabled_WithBearerToken_Returns404()
-    {
-        using var scope = _factory.Services.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        await SetMcpEnabled(context, false);
-
-        // Even with a Bearer header, middleware blocks first when MCP is disabled
-        var request = new HttpRequestMessage(HttpMethod.Post, "/mcp");
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", "tw_sometoken");
-        request.Content = new StringContent("{}", System.Text.Encoding.UTF8, "application/json");
-
-        var response = await _client.SendAsync(request);
-
-        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
-    }
-
-    // ---------------------------------------------------------------
-    // MCP-TEST-08: MCP endpoint passes through when MCP_ENABLED is true
-    // ---------------------------------------------------------------
-
-    [Fact]
-    public async Task McpEndpoint_WhenEnabled_DoesNotReturn404()
-    {
-        using var scope = _factory.Services.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        await SetMcpEnabled(context, true);
+        await EnsureSeeded();
 
         var response = await _client.GetAsync("/mcp");
 
         // The endpoint should be reachable (not blocked by middleware).
         // The MCP protocol may return its own error codes for malformed requests,
-        // but it should NOT be 404 from the middleware.
+        // but it should NOT be 404.
         Assert.NotEqual(HttpStatusCode.NotFound, response.StatusCode);
     }
 
@@ -114,11 +60,12 @@ public class McpEndpointTests : IClassFixture<TeamWareWebApplicationFactory>, ID
     [Fact]
     public async Task McpEndpoint_WithValidPat_AuthenticatesSuccessfully()
     {
+        await EnsureSeeded();
+
         using var scope = _factory.Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
         var tokenService = scope.ServiceProvider.GetRequiredService<IPersonalAccessTokenService>();
-        await SetMcpEnabled(context, true);
 
         // Get the seeded admin user
         var admin = await userManager.FindByEmailAsync(SeedData.AdminEmail);
@@ -142,8 +89,7 @@ public class McpEndpointTests : IClassFixture<TeamWareWebApplicationFactory>, ID
 
         var response = await _client.SendAsync(request);
 
-        // With a valid PAT and MCP enabled, we should not get 401 or 404.
-        // The MCP server should process the initialize request successfully (200 OK or 202 Accepted).
+        // With a valid PAT, we should not get 401 or 404.
         Assert.NotEqual(HttpStatusCode.NotFound, response.StatusCode);
         Assert.NotEqual(HttpStatusCode.Unauthorized, response.StatusCode);
     }
@@ -151,9 +97,7 @@ public class McpEndpointTests : IClassFixture<TeamWareWebApplicationFactory>, ID
     [Fact]
     public async Task McpEndpoint_WithInvalidPat_ReturnsUnauthorized()
     {
-        using var scope = _factory.Services.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        await SetMcpEnabled(context, true);
+        await EnsureSeeded();
 
         // Send a properly formed MCP request with an invalid token
         var initRequest = """
@@ -167,8 +111,7 @@ public class McpEndpointTests : IClassFixture<TeamWareWebApplicationFactory>, ID
 
         var response = await _client.SendAsync(request);
 
-        // The MCP endpoint should reject an invalid PAT.
-        // It should not return 404 (MCP is enabled) but should indicate auth failure.
+        // The MCP endpoint should reject an invalid PAT but not return 404.
         Assert.NotEqual(HttpStatusCode.NotFound, response.StatusCode);
     }
 }

@@ -115,7 +115,7 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
-app.UseMiddleware<McpEnabledMiddleware>();
+app.UseMiddleware<McpErrorHandlingMiddleware>();
 app.UseStatusCodePagesWithReExecute("/Home/StatusCode/{0}");
 app.UseHttpsRedirection();
 app.UseResponseCompression();
