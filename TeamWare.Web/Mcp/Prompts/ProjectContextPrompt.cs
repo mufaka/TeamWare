@@ -9,7 +9,7 @@ using TeamWare.Web.Services;
 namespace TeamWare.Web.Mcp.Prompts;
 
 [McpServerPromptType]
-[Authorize]
+[Authorize(AuthenticationSchemes = TeamWare.Web.Authentication.PatAuthenticationHandler.SchemeName)]
 public class ProjectContextPrompt
 {
     [McpServerPrompt, Description("Provides rich context about a project including description, members, task statistics, and recent activity. Use this to ground an AI conversation about a specific project.")]

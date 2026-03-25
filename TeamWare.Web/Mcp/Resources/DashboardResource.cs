@@ -8,7 +8,7 @@ using TeamWare.Web.Services;
 namespace TeamWare.Web.Mcp.Resources;
 
 [McpServerResourceType]
-[Authorize]
+[Authorize(AuthenticationSchemes = TeamWare.Web.Authentication.PatAuthenticationHandler.SchemeName)]
 public class DashboardResource
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
