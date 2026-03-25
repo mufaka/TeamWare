@@ -13,7 +13,7 @@ This document defines the phased implementation plan for the TeamWare MCP Server
 | 28 | Write MCP Tools | Complete |
 | 29 | MCP Prompts and Resources | Complete |
 | 30 | Lounge MCP Tools | Complete |
-| 31 | MCP Polish and Hardening | Not Started |
+| 31 | MCP Polish and Hardening | Complete |
 
 ---
 
@@ -379,50 +379,50 @@ Final pass on cross-cutting concerns: error handling, security audit, documentat
 
 ### 31.1 Error Handling and Resilience
 
-- [ ] Verify the MCP endpoint returns HTTP 404 when `MCP_ENABLED` is `false` (MCP-70)
-- [ ] Verify all authentication error paths return proper MCP protocol errors (MCP-71)
-- [ ] Verify all authorization error paths return descriptive messages (MCP-72)
-- [ ] Verify all entity-not-found cases return descriptive error messages (MCP-73)
-- [ ] Verify all `ServiceResult` failures are propagated correctly to MCP clients (MCP-74)
-- [ ] Verify MCP tool exceptions are caught and returned as MCP error responses, not propagated to the ASP.NET Core middleware pipeline (MCP-75)
-- [ ] Test behavior when `MCP_ENABLED` is changed from `false` to `true` (endpoint becomes available within 60 seconds) (MCP-04)
-- [ ] Test behavior when `MCP_ENABLED` is changed from `true` to `false` (endpoint stops accepting within 60 seconds) (MCP-04)
+- [x] Verify the MCP endpoint returns HTTP 404 when `MCP_ENABLED` is `false` (MCP-70)
+- [x] Verify all authentication error paths return proper MCP protocol errors (MCP-71)
+- [x] Verify all authorization error paths return descriptive messages (MCP-72)
+- [x] Verify all entity-not-found cases return descriptive error messages (MCP-73)
+- [x] Verify all `ServiceResult` failures are propagated correctly to MCP clients (MCP-74)
+- [x] Verify MCP tool exceptions are caught and returned as MCP error responses, not propagated to the ASP.NET Core middleware pipeline (MCP-75)
+- [x] Test behavior when `MCP_ENABLED` is changed from `false` to `true` (endpoint becomes available within 60 seconds) (MCP-04)
+- [x] Test behavior when `MCP_ENABLED` is changed from `true` to `false` (endpoint stops accepting within 60 seconds) (MCP-04)
 
 ### 31.2 Security Review
 
-- [ ] Audit all MCP tools for authentication enforcement — every tool requires PAT (MCP-18, MCP-36, MCP-43, MCP-52)
-- [ ] Audit all project-scoped tools for membership verification (MCP-19, MCP-20, MCP-37, MCP-44, MCP-53, MCP-63)
-- [ ] Verify input validation on all string parameters: title max 300 chars, description/content max 4000 chars (MCP-SEC-06)
-- [ ] Verify no sensitive data is exposed in tool responses (password hashes, token values, internal IDs of inaccessible entities) (MCP-SEC-05)
-- [ ] Verify the `tw_` prefix is applied to all generated tokens (MCP-SEC-04)
-- [ ] Verify token revocation takes effect immediately with no caching delay (MCP-SEC-03)
-- [ ] Verify PAT hashing uses SHA-256 (MCP-SEC-01, MCP-NF-06)
+- [x] Audit all MCP tools for authentication enforcement — every tool requires PAT (MCP-18, MCP-36, MCP-43, MCP-52)
+- [x] Audit all project-scoped tools for membership verification (MCP-19, MCP-20, MCP-37, MCP-44, MCP-53, MCP-63)
+- [x] Verify input validation on all string parameters: title max 300 chars, description/content max 4000 chars (MCP-SEC-06)
+- [x] Verify no sensitive data is exposed in tool responses (password hashes, token values, internal IDs of inaccessible entities) (MCP-SEC-05)
+- [x] Verify the `tw_` prefix is applied to all generated tokens (MCP-SEC-04)
+- [x] Verify token revocation takes effect immediately with no caching delay (MCP-SEC-03)
+- [x] Verify PAT hashing uses SHA-256 (MCP-SEC-01, MCP-NF-06)
 
 ### 31.3 JSON Response Consistency
 
-- [ ] Verify all MCP tool responses use consistent JSON property naming (camelCase) (MCP-NF-04)
-- [ ] Verify all dates are serialized in ISO 8601 format (MCP-NF-04)
-- [ ] Verify all enums are serialized as their string names, not integer values (MCP-NF-04)
-- [ ] Verify all tools handle null/empty optional parameters gracefully
+- [x] Verify all MCP tool responses use consistent JSON property naming (camelCase) (MCP-NF-04)
+- [x] Verify all dates are serialized in ISO 8601 format (MCP-NF-04)
+- [x] Verify all enums are serialized as their string names, not integer values (MCP-NF-04)
+- [x] Verify all tools handle null/empty optional parameters gracefully
 
 ### 31.4 UI/UX Consistency
 
-- [ ] Verify PAT management UI styling is consistent with existing profile page sections (MCP-UI-06)
-- [ ] Verify light/dark theme support on all PAT management UI elements (MCP-UI-06)
-- [ ] Verify no emoticons or emojis in PAT management chrome or labels (MCP-UI-07)
-- [ ] Verify token creation flow: form → success display with copy button → token list refresh (MCP-UI-03, MCP-UI-04)
-- [ ] Verify revocation flow: confirm dialog → token removed from list (MCP-UI-05)
-- [ ] Verify admin PAT management is accessible and functional (MCP-UI-11, MCP-UI-12)
+- [x] Verify PAT management UI styling is consistent with existing profile page sections (MCP-UI-06)
+- [x] Verify light/dark theme support on all PAT management UI elements (MCP-UI-06)
+- [x] Verify no emoticons or emojis in PAT management chrome or labels (MCP-UI-07)
+- [x] Verify token creation flow: form → success display with copy button → token list refresh (MCP-UI-03, MCP-UI-04)
+- [x] Verify revocation flow: confirm dialog → token removed from list (MCP-UI-05)
+- [x] Verify admin PAT management is accessible and functional (MCP-UI-11, MCP-UI-12)
 
 ### 31.5 Documentation
 
-- [ ] Update `README.md` with MCP server setup instructions:
-  - [ ] How to enable the MCP endpoint via `MCP_ENABLED` in the admin dashboard
-  - [ ] How to generate a Personal Access Token
-  - [ ] How to configure MCP clients (VS Code, Claude Desktop) with the TeamWare MCP endpoint URL and PAT
-  - [ ] List of available tools with brief descriptions
-- [ ] Update `copilot-instructions.md` with Phase 26-31 branch names and issue map
-- [ ] Update the [MCP Server Idea document](McpServerIdea.md) to mark the implementation as complete
+- [x] Update `README.md` with MCP server setup instructions:
+  - [x] How to enable the MCP endpoint via `MCP_ENABLED` in the admin dashboard
+  - [x] How to generate a Personal Access Token
+  - [x] How to configure MCP clients (VS Code, Claude Desktop) with the TeamWare MCP endpoint URL and PAT
+  - [x] List of available tools with brief descriptions
+- [x] Update `copilot-instructions.md` with Phase 26-31 branch names and issue map
+- [x] Update the [MCP Server Idea document](McpServerIdea.md) to mark the implementation as complete
 
 ---
 
