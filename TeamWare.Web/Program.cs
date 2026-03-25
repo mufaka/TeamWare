@@ -99,6 +99,7 @@ builder.Services.AddResponseCompression(options =>
 
 builder.Services.AddMcpServer()
     .WithHttpTransport()
+    .AddAuthorizationFilters()
     .WithToolsFromAssembly()
     .WithPromptsFromAssembly()
     .WithResourcesFromAssembly();
@@ -112,9 +113,13 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
-app.UseStatusCodePagesWithReExecute("/Home/StatusCode/{0}");
-app.UseHttpsRedirection();
-app.UseResponseCompression();
+app.UseWhen(context => !context.Request.Path.StartsWithSegments("/mcp"), branch =>
+{
+    branch.UseStatusCodePagesWithReExecute("/Home/StatusCode/{0}");
+    branch.UseHttpsRedirection();
+    branch.UseResponseCompression();
+});
+
 app.UseRouting();
 
 app.UseAuthentication();
