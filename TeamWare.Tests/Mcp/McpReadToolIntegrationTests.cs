@@ -30,16 +30,12 @@ public class McpReadToolIntegrationTests : IClassFixture<TeamWareWebApplicationF
         _client.Dispose();
     }
 
-    private async Task SetMcpEnabled(ApplicationDbContext context, bool enabled)
+    private async Task EnsureSeeded()
     {
+        using var scope = _factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         await context.Database.EnsureCreatedAsync();
-        await SeedData.InitializeAsync(
-            _factory.Services.CreateScope().ServiceProvider);
-
-        var config = await context.GlobalConfigurations
-            .FirstAsync(gc => gc.Key == "MCP_ENABLED");
-        config.Value = enabled ? "true" : "false";
-        await context.SaveChangesAsync();
+        await SeedData.InitializeAsync(scope.ServiceProvider);
     }
 
     private async Task<(ApplicationUser User, string RawToken)> CreateUserWithPat()
@@ -100,9 +96,7 @@ public class McpReadToolIntegrationTests : IClassFixture<TeamWareWebApplicationF
     [Fact]
     public async Task McpToolCall_WithoutAuth_IsRejected()
     {
-        using var scope = _factory.Services.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        await SetMcpEnabled(context, true);
+        await EnsureSeeded();
 
         var requestBody = """
             {"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"list_projects","arguments":{}}}
@@ -122,9 +116,7 @@ public class McpReadToolIntegrationTests : IClassFixture<TeamWareWebApplicationF
     [Fact]
     public async Task McpToolCall_WithInvalidPat_IsRejected()
     {
-        using var scope = _factory.Services.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        await SetMcpEnabled(context, true);
+        await EnsureSeeded();
 
         var request = CreateMcpToolRequest("tw_invalidtoken123456", "list_projects");
 
@@ -137,11 +129,11 @@ public class McpReadToolIntegrationTests : IClassFixture<TeamWareWebApplicationF
     [Fact]
     public async Task McpToolCall_WithExpiredPat_IsRejected()
     {
+        await EnsureSeeded();
+
         using var scope = _factory.Services.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
         var tokenService = scope.ServiceProvider.GetRequiredService<IPersonalAccessTokenService>();
-        await SetMcpEnabled(context, true);
 
         var admin = await userManager.FindByEmailAsync(SeedData.AdminEmail);
         Assert.NotNull(admin);
@@ -160,11 +152,11 @@ public class McpReadToolIntegrationTests : IClassFixture<TeamWareWebApplicationF
     [Fact]
     public async Task McpToolCall_WithRevokedPat_IsRejected()
     {
+        await EnsureSeeded();
+
         using var scope = _factory.Services.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
         var tokenService = scope.ServiceProvider.GetRequiredService<IPersonalAccessTokenService>();
-        await SetMcpEnabled(context, true);
 
         var admin = await userManager.FindByEmailAsync(SeedData.AdminEmail);
         Assert.NotNull(admin);
@@ -191,9 +183,7 @@ public class McpReadToolIntegrationTests : IClassFixture<TeamWareWebApplicationF
     [Fact]
     public async Task McpInitialize_WithValidPat_Succeeds()
     {
-        using var scope = _factory.Services.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        await SetMcpEnabled(context, true);
+        await EnsureSeeded();
 
         var (user, rawToken) = await CreateUserWithPat();
 

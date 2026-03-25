@@ -30,16 +30,12 @@ public class McpLoungeToolIntegrationTests : IClassFixture<TeamWareWebApplicatio
         _client.Dispose();
     }
 
-    private async Task SetMcpEnabled(ApplicationDbContext context, bool enabled)
+    private async Task EnsureSeeded()
     {
+        using var scope = _factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         await context.Database.EnsureCreatedAsync();
-        await SeedData.InitializeAsync(
-            _factory.Services.CreateScope().ServiceProvider);
-
-        var config = await context.GlobalConfigurations
-            .FirstAsync(gc => gc.Key == "MCP_ENABLED");
-        config.Value = enabled ? "true" : "false";
-        await context.SaveChangesAsync();
+        await SeedData.InitializeAsync(scope.ServiceProvider);
     }
 
     private async Task<(ApplicationUser User, string RawToken)> CreateUserWithPat()
@@ -87,9 +83,7 @@ public class McpLoungeToolIntegrationTests : IClassFixture<TeamWareWebApplicatio
     [Fact]
     public async Task ListLoungeMessages_WithoutAuth_IsRejected()
     {
-        using var scope = _factory.Services.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        await SetMcpEnabled(context, true);
+        await EnsureSeeded();
 
         var requestBody = """
             {"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"list_lounge_messages","arguments":{}}}
@@ -107,9 +101,7 @@ public class McpLoungeToolIntegrationTests : IClassFixture<TeamWareWebApplicatio
     [Fact]
     public async Task PostLoungeMessage_WithoutAuth_IsRejected()
     {
-        using var scope = _factory.Services.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        await SetMcpEnabled(context, true);
+        await EnsureSeeded();
 
         var requestBody = """
             {"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"post_lounge_message","arguments":{"content":"test"}}}
@@ -127,9 +119,7 @@ public class McpLoungeToolIntegrationTests : IClassFixture<TeamWareWebApplicatio
     [Fact]
     public async Task SearchLoungeMessages_WithoutAuth_IsRejected()
     {
-        using var scope = _factory.Services.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        await SetMcpEnabled(context, true);
+        await EnsureSeeded();
 
         var requestBody = """
             {"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"search_lounge_messages","arguments":{"query":"test"}}}
@@ -151,9 +141,9 @@ public class McpLoungeToolIntegrationTests : IClassFixture<TeamWareWebApplicatio
     [Fact]
     public async Task ListLoungeMessages_NonMemberProject_ReturnsError()
     {
+        await EnsureSeeded();
+
         using var scope = _factory.Services.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        await SetMcpEnabled(context, true);
 
         // Create a project owned by a different user
         var otherUser = new ApplicationUser
@@ -189,10 +179,10 @@ public class McpLoungeToolIntegrationTests : IClassFixture<TeamWareWebApplicatio
     [Fact]
     public async Task PostLoungeMessage_WithMention_TriggersNotification()
     {
+        await EnsureSeeded();
+
         using var scope = _factory.Services.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         var notificationService = scope.ServiceProvider.GetRequiredService<INotificationService>();
-        await SetMcpEnabled(context, true);
 
         // Create a user to mention
         var mentionedUser = new ApplicationUser

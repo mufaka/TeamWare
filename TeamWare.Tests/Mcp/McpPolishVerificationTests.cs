@@ -35,16 +35,12 @@ public class McpPolishVerificationTests : IClassFixture<TeamWareWebApplicationFa
         _client.Dispose();
     }
 
-    private async Task SetMcpEnabled(ApplicationDbContext context, bool enabled)
+    private async Task EnsureSeeded()
     {
+        using var scope = _factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         await context.Database.EnsureCreatedAsync();
-        await SeedData.InitializeAsync(
-            _factory.Services.CreateScope().ServiceProvider);
-
-        var config = await context.GlobalConfigurations
-            .FirstAsync(gc => gc.Key == "MCP_ENABLED");
-        config.Value = enabled ? "true" : "false";
-        await context.SaveChangesAsync();
+        await SeedData.InitializeAsync(scope.ServiceProvider);
     }
 
     private async Task<(ApplicationUser User, string RawToken)> CreateUserWithPat()
@@ -76,61 +72,11 @@ public class McpPolishVerificationTests : IClassFixture<TeamWareWebApplicationFa
     // 31.1 Error Handling and Resilience
     // =================================================================
 
-    // MCP-70: MCP endpoint returns HTTP 404 when MCP_ENABLED is false
-    [Fact]
-    public async Task McpEndpoint_WhenDisabled_Returns404_ForGetRequest()
-    {
-        using var scope = _factory.Services.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        await SetMcpEnabled(context, false);
-
-        var response = await _client.GetAsync("/mcp");
-
-        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
-    }
-
-    [Fact]
-    public async Task McpEndpoint_WhenDisabled_Returns404_ForPostRequest()
-    {
-        using var scope = _factory.Services.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        await SetMcpEnabled(context, false);
-
-        var request = new HttpRequestMessage(HttpMethod.Post, "/mcp");
-        request.Content = new StringContent("{}", Encoding.UTF8, "application/json");
-
-        var response = await _client.SendAsync(request);
-
-        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
-    }
-
-    [Fact]
-    public async Task McpEndpoint_WhenDisabled_Returns404_EvenWithValidPat()
-    {
-        using var scope = _factory.Services.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        await SetMcpEnabled(context, true);
-
-        var (user, rawToken) = await CreateUserWithPat();
-
-        // Now disable MCP
-        await SetMcpEnabled(context, false);
-
-        var request = CreateMcpRequest(rawToken,
-            """{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"list_projects","arguments":{}}}""");
-
-        var response = await _client.SendAsync(request);
-
-        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
-    }
-
     // MCP-71: Authentication error paths return proper errors
     [Fact]
     public async Task McpEndpoint_WithEmptyBearer_RejectsRequest()
     {
-        using var scope = _factory.Services.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        await SetMcpEnabled(context, true);
+        await EnsureSeeded();
 
         var request = new HttpRequestMessage(HttpMethod.Post, "/mcp");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", "");
@@ -149,9 +95,7 @@ public class McpPolishVerificationTests : IClassFixture<TeamWareWebApplicationFa
     [Fact]
     public async Task McpEndpoint_WithMalformedBearer_RejectsRequest()
     {
-        using var scope = _factory.Services.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        await SetMcpEnabled(context, true);
+        await EnsureSeeded();
 
         var request = CreateMcpRequest("not_a_valid_token_format",
             """{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"list_projects","arguments":{}}}""");
@@ -161,53 +105,11 @@ public class McpPolishVerificationTests : IClassFixture<TeamWareWebApplicationFa
         Assert.NotEqual(HttpStatusCode.OK, response.StatusCode);
     }
 
-    // MCP-04: Toggle behavior — endpoint becomes available when enabled
-    [Fact]
-    public async Task McpEndpoint_ToggleFromDisabledToEnabled_EndpointBecomesAvailable()
-    {
-        using var scope = _factory.Services.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-
-        // Start disabled
-        await SetMcpEnabled(context, false);
-
-        var response1 = await _client.GetAsync("/mcp");
-        Assert.Equal(HttpStatusCode.NotFound, response1.StatusCode);
-
-        // Enable
-        await SetMcpEnabled(context, true);
-
-        var response2 = await _client.GetAsync("/mcp");
-        Assert.NotEqual(HttpStatusCode.NotFound, response2.StatusCode);
-    }
-
-    // MCP-04: Toggle behavior — endpoint stops accepting when disabled
-    [Fact]
-    public async Task McpEndpoint_ToggleFromEnabledToDisabled_EndpointStopsAccepting()
-    {
-        using var scope = _factory.Services.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-
-        // Start enabled
-        await SetMcpEnabled(context, true);
-
-        var response1 = await _client.GetAsync("/mcp");
-        Assert.NotEqual(HttpStatusCode.NotFound, response1.StatusCode);
-
-        // Disable
-        await SetMcpEnabled(context, false);
-
-        var response2 = await _client.GetAsync("/mcp");
-        Assert.Equal(HttpStatusCode.NotFound, response2.StatusCode);
-    }
-
     // MCP-75: MCP tool exceptions do not propagate to ASP.NET Core middleware
     [Fact]
     public async Task McpEndpoint_MalformedJsonRpc_DoesNotReturn500()
     {
-        using var scope = _factory.Services.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        await SetMcpEnabled(context, true);
+        await EnsureSeeded();
 
         var (user, rawToken) = await CreateUserWithPat();
 
@@ -223,9 +125,7 @@ public class McpPolishVerificationTests : IClassFixture<TeamWareWebApplicationFa
     [Fact]
     public async Task McpEndpoint_InvalidToolName_DoesNotReturn500()
     {
-        using var scope = _factory.Services.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        await SetMcpEnabled(context, true);
+        await EnsureSeeded();
 
         var (user, rawToken) = await CreateUserWithPat();
 

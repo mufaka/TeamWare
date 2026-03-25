@@ -30,16 +30,12 @@ public class McpPromptResourceIntegrationTests : IClassFixture<TeamWareWebApplic
         _client.Dispose();
     }
 
-    private async Task SetMcpEnabled(ApplicationDbContext context, bool enabled)
+    private async Task EnsureSeeded()
     {
+        using var scope = _factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         await context.Database.EnsureCreatedAsync();
-        await SeedData.InitializeAsync(
-            _factory.Services.CreateScope().ServiceProvider);
-
-        var config = await context.GlobalConfigurations
-            .FirstAsync(gc => gc.Key == "MCP_ENABLED");
-        config.Value = enabled ? "true" : "false";
-        await context.SaveChangesAsync();
+        await SeedData.InitializeAsync(scope.ServiceProvider);
     }
 
     private async Task<(ApplicationUser User, string RawToken)> CreateUserWithPat()
@@ -121,9 +117,7 @@ public class McpPromptResourceIntegrationTests : IClassFixture<TeamWareWebApplic
     [Fact]
     public async Task PromptCall_WithoutAuth_IsRejected()
     {
-        using var scope = _factory.Services.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        await SetMcpEnabled(context, true);
+        await EnsureSeeded();
 
         var requestBody = """
             {"jsonrpc":"2.0","id":1,"method":"prompts/get","params":{"name":"standup","arguments":{}}}
@@ -141,9 +135,7 @@ public class McpPromptResourceIntegrationTests : IClassFixture<TeamWareWebApplic
     [Fact]
     public async Task PromptCall_WithInvalidPat_IsRejected()
     {
-        using var scope = _factory.Services.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        await SetMcpEnabled(context, true);
+        await EnsureSeeded();
 
         var request = CreateMcpPromptRequest("tw_invalidtoken123456", "standup");
 
@@ -159,9 +151,7 @@ public class McpPromptResourceIntegrationTests : IClassFixture<TeamWareWebApplic
     [Fact]
     public async Task ResourceRead_WithoutAuth_IsRejected()
     {
-        using var scope = _factory.Services.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        await SetMcpEnabled(context, true);
+        await EnsureSeeded();
 
         var requestBody = """
             {"jsonrpc":"2.0","id":1,"method":"resources/read","params":{"uri":"teamware://dashboard"}}
@@ -179,9 +169,7 @@ public class McpPromptResourceIntegrationTests : IClassFixture<TeamWareWebApplic
     [Fact]
     public async Task ResourceRead_WithInvalidPat_IsRejected()
     {
-        using var scope = _factory.Services.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        await SetMcpEnabled(context, true);
+        await EnsureSeeded();
 
         var request = CreateMcpResourceRequest("tw_invalidtoken123456", "teamware://dashboard");
 
@@ -197,9 +185,9 @@ public class McpPromptResourceIntegrationTests : IClassFixture<TeamWareWebApplic
     [Fact]
     public async Task ProjectContextPrompt_NonMember_ReturnsError()
     {
+        await EnsureSeeded();
+
         using var scope = _factory.Services.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        await SetMcpEnabled(context, true);
 
         // Create a user and project that the PAT user is NOT a member of
         var otherUser = new ApplicationUser
@@ -241,9 +229,9 @@ public class McpPromptResourceIntegrationTests : IClassFixture<TeamWareWebApplic
     [Fact]
     public async Task ProjectSummaryResource_NonMember_ReturnsError()
     {
+        await EnsureSeeded();
+
         using var scope = _factory.Services.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        await SetMcpEnabled(context, true);
 
         var otherUser = new ApplicationUser
         {
