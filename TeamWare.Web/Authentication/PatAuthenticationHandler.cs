@@ -52,6 +52,12 @@ public class PatAuthenticationHandler : AuthenticationHandler<AuthenticationSche
         }
 
         var user = result.Data!;
+
+        if (user.IsAgent && !user.IsAgentActive)
+        {
+            return AuthenticateResult.Fail("Agent is currently paused.");
+        }
+
         var roles = await _userManager.GetRolesAsync(user);
 
         var claims = new List<Claim>
@@ -60,6 +66,11 @@ public class PatAuthenticationHandler : AuthenticationHandler<AuthenticationSche
             new(ClaimTypes.Name, user.UserName ?? string.Empty),
             new(ClaimTypes.Email, user.Email ?? string.Empty)
         };
+
+        if (user.IsAgent)
+        {
+            claims.Add(new Claim("IsAgent", "true"));
+        }
 
         foreach (var role in roles)
         {
