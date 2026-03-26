@@ -49,6 +49,7 @@ public class CommentController : Controller
                 TaskItemId = c.TaskItemId,
                 AuthorId = c.AuthorId,
                 AuthorDisplayName = c.Author.DisplayName,
+                IsAuthorAgent = c.Author.IsAgent,
                 Content = c.Content,
                 CreatedAt = c.CreatedAt,
                 UpdatedAt = c.UpdatedAt,

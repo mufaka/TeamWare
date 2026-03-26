@@ -49,6 +49,7 @@ public class TaskController : Controller
                 TaskItemId = c.TaskItemId,
                 AuthorId = c.AuthorId,
                 AuthorDisplayName = c.Author.DisplayName,
+                IsAuthorAgent = c.Author.IsAgent,
                 Content = c.Content,
                 CreatedAt = c.CreatedAt,
                 UpdatedAt = c.UpdatedAt,
@@ -288,6 +289,7 @@ public class TaskController : Controller
                 TaskItemId = a.TaskItemId,
                 TaskTitle = task.Title,
                 UserDisplayName = a.User.DisplayName,
+                IsUserAgent = a.User.IsAgent,
                 ChangeType = a.ChangeType,
                 OldValue = a.OldValue,
                 NewValue = a.NewValue,
@@ -297,7 +299,8 @@ public class TaskController : Controller
             Assignees = task.Assignments.Select(a => new TaskAssigneeViewModel
             {
                 UserId = a.UserId,
-                DisplayName = a.User.DisplayName
+                DisplayName = a.User.DisplayName,
+                IsAgent = a.User.IsAgent
             }).ToList(),
             ProjectMembers = membersResult.Succeeded
                 ? membersResult.Data!.Select(m => new ProjectMemberViewModel
@@ -305,7 +308,8 @@ public class TaskController : Controller
                     UserId = m.UserId,
                     DisplayName = m.User.DisplayName,
                     Email = m.User.Email ?? string.Empty,
-                    Role = m.Role
+                    Role = m.Role,
+                    IsAgent = m.User.IsAgent
                 }).ToList()
                 : new()
         };

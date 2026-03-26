@@ -17,17 +17,17 @@ public class DirectoryController : Controller
         _presenceService = presenceService;
     }
 
-    public async Task<IActionResult> Index(string? search, string sortBy = "displayname", bool ascending = true, int page = 1)
+    public async Task<IActionResult> Index(string? search, string sortBy = "displayname", bool ascending = true, int page = 1, string userTypeFilter = "all")
     {
         ServiceResult<PagedResult<UserDirectoryEntryViewModel>> result;
 
         if (!string.IsNullOrWhiteSpace(search))
         {
-            result = await _directoryService.SearchUsers(search, page);
+            result = await _directoryService.SearchUsers(search, page, userTypeFilter: userTypeFilter);
         }
         else
         {
-            result = await _directoryService.GetUsersSorted(sortBy, ascending, page);
+            result = await _directoryService.GetUsersSorted(sortBy, ascending, page, userTypeFilter: userTypeFilter);
         }
 
         if (!result.Succeeded)
@@ -49,7 +49,8 @@ public class DirectoryController : Controller
             Ascending = ascending,
             Page = result.Data.Page,
             TotalPages = result.Data.TotalPages,
-            TotalCount = result.Data.TotalCount
+            TotalCount = result.Data.TotalCount,
+            UserTypeFilter = userTypeFilter
         };
 
         return View(viewModel);

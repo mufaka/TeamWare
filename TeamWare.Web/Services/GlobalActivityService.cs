@@ -45,6 +45,7 @@ public class GlobalActivityService : IGlobalActivityService
                 ProjectName = a.Project.Name,
                 a.UserId,
                 UserDisplayName = a.User != null ? a.User.DisplayName : null,
+                IsUserAgent = a.User != null && a.User.IsAgent,
                 TaskTitle = a.TaskItem != null ? a.TaskItem.Title : null,
                 a.OldValue,
                 a.NewValue,
@@ -67,6 +68,7 @@ public class GlobalActivityService : IGlobalActivityService
                     ? (entry.UserDisplayName ?? "Unknown")
                     : "A user",
                 UserId = isMember ? entry.UserId : string.Empty,
+                IsUserAgent = isMember && entry.IsUserAgent,
                 CreatedAt = entry.CreatedAt,
                 IsMasked = !isMember
             };

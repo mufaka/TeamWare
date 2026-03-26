@@ -12,6 +12,8 @@ public class ActivityLogEntryViewModel
 
     public string UserDisplayName { get; set; } = string.Empty;
 
+    public bool IsUserAgent { get; set; }
+
     public ActivityChangeType ChangeType { get; set; }
 
     public string? OldValue { get; set; }

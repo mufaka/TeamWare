@@ -205,45 +205,45 @@ Add the `get_my_profile` MCP tool, modify `my_assignments` for agent context, an
 
 ### 34.1 ProfileTools MCP Tool
 
-- [ ] Create `TeamWare.Web/Mcp/Tools/ProfileTools.cs` with `[McpServerToolType]` and `[Authorize]` (Spec Section 6.1)
-- [ ] Implement `get_my_profile` tool:
-  - [ ] Accept no parameters (AGT-41)
-  - [ ] Resolve authenticated user ID from `ClaimsPrincipal`
-  - [ ] Load `ApplicationUser` via `UserManager<ApplicationUser>.FindByIdAsync`
-  - [ ] Return JSON object: `{ userId, displayName, email, isAgent, agentDescription, isAgentActive, lastActiveAt }` (AGT-42)
-  - [ ] For human users: `agentDescription` and `isAgentActive` are `null` (AGT-44)
-  - [ ] Dates use ISO 8601 format, consistent with all other MCP tools
-- [ ] Write unit tests verifying correct response for agent user and human user (AGT-TEST-10)
+- [x] Create `TeamWare.Web/Mcp/Tools/ProfileTools.cs` with `[McpServerToolType]` and `[Authorize]` (Spec Section 6.1)
+- [x] Implement `get_my_profile` tool:
+  - [x] Accept no parameters (AGT-41)
+  - [x] Resolve authenticated user ID from `ClaimsPrincipal`
+  - [x] Load `ApplicationUser` via `UserManager<ApplicationUser>.FindByIdAsync`
+  - [x] Return JSON object: `{ userId, displayName, email, isAgent, agentDescription, isAgentActive, lastActiveAt }` (AGT-42)
+  - [x] For human users: `agentDescription` and `isAgentActive` are `null` (AGT-44)
+  - [x] Dates use ISO 8601 format, consistent with all other MCP tools
+- [x] Write unit tests verifying correct response for agent user and human user (AGT-TEST-10)
 
 ### 34.2 my_assignments Agent Filtering
 
-- [ ] Modify `my_assignments` in `TaskTools.cs` to detect agent context (AGT-33):
-  - [ ] Check for the `IsAgent` claim in the `ClaimsPrincipal` (added by `PatAuthenticationHandler` in Phase 32)
-  - [ ] If `IsAgent` claim is present with value `"true"`, filter results to only include tasks with status `ToDo` or `InProgress`
-  - [ ] If `IsAgent` claim is not present (human user), return all statuses as before (no behavior change)
-- [ ] Write unit tests verifying:
-  - [ ] Agent user receives only `ToDo` and `InProgress` tasks (AGT-TEST-11)
-  - [ ] Human user receives all task statuses (AGT-TEST-12)
+- [x] Modify `my_assignments` in `TaskTools.cs` to detect agent context (AGT-33):
+  - [x] Check for the `IsAgent` claim in the `ClaimsPrincipal` (added by `PatAuthenticationHandler` in Phase 32)
+  - [x] If `IsAgent` claim is present with value `"true"`, filter results to only include tasks with status `ToDo` or `InProgress`
+  - [x] If `IsAgent` claim is not present (human user), return all statuses as before (no behavior change)
+- [x] Write unit tests verifying:
+  - [x] Agent user receives only `ToDo` and `InProgress` tasks (AGT-TEST-11)
+  - [x] Human user receives all task statuses (AGT-TEST-12)
 
 ### 34.3 Bot Badge Partial View
 
-- [ ] Create `Views/Shared/_BotBadge.cshtml` partial view (AGT-55):
-  - [ ] Accept a boolean model parameter (or `IsAgent` flag)
-  - [ ] When `true`, render a small inline "BOT" label styled with Tailwind CSS (AGT-UI-10, AGT-UI-11)
-  - [ ] Use a subtle background color with contrasting text (e.g., `bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300`) (AGT-UI-12)
-  - [ ] When `false`, render nothing
-  - [ ] No emoticons or emojis (AGT-56)
+- [x] Create `Views/Shared/_BotBadge.cshtml` partial view (AGT-55):
+  - [x] Accept a boolean model parameter (or `IsAgent` flag)
+  - [x] When `true`, render a small inline "BOT" label styled with Tailwind CSS (AGT-UI-10, AGT-UI-11)
+  - [x] Use a subtle background color with contrasting text (e.g., `bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300`) (AGT-UI-12)
+  - [x] When `false`, render nothing
+  - [x] No emoticons or emojis (AGT-56)
 
 ### 34.4 Bot Badge Integration Across Views
 
-- [ ] Add bot badge to comment display in task detail view — next to the comment author's display name (AGT-50)
-- [ ] Add bot badge to activity log entries — next to the actor's display name (AGT-51)
-- [ ] Add bot badge to task assignee lists in task detail view (AGT-52)
-- [ ] Add bot badge to project member lists in project views (AGT-53)
-- [ ] Add bot badge to user directory entries (AGT-54)
-- [ ] Add bot badge to task assignment dropdowns/selectors — next to agent user names (AGT-31)
-- [ ] Add optional filter to user directory: "All Users", "Human Users Only", "Agent Users Only" (AGT-54)
-- [ ] Write tests verifying bot badge renders for agent users and does not render for human users across all contexts (AGT-TEST-15)
+- [x] Add bot badge to comment display in task detail view — next to the comment author's display name (AGT-50)
+- [x] Add bot badge to activity log entries — next to the actor's display name (AGT-51)
+- [x] Add bot badge to task assignee lists in task detail view (AGT-52)
+- [x] Add bot badge to project member lists in project views (AGT-53)
+- [x] Add bot badge to user directory entries (AGT-54)
+- [x] Add bot badge to task assignment dropdowns/selectors — next to agent user names (AGT-31)
+- [x] Add optional filter to user directory: "All Users", "Human Users Only", "Agent Users Only" (AGT-54)
+- [x] Write tests verifying bot badge renders for agent users and does not render for human users across all contexts (AGT-TEST-15)
 
 ---
 

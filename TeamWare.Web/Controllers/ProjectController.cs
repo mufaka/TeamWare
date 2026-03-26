@@ -188,6 +188,7 @@ public class ProjectController : Controller
                 TaskItemId = a.TaskItemId,
                 TaskTitle = a.TaskItem.Title,
                 UserDisplayName = a.User.DisplayName,
+                IsUserAgent = a.User.IsAgent,
                 ChangeType = a.ChangeType,
                 OldValue = a.OldValue,
                 NewValue = a.NewValue,
@@ -199,7 +200,8 @@ public class ProjectController : Controller
                 DisplayName = m.User.DisplayName,
                 Email = m.User.Email ?? string.Empty,
                 Role = m.Role,
-                JoinedAt = m.JoinedAt
+                JoinedAt = m.JoinedAt,
+                IsAgent = m.User.IsAgent
             }).OrderByDescending(m => m.Role).ThenBy(m => m.DisplayName).ToList()
         };
 
