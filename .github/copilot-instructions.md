@@ -4,7 +4,7 @@
 - TeamWare is an ASP.NET Core MVC application. It should not use Razor Pages. Use Controllers and Views instead.
 - One type per file (MAINT-01).
 - Tests accompany every feature. No phase is complete without its test cases.
-- Follow the implementation plan in `TeamWare.Web/Specifications/ImplementationPlan.md`, `TeamWare.Web/Specifications/SocialFeaturesImplementationPlan.md`, `TeamWare.Web/Specifications/ProjectLoungeImplementationPlan.md`, `TeamWare.Web/Specifications/OllamaIntegrationImplementationPlan.md`, and `TeamWare.Web/Specifications/McpServerImplementationPlan.md`.
+- Follow the implementation plan in `TeamWare.Web/Specifications/ImplementationPlan.md`, `TeamWare.Web/Specifications/SocialFeaturesImplementationPlan.md`, `TeamWare.Web/Specifications/ProjectLoungeImplementationPlan.md`, `TeamWare.Web/Specifications/OllamaIntegrationImplementationPlan.md`, `TeamWare.Web/Specifications/McpServerImplementationPlan.md`, and `TeamWare.Web/Specifications/AgentUsersImplementationPlan.md`.
 - In `_DashboardProjects.cshtml`, ensure the link to project details is correctly implemented using `asp-controller="Project" asp-action="Details" asp-route-id="@project.Id"`.
 
 ---
@@ -49,6 +49,10 @@ Each phase in the implementation plan gets its own branch created from `master`.
 | Phase 29 | `phase-29/mcp-prompts-resources` |
 | Phase 30 | `phase-30/mcp-lounge-tools` |
 | Phase 31 | `phase-31/mcp-polish-hardening` |
+| Phase 32 | `phase-32/agent-data-model` |
+| Phase 33 | `phase-33/agent-management-ui` |
+| Phase 34 | `phase-34/agent-mcp-bot-badge` |
+| Phase 35 | `phase-35/agent-polish-hardening` |
 
 When starting a phase:
 1. Create the phase branch from `master` in GitHub.
@@ -200,3 +204,38 @@ The following maps implementation plan work items to their canonical GitHub issu
 | 31.3 JSON Response Consistency | #181 | — |
 | 31.4 UI/UX Consistency | #183 | — |
 | 31.5 Documentation | #182 | — |
+
+### Phase 32: Agent Data Model and Authentication (label: `Phase 32: Agent Data Model`)
+
+| Work Item | Canonical Issue | Duplicate Issues |
+|-----------|----------------|------------------|
+| 32.1 ApplicationUser Entity Changes | #196 | — |
+| 32.2 PAT Authentication Handler Changes | #195 | — |
+| 32.3 Admin Service Agent Methods | #197 | — |
+
+### Phase 33: Agent Management UI (label: `Phase 33: Agent Management UI`)
+
+| Work Item | Canonical Issue | Duplicate Issues |
+|-----------|----------------|------------------|
+| 33.1 Agent List Page | #198 | — |
+| 33.2 Agent Creation Flow | #199 | — |
+| 33.3 Agent Edit and Detail Pages | #200 | — |
+| 33.4 Agent Pause/Resume and Deletion | #201 | — |
+
+### Phase 34: Agent MCP Tools and Bot Badge (label: `Phase 34: Agent MCP and Bot Badge`)
+
+| Work Item | Canonical Issue | Duplicate Issues |
+|-----------|----------------|------------------|
+| 34.1 ProfileTools MCP Tool | #202 | — |
+| 34.2 my_assignments Agent Filtering | #203 | — |
+| 34.3 Bot Badge Partial View | #204 | — |
+| 34.4 Bot Badge Integration Across Views | #205 | — |
+
+### Phase 35: Agent Polish and Hardening (label: `Phase 35: Agent Polish`)
+
+| Work Item | Canonical Issue | Duplicate Issues |
+|-----------|----------------|------------------|
+| 35.1 Security Hardening | #209 | — |
+| 35.2 Edge Cases and Regression Testing | #206 | — |
+| 35.3 UI Consistency Review | #207 | — |
+| 35.4 Documentation | #208 | — |
