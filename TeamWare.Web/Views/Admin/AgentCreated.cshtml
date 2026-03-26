@@ -1,0 +1,37 @@
+﻿@model TeamWare.Web.ViewModels.AgentCreatedViewModel
+@{
+    ViewData["Title"] = "Agent Created";
+}
+
+<div class="mx-auto max-w-2xl">
+    <div class="mb-6">
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Agent Created Successfully</h1>
+        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            <strong>@Model.DisplayName</strong> has been created.
+        </p>
+    </div>
+
+    <div class="mb-6 rounded-lg border border-amber-300 bg-amber-50 p-4 dark:border-amber-700 dark:bg-amber-900/20">
+        <p class="text-sm font-medium text-amber-800 dark:text-amber-200">
+            Important: Copy the API token below. It will not be shown again.
+        </p>
+    </div>
+
+    <div class="mb-6">
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">API Token</label>
+        <div class="flex gap-2">
+            <input type="text" id="tokenValue" value="@Model.RawToken" readonly
+                   class="flex-1 rounded-lg border border-gray-300 bg-gray-50 px-4 py-2 font-mono text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-800 dark:text-white" />
+            <button type="button" id="copyButton"
+                    onclick="navigator.clipboard.writeText(document.getElementById('tokenValue').value).then(function() { document.getElementById('copyButton').textContent = 'Copied'; setTimeout(function() { document.getElementById('copyButton').textContent = 'Copy'; }, 2000); })"
+                    class="rounded-lg bg-gray-600 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900">
+                Copy
+            </button>
+        </div>
+    </div>
+
+    <a asp-action="AgentDetail" asp-route-id="@Model.UserId"
+       class="inline-block rounded-lg bg-blue-600 px-6 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900">
+        View Agent Details
+    </a>
+</div>

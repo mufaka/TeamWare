@@ -1,0 +1,100 @@
+﻿@model List<TeamWare.Web.ViewModels.AgentUserSummary>
+@{
+    ViewData["Title"] = "Agent Management";
+}
+
+<div class="mx-auto max-w-5xl">
+    <div class="mb-6 flex items-center justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Agent Management</h1>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">@Model.Count agent(s)</p>
+        </div>
+        <div class="flex gap-2">
+            <a asp-action="CreateAgent"
+               class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900">
+                Create Agent
+            </a>
+            <a asp-action="Dashboard" class="text-sm text-blue-600 hover:underline dark:text-blue-400 self-center">Back to Dashboard</a>
+        </div>
+    </div>
+
+    @if (Model.Count == 0)
+    {
+        <div class="rounded-lg border border-gray-200 bg-white p-8 text-center dark:border-gray-700 dark:bg-gray-800">
+            <p class="text-gray-500 dark:text-gray-400">No agent users have been created yet.</p>
+            <a asp-action="CreateAgent" class="mt-4 inline-block text-sm text-blue-600 hover:underline dark:text-blue-400">Create your first agent</a>
+        </div>
+    }
+    else
+    {
+        <div class="overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700">
+            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead class="bg-gray-50 dark:bg-gray-800">
+                    <tr>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Agent</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Status</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Last Active</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Tasks</th>
+                        <th scope="col" class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200 bg-white dark:divide-gray-700 dark:bg-gray-900">
+                    @foreach (var agent in Model)
+                    {
+                        <tr>
+                            <td class="whitespace-nowrap px-6 py-4">
+                                <div class="text-sm font-medium text-gray-900 dark:text-white">
+                                    <a asp-action="AgentDetail" asp-route-id="@agent.UserId" class="hover:underline">@agent.DisplayName</a>
+                                </div>
+                                @if (!string.IsNullOrEmpty(agent.AgentDescription))
+                                {
+                                    <div class="text-sm text-gray-500 dark:text-gray-400 max-w-xs truncate">@agent.AgentDescription</div>
+                                }
+                            </td>
+                            <td class="whitespace-nowrap px-6 py-4">
+                                @if (agent.IsAgentActive)
+                                {
+                                    <span class="inline-flex rounded-full bg-green-100 px-2 text-xs font-semibold leading-5 text-green-800 dark:bg-green-900 dark:text-green-200">Active</span>
+                                }
+                                else
+                                {
+                                    <span class="inline-flex rounded-full bg-yellow-100 px-2 text-xs font-semibold leading-5 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">Paused</span>
+                                }
+                            </td>
+                            <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
+                                @if (agent.LastActiveAt.HasValue)
+                                {
+                                    @agent.LastActiveAt.Value.ToString("yyyy-MM-dd HH:mm")
+                                }
+                                else
+                                {
+                                    <span>Never</span>
+                                }
+                            </td>
+                            <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
+                                @agent.AssignedTaskCount
+                            </td>
+                            <td class="whitespace-nowrap px-6 py-4 text-right text-sm">
+                                <div class="flex justify-end gap-2">
+                                    <a asp-action="EditAgent" asp-route-id="@agent.UserId"
+                                       class="text-blue-600 hover:underline dark:text-blue-400">Edit</a>
+                                    <form asp-action="ToggleAgentActive" method="post" class="inline">
+                                        <input type="hidden" name="id" value="@agent.UserId" />
+                                        @if (agent.IsAgentActive)
+                                        {
+                                            <button type="submit" class="text-yellow-600 hover:underline dark:text-yellow-400">Pause</button>
+                                        }
+                                        else
+                                        {
+                                            <button type="submit" class="text-green-600 hover:underline dark:text-green-400">Resume</button>
+                                        }
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
