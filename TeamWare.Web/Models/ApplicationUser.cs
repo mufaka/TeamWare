@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Identity;
 
 namespace TeamWare.Web.Models;
 
@@ -11,6 +12,13 @@ public class ApplicationUser : IdentityUser
     public string ThemePreference { get; set; } = "system";
 
     public DateTime? LastActiveAt { get; set; }
+
+    public bool IsAgent { get; set; }
+
+    [StringLength(2000)]
+    public string? AgentDescription { get; set; }
+
+    public bool IsAgentActive { get; set; } = true;
 
     public ICollection<LoungeMessage> LoungeMessages { get; set; } = new List<LoungeMessage>();
 

@@ -54,6 +54,9 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             entity.Property(u => u.DisplayName).HasMaxLength(100);
             entity.Property(u => u.AvatarUrl).HasMaxLength(500);
             entity.Property(u => u.ThemePreference).HasMaxLength(20).HasDefaultValue("system");
+            entity.Property(u => u.IsAgent).HasDefaultValue(false);
+            entity.Property(u => u.AgentDescription).HasMaxLength(2000);
+            entity.Property(u => u.IsAgentActive).HasDefaultValue(true);
         });
 
         builder.Entity<Project>(entity =>
