@@ -128,6 +128,11 @@ public class AdminService : IAdminService
             return ServiceResult.Failure("User not found.");
         }
 
+        if (targetUser.IsAgent)
+        {
+            return ServiceResult.Failure("Agent users cannot be assigned the Admin role.");
+        }
+
         if (await _userManager.IsInRoleAsync(targetUser, SeedData.AdminRoleName))
         {
             return ServiceResult.Failure("User is already an admin.");

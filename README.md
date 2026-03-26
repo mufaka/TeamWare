@@ -21,6 +21,7 @@ TeamWare is a lightweight, self-hosted project and task management application b
 - **Project Invitations** — Accept/decline invitation workflow with bulk invite support, pending invitation management, and notification integration
 - **Project Lounge** — Real-time chat rooms for each project and a site-wide #general room, with @mentions, emoji reactions, message pinning, message-to-task conversion, and unread tracking
 - **AI Assistant** — Optional Ollama-powered AI features: rewrite project/task descriptions, polish comments, expand inbox items, generate project summaries, personal digests, and GTD review preparation
+- **Agent Users** — Admin-managed service accounts for AI agents that interact via MCP, with bot badges, pause/resume control, and automatic PAT provisioning
 
 ## Tech Stack
 
@@ -78,7 +79,7 @@ On first run, the database is automatically created and migrated, and a default 
 dotnet test
 ```
 
-The test suite includes 1100+ tests covering unit tests, integration tests, and security tests.
+The test suite includes 1500+ tests covering unit tests, integration tests, and security tests.
 
 ## Configuration
 
@@ -281,7 +282,7 @@ Items flagged as Someday/Maybe are parked for future consideration. Access them 
 
 ## Development
 
-See the [Implementation Plan](TeamWare.Web/Specifications/ImplementationPlan.md), the [Social Features Implementation Plan](TeamWare.Web/Specifications/SocialFeaturesImplementationPlan.md), the [Project Lounge Implementation Plan](TeamWare.Web/Specifications/ProjectLoungeImplementationPlan.md), the [Ollama Integration Implementation Plan](TeamWare.Web/Specifications/OllamaIntegrationImplementationPlan.md), and the [MCP Server Implementation Plan](TeamWare.Web/Specifications/McpServerImplementationPlan.md) for the phased development roadmap. See the [Specification](TeamWare.Web/Specifications/Specification.md), [Social Features Specification](TeamWare.Web/Specifications/SocialFeaturesSpecification.md), [Ollama Integration Specification](TeamWare.Web/Specifications/OllamaIntegrationSpecification.md), and [MCP Server Specification](TeamWare.Web/Specifications/McpServerSpecification.md) for formal requirements. Each phase has a corresponding GitHub branch (`phase-X/<name>`) and issues for individual work items.
+See the [Implementation Plan](TeamWare.Web/Specifications/ImplementationPlan.md), the [Social Features Implementation Plan](TeamWare.Web/Specifications/SocialFeaturesImplementationPlan.md), the [Project Lounge Implementation Plan](TeamWare.Web/Specifications/ProjectLoungeImplementationPlan.md), the [Ollama Integration Implementation Plan](TeamWare.Web/Specifications/OllamaIntegrationImplementationPlan.md), the [MCP Server Implementation Plan](TeamWare.Web/Specifications/McpServerImplementationPlan.md), and the [Agent Users Implementation Plan](TeamWare.Web/Specifications/AgentUsersImplementationPlan.md) for the phased development roadmap. See the [Specification](TeamWare.Web/Specifications/Specification.md), [Social Features Specification](TeamWare.Web/Specifications/SocialFeaturesSpecification.md), [Ollama Integration Specification](TeamWare.Web/Specifications/OllamaIntegrationSpecification.md), [MCP Server Specification](TeamWare.Web/Specifications/McpServerSpecification.md), and [Agent Users Specification](TeamWare.Web/Specifications/AgentUsersSpecification.md) for formal requirements. Each phase has a corresponding GitHub branch (`phase-X/<name>`) and issues for individual work items.
 
 ### SignalR Configuration
 
@@ -437,6 +438,7 @@ Configure your MCP client with the TeamWare endpoint URL and your PAT. Examples:
 | `list_lounge_messages` | List recent lounge messages (global or project) |
 | `post_lounge_message` | Post a message to the lounge |
 | `search_lounge_messages` | Search lounge messages by content |
+| `get_my_profile` | Get the authenticated user's profile information (agent-aware) |
 
 ### Available Prompts
 
@@ -452,6 +454,53 @@ Configure your MCP client with the TeamWare endpoint URL and your PAT. Examples:
 |----------|-------------|
 | `teamware://dashboard` | Personal dashboard summary (tasks, notifications, inbox counts) |
 | `teamware://projects/{projectId}/summary` | Project summary with task statistics |
+
+## Agent Users
+
+TeamWare supports **agent users** — admin-managed service accounts that allow AI agents (such as GitHub Copilot coding agents) to interact with projects, tasks, and the lounge via the MCP server. Agent users are entirely optional; teams that do not use them see no difference in their experience.
+
+### Creating an Agent
+
+1. Log in as an administrator.
+2. Navigate to **Admin Dashboard > Agents** (or go to `/Admin/Agents`).
+3. Click **Create Agent**.
+4. Enter a display name (required) and an optional description.
+5. Click **Create**. A Personal Access Token (PAT) is generated automatically.
+6. **Copy the token immediately** — it is shown only once. Use this token to configure the agent's MCP client.
+
+Agent usernames are generated automatically (e.g., `agent-my-bot`) with placeholder emails (`agent-my-bot@agent.local`). Agents do not have passwords and cannot log in via the web UI.
+
+### Managing Agents
+
+From the **Admin > Agents** page, administrators can:
+
+- **View** all agent users with their status, description, last active time, and assigned task count.
+- **Edit** an agent's display name and description.
+- **Pause** an agent to temporarily revoke its MCP access. Paused agents receive an authentication error when using their PAT.
+- **Resume** a paused agent to restore MCP access.
+- **Delete** an agent, which revokes all its PATs and removes the account.
+
+All agent management actions are recorded in the admin activity log.
+
+### Bot Badge
+
+Actions performed by agent users are visually distinguished throughout the UI with a **bot badge** — a small "BOT" indicator displayed next to the agent's name. Bot badges appear in:
+
+- Task comments
+- Activity log entries
+- Lounge messages
+- Task assignment lists
+- Project member lists
+
+This makes it easy for team members to identify which actions were performed by an automated agent versus a human user.
+
+### Agent Behavior
+
+- Agents interact with TeamWare exclusively through the MCP server using their PAT.
+- Agents can be assigned to tasks, post comments, send lounge messages, and perform all standard MCP operations.
+- The `my_assignments` MCP tool filters agent results to only **To Do** and **In Progress** tasks (agents do not see In Review or Done tasks in their assignment list).
+- Agents can use the `get_my_profile` MCP tool to retrieve their own profile information, including their `IsAgent` status and description.
+- Agents are not assigned the Admin role and cannot access administrative functions.
 
 ## License
 

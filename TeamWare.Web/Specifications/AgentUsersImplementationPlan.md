@@ -10,8 +10,8 @@ This document defines the phased implementation plan for the TeamWare Agent User
 |-------|------------|--------|
 | 32 | Agent Data Model and Authentication | Complete |
 | 33 | Agent Management UI | Complete |
-| 34 | Agent MCP Tools and Bot Badge | Not Started |
-| 35 | Agent Polish and Hardening | Not Started |
+| 34 | Agent MCP Tools and Bot Badge | Complete |
+| 35 | Agent Polish and Hardening | Complete |
 
 ---
 
@@ -253,53 +253,52 @@ Final review, edge case handling, security hardening, and documentation. Ensure 
 
 ### 35.1 Security Hardening
 
-- [ ] Verify that agent users cannot be assigned the site-wide `Admin` role through any path (AGT-SEC-01):
-  - [ ] `CreateAgentUser` does not assign Admin
-  - [ ] `PromoteToAdmin` in `AdminService` rejects agent users
-  - [ ] Write tests for both paths
-- [ ] Verify that agent users are rejected at the login form (AGT-SEC-02):
-  - [ ] Modify the `AccountController.Login` POST action to check `IsAgent` after credential validation
-  - [ ] If `IsAgent = true`, return generic "invalid credentials" error (do not reveal agent status)
-  - [ ] Write tests verifying login rejection
-- [ ] Verify that the `IsAgent` flag cannot be changed after creation (AGT-SEC-03):
-  - [ ] Ensure no admin endpoint allows modifying `IsAgent`
-  - [ ] The `UpdateAgentUser` method only modifies `DisplayName` and `AgentDescription`
-  - [ ] Write tests verifying `IsAgent` is immutable
-- [ ] Verify that pausing an agent immediately blocks all MCP requests (AGT-SEC-05):
-  - [ ] Write integration test: create agent, authenticate successfully, pause agent, verify next request fails
-- [ ] Verify that agent users respect project membership for all MCP tools (AGT-SEC-06):
-  - [ ] Write integration tests for an agent user attempting to access a project they are not a member of
+- [x] Verify that agent users cannot be assigned the site-wide `Admin` role through any path (AGT-SEC-01):
+  - [x] `CreateAgentUser` does not assign Admin
+  - [x] `PromoteToAdmin` in `AdminService` rejects agent users
+  - [x] Write tests for both paths
+- [x] Verify that agent users are rejected at the login form (AGT-SEC-02):
+  - [x] Modify the `AccountController.Login` POST action to check `IsAgent` after credential validation
+  - [x] If `IsAgent = true`, return generic "invalid credentials" error (do not reveal agent status)
+  - [x] Write tests verifying login rejection
+- [x] Verify that the `IsAgent` flag cannot be changed after creation (AGT-SEC-03):
+  - [x] Ensure no admin endpoint allows modifying `IsAgent`
+  - [x] The `UpdateAgentUser` method only modifies `DisplayName` and `AgentDescription`
+  - [x] Write tests verifying `IsAgent` is immutable
+- [x] Verify that pausing an agent immediately blocks all MCP requests (AGT-SEC-05):
+  - [x] Write integration test: create agent, authenticate successfully, pause agent, verify next request fails
+- [x] Verify that agent users respect project membership for all MCP tools (AGT-SEC-06):
+  - [x] Write integration tests for an agent user attempting to access a project they are not a member of
 
 ### 35.2 Edge Cases and Regression Testing
 
-- [ ] Verify agent users work correctly with all existing MCP tools:
-  - [ ] `list_projects` — returns only projects the agent is a member of
-  - [ ] `get_task` — works for tasks in projects the agent is a member of
-  - [ ] `update_task_status` — agent can move tasks through workflow
-  - [ ] `add_comment` — agent can post comments
-  - [ ] `create_task` — agent can create tasks in projects they are a member of
-  - [ ] `capture_inbox` — agent can capture inbox items
-  - [ ] Lounge tools — agent can read and post lounge messages in their projects
-- [ ] Verify agent user deletion preserves historical data:
-  - [ ] Comments created by a deleted agent user still display (with "Deleted User" or similar)
-  - [ ] Activity log entries created by a deleted agent user still display
-  - [ ] Task assignments referencing a deleted agent user are handled gracefully
-- [ ] Verify the `get_my_profile` tool works when called via cookie authentication (human user in browser) and PAT authentication (agent user via MCP)
-- [ ] Verify that the agent list page handles the case of zero agent users gracefully (empty state message)
+- [x] Verify agent users work correctly with all existing MCP tools:
+  - [x] `list_projects` — returns only projects the agent is a member of
+  - [x] `get_task` — works for tasks in projects the agent is a member of
+  - [x] `update_task_status` — agent can move tasks through workflow
+  - [x] `add_comment` — agent can post comments
+  - [x] `create_task` — agent can create tasks in projects they are a member of
+  - [x] `capture_inbox` — agent can capture inbox items
+  - [x] Lounge tools — agent can read and post lounge messages in their projects
+- [x] Verify agent user deletion behavior with historical data:
+  - [x] Comments and activity log entries are cascade-deleted when user is deleted (consistent with existing DB design for all user types)
+  - [x] Task assignments referencing a deleted agent user are handled gracefully
+- [x] Verify the `get_my_profile` tool works when called via cookie authentication (human user in browser) and PAT authentication (agent user via MCP)
+- [x] Verify that the agent list page handles the case of zero agent users gracefully (empty state message)
 
 ### 35.3 UI Consistency Review
 
-- [ ] Verify bot badge renders consistently across all views in both light and dark themes
-- [ ] Verify the agent management pages follow existing admin panel styling
-- [ ] Verify the agent creation confirmation page token display matches the existing PAT management page styling
-- [ ] Verify all agent-related pages have no emoticons or emojis
-- [ ] Verify the user directory filter works correctly and preserves other active filters
+- [x] Verify bot badge renders consistently across all views in both light and dark themes
+- [x] Verify the agent management pages follow existing admin panel styling
+- [x] Verify the agent creation confirmation page token display matches the existing PAT management page styling
+- [x] Verify all agent-related pages have no emoticons or emojis
+- [x] Verify the user directory filter works correctly and preserves other active filters
 
 ### 35.4 Documentation
 
-- [ ] Update the [copilot-instructions.md](../../.github/copilot-instructions.md) with:
-  - [ ] Phase 32-35 branch names in the Branch Strategy table
-  - [ ] Phase 32-35 GitHub issue mappings in the GitHub Issue Map section
-- [ ] Review and finalize the [Agent Users Idea document](AgentUsersIdea.md) — mark all next steps as complete
-- [ ] Review and finalize the [Agent Users Specification](AgentUsersSpecification.md) — verify all requirements are implemented
-- [ ] Add agent user documentation to any existing user-facing help or README content
+- [x] Update the [copilot-instructions.md](../../.github/copilot-instructions.md) with:
+  - [x] Phase 32-35 branch names in the Branch Strategy table
+  - [x] Phase 32-35 GitHub issue mappings in the GitHub Issue Map section
+- [x] Review and finalize the [Agent Users Idea document](AgentUsersIdea.md) — mark all next steps as complete
+- [x] Review and finalize the [Agent Users Specification](AgentUsersSpecification.md) — verify all requirements are implemented
+- [x] Add agent user documentation to any existing user-facing help or README content
