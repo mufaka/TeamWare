@@ -8,7 +8,7 @@ This document defines the phased implementation plan for the TeamWare Agent User
 
 | Phase | Description | Status |
 |-------|------------|--------|
-| 32 | Agent Data Model and Authentication | Not Started |
+| 32 | Agent Data Model and Authentication | Complete |
 | 33 | Agent Management UI | Not Started |
 | 34 | Agent MCP Tools and Bot Badge | Not Started |
 | 35 | Agent Polish and Hardening | Not Started |
@@ -63,72 +63,72 @@ Extend `ApplicationUser` with agent-specific fields, update the PAT authenticati
 
 ### 32.1 ApplicationUser Entity Changes
 
-- [ ] Add `IsAgent` boolean property to `ApplicationUser` with default value `false` (AGT-01)
-- [ ] Add `AgentDescription` optional string property (max 2000 characters) to `ApplicationUser` (AGT-02)
-- [ ] Add `IsAgentActive` boolean property to `ApplicationUser` with default value `true` (AGT-03)
-- [ ] Add `[StringLength(2000)]` attribute to `AgentDescription`
-- [ ] Create EF Core migration `AddAgentUserFields`:
-  - [ ] `IsAgent` column: `bool`, not null, default `false`
-  - [ ] `AgentDescription` column: `nvarchar(2000)`, nullable
-  - [ ] `IsAgentActive` column: `bool`, not null, default `true`
-- [ ] Verify migration is non-destructive: all existing rows receive `IsAgent = false`, `AgentDescription = null`, `IsAgentActive = true` (AGT-04, AGT-NF-04)
-- [ ] Write tests verifying migration applies cleanly and existing users are unaffected (AGT-TEST-16)
+- [x] Add `IsAgent` boolean property to `ApplicationUser` with default value `false` (AGT-01)
+- [x] Add `AgentDescription` optional string property (max 2000 characters) to `ApplicationUser` (AGT-02)
+- [x] Add `IsAgentActive` boolean property to `ApplicationUser` with default value `true` (AGT-03)
+- [x] Add `[StringLength(2000)]` attribute to `AgentDescription`
+- [x] Create EF Core migration `AddAgentUserFields`:
+  - [x] `IsAgent` column: `bool`, not null, default `false`
+  - [x] `AgentDescription` column: `nvarchar(2000)`, nullable
+  - [x] `IsAgentActive` column: `bool`, not null, default `true`
+- [x] Verify migration is non-destructive: all existing rows receive `IsAgent = false`, `AgentDescription = null`, `IsAgentActive = true` (AGT-04, AGT-NF-04)
+- [x] Write tests verifying migration applies cleanly and existing users are unaffected (AGT-TEST-16)
 
 ### 32.2 PAT Authentication Handler Changes
 
-- [ ] Modify `PatAuthenticationHandler.HandleAuthenticateAsync` to check `IsAgentActive` after successful token validation (AGT-60, AGT-62):
-  - [ ] If `user.IsAgent` is `true` and `user.IsAgentActive` is `false`, return `AuthenticateResult.Fail("Agent is currently paused.")`
-  - [ ] If `user.IsAgent` is `false`, skip the `IsAgentActive` check entirely
-- [ ] Add `IsAgent` claim to the `ClaimsPrincipal` when `user.IsAgent` is `true` (AGT-61):
-  - [ ] Claim type: `"IsAgent"`, value: `"true"`
-  - [ ] Only added for agent users; human users do not receive this claim
-- [ ] Write unit tests verifying:
-  - [ ] Agent user with `IsAgentActive = true` authenticates successfully and has `IsAgent` claim (AGT-TEST-08)
-  - [ ] Agent user with `IsAgentActive = false` is rejected with descriptive error (AGT-TEST-07)
-  - [ ] Human user authenticates without `IsAgent` claim and without `IsAgentActive` check (AGT-TEST-09)
+- [x] Modify `PatAuthenticationHandler.HandleAuthenticateAsync` to check `IsAgentActive` after successful token validation (AGT-60, AGT-62):
+  - [x] If `user.IsAgent` is `true` and `user.IsAgentActive` is `false`, return `AuthenticateResult.Fail("Agent is currently paused.")`
+  - [x] If `user.IsAgent` is `false`, skip the `IsAgentActive` check entirely
+- [x] Add `IsAgent` claim to the `ClaimsPrincipal` when `user.IsAgent` is `true` (AGT-61):
+  - [x] Claim type: `"IsAgent"`, value: `"true"`
+  - [x] Only added for agent users; human users do not receive this claim
+- [x] Write unit tests verifying:
+  - [x] Agent user with `IsAgentActive = true` authenticates successfully and has `IsAgent` claim (AGT-TEST-08)
+  - [x] Agent user with `IsAgentActive = false` is rejected with descriptive error (AGT-TEST-07)
+  - [x] Human user authenticates without `IsAgent` claim and without `IsAgentActive` check (AGT-TEST-09)
 
 ### 32.3 Admin Service Agent Methods
 
-- [ ] Add agent management methods to `IAdminService` interface (Spec Section 5.1):
-  - [ ] `CreateAgentUser(string displayName, string? agentDescription)` returning `ServiceResult<(ApplicationUser User, string RawToken)>`
-  - [ ] `UpdateAgentUser(string userId, string displayName, string? agentDescription)` returning `ServiceResult`
-  - [ ] `SetAgentActive(string userId, bool isActive)` returning `ServiceResult`
-  - [ ] `GetAgentUsers()` returning `ServiceResult<List<AgentUserSummary>>`
-  - [ ] `DeleteAgentUser(string userId, string adminUserId)` returning `ServiceResult`
-- [ ] Create `AgentUserSummary` view model in `TeamWare.Web/ViewModels/AgentUserSummary.cs` (Spec Section 5.1)
-- [ ] Implement `CreateAgentUser` in `AdminService`:
-  - [ ] Generate username from display name: lowercase, replace spaces with hyphens, prefix with `agent-` (AGT-12)
-  - [ ] Generate placeholder email: `{username}@agent.local` (AGT-16)
-  - [ ] Generate random high-entropy password using `RandomNumberGenerator` (AGT-13)
-  - [ ] Create `ApplicationUser` with `IsAgent = true`, `IsAgentActive = true`, the display name, and the generated username/email/password
-  - [ ] Do not assign the `Admin` role (AGT-15)
-  - [ ] Call `IPersonalAccessTokenService.CreateTokenAsync` to generate a PAT (AGT-14)
-  - [ ] Return the user and raw token value
-  - [ ] Log the creation in the admin activity log (AGT-NF-05)
-- [ ] Implement `UpdateAgentUser` in `AdminService`:
-  - [ ] Verify the target user has `IsAgent = true`; return failure otherwise (AGT-TEST-03)
-  - [ ] Update `DisplayName` and `AgentDescription`
-  - [ ] Log the update in the admin activity log
-- [ ] Implement `SetAgentActive` in `AdminService`:
-  - [ ] Verify the target user has `IsAgent = true`; return failure otherwise (AGT-TEST-04)
-  - [ ] Set `IsAgentActive` to the specified value
-  - [ ] Log the status change in the admin activity log
-- [ ] Implement `GetAgentUsers` in `AdminService`:
-  - [ ] Query all `ApplicationUser` records where `IsAgent = true` (AGT-TEST-05)
-  - [ ] Include assigned task count (tasks not in `Done` status)
-  - [ ] Return as `List<AgentUserSummary>`
-- [ ] Implement `DeleteAgentUser` in `AdminService`:
-  - [ ] Verify the target user has `IsAgent = true`; return failure otherwise
-  - [ ] Call `IPersonalAccessTokenService.RevokeAllTokensForUserAsync` (AGT-28)
-  - [ ] Delete the user via `UserManager<ApplicationUser>`
-  - [ ] Log the deletion in the admin activity log (AGT-TEST-06)
-- [ ] Register all new types in DI (if applicable)
-- [ ] Write unit tests for all five methods:
-  - [ ] `CreateAgentUser`: success, PAT generation, no Admin role, generated username and email (AGT-TEST-01, AGT-TEST-02)
-  - [ ] `UpdateAgentUser`: success, failure for non-agent (AGT-TEST-03)
-  - [ ] `SetAgentActive`: success, failure for non-agent (AGT-TEST-04)
-  - [ ] `GetAgentUsers`: returns only agents (AGT-TEST-05)
-  - [ ] `DeleteAgentUser`: success, PAT revocation, admin log entry (AGT-TEST-06)
+- [x] Add agent management methods to `IAdminService` interface (Spec Section 5.1):
+  - [x] `CreateAgentUser(string displayName, string? agentDescription)` returning `ServiceResult<(ApplicationUser User, string RawToken)>`
+  - [x] `UpdateAgentUser(string userId, string displayName, string? agentDescription)` returning `ServiceResult`
+  - [x] `SetAgentActive(string userId, bool isActive)` returning `ServiceResult`
+  - [x] `GetAgentUsers()` returning `ServiceResult<List<AgentUserSummary>>`
+  - [x] `DeleteAgentUser(string userId, string adminUserId)` returning `ServiceResult`
+- [x] Create `AgentUserSummary` view model in `TeamWare.Web/ViewModels/AgentUserSummary.cs` (Spec Section 5.1)
+- [x] Implement `CreateAgentUser` in `AdminService`:
+  - [x] Generate username from display name: lowercase, replace spaces with hyphens, prefix with `agent-` (AGT-12)
+  - [x] Generate placeholder email: `{username}@agent.local` (AGT-16)
+  - [x] Generate random high-entropy password using `RandomNumberGenerator` (AGT-13)
+  - [x] Create `ApplicationUser` with `IsAgent = true`, `IsAgentActive = true`, the display name, and the generated username/email/password
+  - [x] Do not assign the `Admin` role (AGT-15)
+  - [x] Call `IPersonalAccessTokenService.CreateTokenAsync` to generate a PAT (AGT-14)
+  - [x] Return the user and raw token value
+  - [x] Log the creation in the admin activity log (AGT-NF-05)
+- [x] Implement `UpdateAgentUser` in `AdminService`:
+  - [x] Verify the target user has `IsAgent = true`; return failure otherwise (AGT-TEST-03)
+  - [x] Update `DisplayName` and `AgentDescription`
+  - [x] Log the update in the admin activity log
+- [x] Implement `SetAgentActive` in `AdminService`:
+  - [x] Verify the target user has `IsAgent = true`; return failure otherwise (AGT-TEST-04)
+  - [x] Set `IsAgentActive` to the specified value
+  - [x] Log the status change in the admin activity log
+- [x] Implement `GetAgentUsers` in `AdminService`:
+  - [x] Query all `ApplicationUser` records where `IsAgent = true` (AGT-TEST-05)
+  - [x] Include assigned task count (tasks not in `Done` status)
+  - [x] Return as `List<AgentUserSummary>`
+- [x] Implement `DeleteAgentUser` in `AdminService`:
+  - [x] Verify the target user has `IsAgent = true`; return failure otherwise
+  - [x] Call `IPersonalAccessTokenService.RevokeAllTokensForUserAsync` (AGT-28)
+  - [x] Delete the user via `UserManager<ApplicationUser>`
+  - [x] Log the deletion in the admin activity log (AGT-TEST-06)
+- [x] Register all new types in DI (if applicable)
+- [x] Write unit tests for all five methods:
+  - [x] `CreateAgentUser`: success, PAT generation, no Admin role, generated username and email (AGT-TEST-01, AGT-TEST-02)
+  - [x] `UpdateAgentUser`: success, failure for non-agent (AGT-TEST-03)
+  - [x] `SetAgentActive`: success, failure for non-agent (AGT-TEST-04)
+  - [x] `GetAgentUsers`: returns only agents (AGT-TEST-05)
+  - [x] `DeleteAgentUser`: success, PAT revocation, admin log entry (AGT-TEST-06)
 
 ---
 
