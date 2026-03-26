@@ -16,6 +16,7 @@ public class AdminServiceTests : IDisposable
     private readonly ApplicationDbContext _context;
     private readonly AdminService _service;
     private readonly AdminActivityLogService _activityLogService;
+    private readonly PersonalAccessTokenService _tokenService;
 
     public AdminServiceTests()
     {
@@ -52,7 +53,8 @@ public class AdminServiceTests : IDisposable
         roleManager.CreateAsync(new IdentityRole(SeedData.UserRoleName)).GetAwaiter().GetResult();
 
         _activityLogService = new AdminActivityLogService(_context);
-        _service = new AdminService(_context, _userManager, _activityLogService);
+        _tokenService = new PersonalAccessTokenService(_context);
+        _service = new AdminService(_context, _userManager, _activityLogService, _tokenService);
     }
 
     private async Task<ApplicationUser> CreateUser(string email, string displayName, bool isAdmin = false)

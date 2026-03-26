@@ -1,7 +1,9 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using System.Security.Cryptography;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using TeamWare.Web.Data;
 using TeamWare.Web.Models;
+using TeamWare.Web.ViewModels;
 
 namespace TeamWare.Web.Services;
 
@@ -10,15 +12,18 @@ public class AdminService : IAdminService
     private readonly ApplicationDbContext _context;
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly IAdminActivityLogService _activityLog;
+    private readonly IPersonalAccessTokenService _tokenService;
 
     public AdminService(
         ApplicationDbContext context,
         UserManager<ApplicationUser> userManager,
-        IAdminActivityLogService activityLog)
+        IAdminActivityLogService activityLog,
+        IPersonalAccessTokenService tokenService)
     {
         _context = context;
         _userManager = userManager;
         _activityLog = activityLog;
+        _tokenService = tokenService;
     }
 
     public async Task<ServiceResult<PagedResult<ApplicationUser>>> GetAllUsers(string? searchTerm, int page, int pageSize)
@@ -180,5 +185,166 @@ public class AdminService : IAdminService
         };
 
         return ServiceResult<SystemStatistics>.Success(stats);
+    }
+
+    public async Task<ServiceResult<(ApplicationUser User, string RawToken)>> CreateAgentUser(string displayName, string? agentDescription, string adminUserId)
+    {
+        if (string.IsNullOrWhiteSpace(displayName))
+        {
+            return ServiceResult<(ApplicationUser, string)>.Failure("Display name is required.");
+        }
+
+        var username = "agent-" + displayName.Trim().ToLowerInvariant().Replace(" ", "-");
+        var email = $"{username}@agent.local";
+
+        var passwordBytes = new byte[32];
+        RandomNumberGenerator.Fill(passwordBytes);
+        var password = Convert.ToBase64String(passwordBytes) + "A1!";
+
+        var user = new ApplicationUser
+        {
+            UserName = username,
+            Email = email,
+            DisplayName = displayName.Trim(),
+            IsAgent = true,
+            IsAgentActive = true,
+            AgentDescription = agentDescription?.Trim()
+        };
+
+        var createResult = await _userManager.CreateAsync(user, password);
+        if (!createResult.Succeeded)
+        {
+            return ServiceResult<(ApplicationUser, string)>.Failure(
+                createResult.Errors.Select(e => e.Description));
+        }
+
+        await _userManager.AddToRoleAsync(user, SeedData.UserRoleName);
+
+        var tokenResult = await _tokenService.CreateTokenAsync(user.Id, "Default Agent Token", null);
+        if (!tokenResult.Succeeded)
+        {
+            return ServiceResult<(ApplicationUser, string)>.Failure(tokenResult.Errors);
+        }
+
+        await _activityLog.LogAction(adminUserId, "CreateAgentUser", user.Id,
+            details: $"Created agent user '{displayName}'");
+
+        return ServiceResult<(ApplicationUser, string)>.Success((user, tokenResult.Data!));
+    }
+
+    public async Task<ServiceResult> UpdateAgentUser(string userId, string displayName, string? agentDescription, string adminUserId)
+    {
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user == null)
+        {
+            return ServiceResult.Failure("User not found.");
+        }
+
+        if (!user.IsAgent)
+        {
+            return ServiceResult.Failure("User is not an agent.");
+        }
+
+        if (string.IsNullOrWhiteSpace(displayName))
+        {
+            return ServiceResult.Failure("Display name is required.");
+        }
+
+        user.DisplayName = displayName.Trim();
+        user.AgentDescription = agentDescription?.Trim();
+
+        await _userManager.UpdateAsync(user);
+
+        await _activityLog.LogAction(adminUserId, "UpdateAgentUser", userId,
+            details: $"Updated agent user '{displayName}'");
+
+        return ServiceResult.Success();
+    }
+
+    public async Task<ServiceResult> SetAgentActive(string userId, bool isActive, string adminUserId)
+    {
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user == null)
+        {
+            return ServiceResult.Failure("User not found.");
+        }
+
+        if (!user.IsAgent)
+        {
+            return ServiceResult.Failure("User is not an agent.");
+        }
+
+        user.IsAgentActive = isActive;
+        await _userManager.UpdateAsync(user);
+
+        var action = isActive ? "ResumeAgent" : "PauseAgent";
+        await _activityLog.LogAction(adminUserId, action, userId,
+            details: $"{action} for agent '{user.DisplayName}'");
+
+        return ServiceResult.Success();
+    }
+
+    public async Task<ServiceResult<List<AgentUserSummary>>> GetAgentUsers()
+    {
+        var agents = await _context.Users
+            .Where(u => u.IsAgent)
+            .Select(u => new AgentUserSummary
+            {
+                UserId = u.Id,
+                DisplayName = u.DisplayName,
+                AgentDescription = u.AgentDescription,
+                IsAgentActive = u.IsAgentActive,
+                LastActiveAt = u.LastActiveAt,
+                AssignedTaskCount = _context.TaskAssignments
+                    .Count(ta => ta.UserId == u.Id && ta.TaskItem.Status != TaskItemStatus.Done)
+            })
+            .OrderBy(a => a.DisplayName)
+            .ToListAsync();
+
+        return ServiceResult<List<AgentUserSummary>>.Success(agents);
+    }
+
+    public async Task<ServiceResult> DeleteAgentUser(string userId, string adminUserId)
+    {
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user == null)
+        {
+            return ServiceResult.Failure("User not found.");
+        }
+
+        if (!user.IsAgent)
+        {
+            return ServiceResult.Failure("User is not an agent.");
+        }
+
+        var displayName = user.DisplayName;
+
+        await _activityLog.LogAction(adminUserId, "DeleteAgentUser", userId,
+            details: $"Deleted agent user '{displayName}'");
+
+        await _tokenService.RevokeAllTokensForUserAsync(userId);
+
+        var tokens = await _context.PersonalAccessTokens
+            .Where(t => t.UserId == userId)
+            .ToListAsync();
+        _context.PersonalAccessTokens.RemoveRange(tokens);
+
+        var activityLogs = await _context.AdminActivityLogs
+            .Where(l => l.TargetUserId == userId)
+            .ToListAsync();
+        foreach (var log in activityLogs)
+        {
+            log.TargetUserId = null;
+        }
+
+        await _context.SaveChangesAsync();
+
+        var deleteResult = await _userManager.DeleteAsync(user);
+        if (!deleteResult.Succeeded)
+        {
+            return ServiceResult.Failure(deleteResult.Errors.Select(e => e.Description));
+        }
+
+        return ServiceResult.Success();
     }
 }
