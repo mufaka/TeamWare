@@ -12,6 +12,8 @@ public class GlobalActivityFeedEntryViewModel
 
     public string UserId { get; set; } = string.Empty;
 
+    public bool IsUserAgent { get; set; }
+
     public DateTime CreatedAt { get; set; }
 
     public bool IsMasked { get; set; }

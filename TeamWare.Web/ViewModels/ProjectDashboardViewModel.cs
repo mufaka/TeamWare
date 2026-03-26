@@ -53,4 +53,6 @@ public class ProjectMemberViewModel
     public ProjectRole Role { get; set; }
 
     public DateTime JoinedAt { get; set; }
+
+    public bool IsAgent { get; set; }
 }

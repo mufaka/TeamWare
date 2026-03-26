@@ -15,12 +15,14 @@ public class UserDirectoryService : IUserDirectoryService
     }
 
     public async Task<ServiceResult<PagedResult<UserDirectoryEntryViewModel>>> SearchUsers(
-        string? searchTerm, int page = 1, int pageSize = 20)
+        string? searchTerm, int page = 1, int pageSize = 20, string? userTypeFilter = null)
     {
         if (page < 1) page = 1;
         if (pageSize < 1) pageSize = 20;
 
         var query = _context.Users.AsQueryable();
+
+        query = ApplyUserTypeFilter(query, userTypeFilter);
 
         if (!string.IsNullOrWhiteSpace(searchTerm))
         {
@@ -42,7 +44,8 @@ public class UserDirectoryService : IUserDirectoryService
                 UserId = u.Id,
                 DisplayName = u.DisplayName,
                 Email = u.Email ?? string.Empty,
-                AvatarUrl = u.AvatarUrl
+                AvatarUrl = u.AvatarUrl,
+                IsAgent = u.IsAgent
             })
             .ToListAsync();
 
@@ -51,12 +54,14 @@ public class UserDirectoryService : IUserDirectoryService
     }
 
     public async Task<ServiceResult<PagedResult<UserDirectoryEntryViewModel>>> GetUsersSorted(
-        string sortBy = "displayname", bool ascending = true, int page = 1, int pageSize = 20)
+        string sortBy = "displayname", bool ascending = true, int page = 1, int pageSize = 20, string? userTypeFilter = null)
     {
         if (page < 1) page = 1;
         if (pageSize < 1) pageSize = 20;
 
         var query = _context.Users.AsQueryable();
+
+        query = ApplyUserTypeFilter(query, userTypeFilter);
 
         query = sortBy.ToLower() switch
         {
@@ -78,7 +83,8 @@ public class UserDirectoryService : IUserDirectoryService
                 UserId = u.Id,
                 DisplayName = u.DisplayName,
                 Email = u.Email ?? string.Empty,
-                AvatarUrl = u.AvatarUrl
+                AvatarUrl = u.AvatarUrl,
+                IsAgent = u.IsAgent
             })
             .ToListAsync();
 
@@ -214,6 +220,16 @@ public class UserDirectoryService : IUserDirectoryService
             ActivityChangeType.Updated => $"Updated \"{taskTitle}\"",
             ActivityChangeType.Deleted => $"Deleted task \"{taskTitle}\"",
             _ => $"Performed action on \"{taskTitle}\""
+        };
+    }
+
+    private static IQueryable<ApplicationUser> ApplyUserTypeFilter(IQueryable<ApplicationUser> query, string? userTypeFilter)
+    {
+        return userTypeFilter?.ToLower() switch
+        {
+            "human" => query.Where(u => !u.IsAgent),
+            "agent" => query.Where(u => u.IsAgent),
+            _ => query
         };
     }
 }

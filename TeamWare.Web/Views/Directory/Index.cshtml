@@ -13,18 +13,32 @@
         <div class="flex gap-2">
             <input type="text" name="search" value="@Model.SearchTerm" placeholder="Search by name or email..."
                    class="flex-1 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:placeholder-gray-500 dark:focus:border-blue-400" />
+            <input type="hidden" name="userTypeFilter" value="@Model.UserTypeFilter" />
             <button type="submit"
                     class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900">
                 Search
             </button>
             @if (!string.IsNullOrEmpty(Model.SearchTerm))
             {
-                <a asp-action="Index" class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
+                <a asp-action="Index" asp-route-userTypeFilter="@Model.UserTypeFilter"
+                   class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
                     Clear
                 </a>
             }
         </div>
     </form>
+
+    <div class="mb-4 flex items-center gap-4 text-sm">
+        <span class="text-gray-500 dark:text-gray-400">Show:</span>
+        <a asp-action="Index" asp-route-search="@Model.SearchTerm" asp-route-sortBy="@Model.SortBy" asp-route-ascending="@Model.Ascending" asp-route-userTypeFilter="all"
+           class="@(Model.UserTypeFilter == "all" ? "font-medium text-blue-600 dark:text-blue-400" : "text-gray-700 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400")">All Users</a>
+        <span class="text-gray-300 dark:text-gray-600">|</span>
+        <a asp-action="Index" asp-route-search="@Model.SearchTerm" asp-route-sortBy="@Model.SortBy" asp-route-ascending="@Model.Ascending" asp-route-userTypeFilter="human"
+           class="@(Model.UserTypeFilter == "human" ? "font-medium text-blue-600 dark:text-blue-400" : "text-gray-700 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400")">Human Users Only</a>
+        <span class="text-gray-300 dark:text-gray-600">|</span>
+        <a asp-action="Index" asp-route-search="@Model.SearchTerm" asp-route-sortBy="@Model.SortBy" asp-route-ascending="@Model.Ascending" asp-route-userTypeFilter="agent"
+           class="@(Model.UserTypeFilter == "agent" ? "font-medium text-blue-600 dark:text-blue-400" : "text-gray-700 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400")">Agent Users Only</a>
+    </div>
 
     @if (string.IsNullOrEmpty(Model.SearchTerm))
     {
@@ -32,33 +46,33 @@
             <span class="text-gray-500 dark:text-gray-400">Sort by:</span>
             @if (Model.SortBy == "displayname" && Model.Ascending)
             {
-                <a asp-action="Index" asp-route-sortBy="displayname" asp-route-ascending="false"
+                <a asp-action="Index" asp-route-sortBy="displayname" asp-route-ascending="false" asp-route-userTypeFilter="@Model.UserTypeFilter"
                    class="font-medium text-blue-600 dark:text-blue-400">Name (A-Z)</a>
             }
             else if (Model.SortBy == "displayname" && !Model.Ascending)
             {
-                <a asp-action="Index" asp-route-sortBy="displayname" asp-route-ascending="true"
+                <a asp-action="Index" asp-route-sortBy="displayname" asp-route-ascending="true" asp-route-userTypeFilter="@Model.UserTypeFilter"
                    class="font-medium text-blue-600 dark:text-blue-400">Name (Z-A)</a>
             }
             else
             {
-                <a asp-action="Index" asp-route-sortBy="displayname" asp-route-ascending="true"
+                <a asp-action="Index" asp-route-sortBy="displayname" asp-route-ascending="true" asp-route-userTypeFilter="@Model.UserTypeFilter"
                    class="text-gray-700 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400">Name</a>
             }
             <span class="text-gray-300 dark:text-gray-600">|</span>
             @if (Model.SortBy == "email" && Model.Ascending)
             {
-                <a asp-action="Index" asp-route-sortBy="email" asp-route-ascending="false"
+                <a asp-action="Index" asp-route-sortBy="email" asp-route-ascending="false" asp-route-userTypeFilter="@Model.UserTypeFilter"
                    class="font-medium text-blue-600 dark:text-blue-400">Email (A-Z)</a>
             }
             else if (Model.SortBy == "email" && !Model.Ascending)
             {
-                <a asp-action="Index" asp-route-sortBy="email" asp-route-ascending="true"
+                <a asp-action="Index" asp-route-sortBy="email" asp-route-ascending="true" asp-route-userTypeFilter="@Model.UserTypeFilter"
                    class="font-medium text-blue-600 dark:text-blue-400">Email (Z-A)</a>
             }
             else
             {
-                <a asp-action="Index" asp-route-sortBy="email" asp-route-ascending="true"
+                <a asp-action="Index" asp-route-sortBy="email" asp-route-ascending="true" asp-route-userTypeFilter="@Model.UserTypeFilter"
                    class="text-gray-700 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400">Email</a>
             }
         </div>
@@ -103,7 +117,10 @@
                                   title="@(user.IsOnline ? "Online" : "Offline")"></span>
                         </div>
                         <div class="min-w-0 flex-1">
-                            <div class="truncate text-sm font-medium text-gray-900 dark:text-white">@user.DisplayName</div>
+                            <div class="flex items-center truncate text-sm font-medium text-gray-900 dark:text-white">
+                                @user.DisplayName
+                                @await Html.PartialAsync("_BotBadge", user.IsAgent)
+                            </div>
                             <div class="truncate text-xs text-gray-500 dark:text-gray-400">@user.Email</div>
                         </div>
                     </div>
@@ -122,7 +139,7 @@
                 @if (Model.Page > 1)
                 {
                     <a asp-action="Index" asp-route-search="@Model.SearchTerm" asp-route-sortBy="@Model.SortBy"
-                       asp-route-ascending="@Model.Ascending" asp-route-page="@(Model.Page - 1)"
+                       asp-route-ascending="@Model.Ascending" asp-route-page="@(Model.Page - 1)" asp-route-userTypeFilter="@Model.UserTypeFilter"
                        class="rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
                         Previous
                     </a>
@@ -130,7 +147,7 @@
                 @if (Model.Page < Model.TotalPages)
                 {
                     <a asp-action="Index" asp-route-search="@Model.SearchTerm" asp-route-sortBy="@Model.SortBy"
-                       asp-route-ascending="@Model.Ascending" asp-route-page="@(Model.Page + 1)"
+                       asp-route-ascending="@Model.Ascending" asp-route-page="@(Model.Page + 1)" asp-route-userTypeFilter="@Model.UserTypeFilter"
                        class="rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
                         Next
                     </a>

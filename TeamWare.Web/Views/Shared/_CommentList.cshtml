@@ -14,6 +14,7 @@
                         </div>
                         <div>
                             <span class="text-sm font-medium text-gray-900 dark:text-white">@comment.AuthorDisplayName</span>
+                            @await Html.PartialAsync("_BotBadge", comment.IsAuthorAgent)
                             <span class="ml-2 text-xs text-gray-500 dark:text-gray-400">@Html.LocalTime(comment.CreatedAt)</span>
                             @if (comment.IsEdited)
                             {

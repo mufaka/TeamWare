@@ -15,4 +15,6 @@ public class DirectoryListViewModel
     public int TotalPages { get; set; }
 
     public int TotalCount { get; set; }
+
+    public string UserTypeFilter { get; set; } = "all";
 }

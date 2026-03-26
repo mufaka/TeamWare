@@ -557,6 +557,141 @@ public class UserDirectoryServiceTests : IDisposable
         Assert.Empty(result.Data!);
     }
 
+    // --- User Type Filtering (Agent/Human) ---
+
+    private ApplicationUser CreateAgentUser(string email, string displayName)
+    {
+        var user = new ApplicationUser
+        {
+            UserName = email,
+            Email = email,
+            DisplayName = displayName,
+            IsAgent = true,
+            AgentDescription = "Test agent",
+            IsAgentActive = true
+        };
+        _context.Users.Add(user);
+        _context.SaveChanges();
+        return user;
+    }
+
+    [Fact]
+    public async Task SearchUsers_IsAgentProperty_PopulatedCorrectly()
+    {
+        var human = CreateUser("human@test.com", "Human User");
+        var agent = CreateAgentUser("agent@test.com", "Agent User");
+
+        var result = await _service.SearchUsers("User", 1, 10);
+
+        Assert.True(result.Succeeded);
+        Assert.Equal(2, result.Data!.Items.Count);
+
+        var humanEntry = result.Data.Items.First(u => u.DisplayName == "Human User");
+        var agentEntry = result.Data.Items.First(u => u.DisplayName == "Agent User");
+        Assert.False(humanEntry.IsAgent);
+        Assert.True(agentEntry.IsAgent);
+    }
+
+    [Fact]
+    public async Task SearchUsers_FilterByHuman_ExcludesAgents()
+    {
+        CreateUser("human@test.com", "Human User");
+        CreateAgentUser("agent@test.com", "Agent User");
+
+        var result = await _service.SearchUsers("User", 1, 10, userTypeFilter: "human");
+
+        Assert.True(result.Succeeded);
+        Assert.Single(result.Data!.Items);
+        Assert.Equal("Human User", result.Data.Items[0].DisplayName);
+        Assert.False(result.Data.Items[0].IsAgent);
+    }
+
+    [Fact]
+    public async Task SearchUsers_FilterByAgent_ExcludesHumans()
+    {
+        CreateUser("human@test.com", "Human User");
+        CreateAgentUser("agent@test.com", "Agent User");
+
+        var result = await _service.SearchUsers("User", 1, 10, userTypeFilter: "agent");
+
+        Assert.True(result.Succeeded);
+        Assert.Single(result.Data!.Items);
+        Assert.Equal("Agent User", result.Data.Items[0].DisplayName);
+        Assert.True(result.Data.Items[0].IsAgent);
+    }
+
+    [Fact]
+    public async Task SearchUsers_FilterAll_ReturnsEveryone()
+    {
+        CreateUser("human@test.com", "Human User");
+        CreateAgentUser("agent@test.com", "Agent User");
+
+        var result = await _service.SearchUsers("User", 1, 10, userTypeFilter: "all");
+
+        Assert.True(result.Succeeded);
+        Assert.Equal(2, result.Data!.Items.Count);
+    }
+
+    [Fact]
+    public async Task GetUsersSorted_IsAgentProperty_PopulatedCorrectly()
+    {
+        CreateUser("human@test.com", "Human User");
+        CreateAgentUser("agent@test.com", "Agent User");
+
+        var result = await _service.GetUsersSorted("name", true, 1, 10);
+
+        Assert.True(result.Succeeded);
+        Assert.Equal(2, result.Data!.Items.Count);
+
+        var agentEntry = result.Data.Items.First(u => u.DisplayName == "Agent User");
+        var humanEntry = result.Data.Items.First(u => u.DisplayName == "Human User");
+        Assert.True(agentEntry.IsAgent);
+        Assert.False(humanEntry.IsAgent);
+    }
+
+    [Fact]
+    public async Task GetUsersSorted_FilterByHuman_ExcludesAgents()
+    {
+        CreateUser("human@test.com", "Human User");
+        CreateAgentUser("agent@test.com", "Agent User");
+
+        var result = await _service.GetUsersSorted("name", true, 1, 10, userTypeFilter: "human");
+
+        Assert.True(result.Succeeded);
+        Assert.Single(result.Data!.Items);
+        Assert.Equal("Human User", result.Data.Items[0].DisplayName);
+    }
+
+    [Fact]
+    public async Task GetUsersSorted_FilterByAgent_ExcludesHumans()
+    {
+        CreateUser("human@test.com", "Human User");
+        CreateAgentUser("agent@test.com", "Agent User");
+
+        var result = await _service.GetUsersSorted("name", true, 1, 10, userTypeFilter: "agent");
+
+        Assert.True(result.Succeeded);
+        Assert.Single(result.Data!.Items);
+        Assert.Equal("Agent User", result.Data.Items[0].DisplayName);
+    }
+
+    [Fact]
+    public async Task SearchUsers_FilterByAgent_PaginationCountCorrect()
+    {
+        // Create 3 humans and 2 agents
+        CreateUser("h1@test.com", "Human One");
+        CreateUser("h2@test.com", "Human Two");
+        CreateUser("h3@test.com", "Human Three");
+        CreateAgentUser("a1@test.com", "Agent One");
+        CreateAgentUser("a2@test.com", "Agent Two");
+
+        var result = await _service.SearchUsers("", 1, 10, userTypeFilter: "agent");
+
+        Assert.True(result.Succeeded);
+        Assert.Equal(2, result.Data!.Items.Count);
+        Assert.Equal(2, result.Data.TotalCount);
+    }
+
     public void Dispose()
     {
         _context.Dispose();

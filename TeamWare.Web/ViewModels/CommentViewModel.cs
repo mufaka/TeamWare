@@ -10,6 +10,8 @@ public class CommentViewModel
 
     public string AuthorDisplayName { get; set; } = string.Empty;
 
+    public bool IsAuthorAgent { get; set; }
+
     public string Content { get; set; } = string.Empty;
 
     public DateTime CreatedAt { get; set; }

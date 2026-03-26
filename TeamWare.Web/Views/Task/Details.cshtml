@@ -194,7 +194,10 @@
                                         </span>
                                     </div>
                                     <div class="min-w-0 flex-1">
-                                        <p class="text-sm text-gray-700 dark:text-gray-300">@entry.Description</p>
+                                        <p class="text-sm text-gray-700 dark:text-gray-300">
+                                            @entry.Description
+                                            @await Html.PartialAsync("_BotBadge", entry.IsUserAgent)
+                                        </p>
                                         <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
                                             @Html.LocalTime(entry.CreatedAt)
                                         </p>
@@ -257,6 +260,7 @@
                                     @assignee.DisplayName.FirstOrDefault().ToString().ToUpper()
                                 </div>
                                 <span class="text-sm text-gray-900 dark:text-white">@assignee.DisplayName</span>
+                                @await Html.PartialAsync("_BotBadge", assignee.IsAgent)
                             </div>
                             <form asp-action="Unassign" method="post">
                                 <input type="hidden" name="id" value="@Model.Id" />
@@ -290,12 +294,13 @@
                             <form asp-action="Assign" method="post" class="flex items-center gap-2">
                                 <input type="hidden" name="id" value="@Model.Id" />
                                 <input type="hidden" name="userId" value="@member.UserId" />
-                                <button type="submit"
+                                    <button type="submit"
                                         class="flex items-center gap-2 rounded-md px-2 py-1 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700">
                                     <div class="flex h-5 w-5 items-center justify-center rounded-full bg-gray-200 text-xs dark:bg-gray-600">
                                         @member.DisplayName.FirstOrDefault().ToString().ToUpper()
                                     </div>
                                     @member.DisplayName
+                                    @await Html.PartialAsync("_BotBadge", member.IsAgent)
                                 </button>
                             </form>
                         }

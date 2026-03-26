@@ -11,4 +11,6 @@ public class UserDirectoryEntryViewModel
     public string? AvatarUrl { get; set; }
 
     public bool IsOnline { get; set; }
+
+    public bool IsAgent { get; set; }
 }

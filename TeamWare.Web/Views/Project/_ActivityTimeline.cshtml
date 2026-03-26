@@ -28,6 +28,7 @@
                         <div class="min-w-0 flex-1">
                             <p class="text-sm text-gray-700 dark:text-gray-300">
                                 @entry.Description
+                                @await Html.PartialAsync("_BotBadge", entry.IsUserAgent)
                                 <a asp-controller="Task" asp-action="Details" asp-route-id="@entry.TaskItemId"
                                    class="font-medium text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300">@entry.TaskTitle</a>
                             </p>
