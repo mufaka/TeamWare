@@ -9,7 +9,7 @@ This document defines the phased implementation plan for the TeamWare Agent User
 | Phase | Description | Status |
 |-------|------------|--------|
 | 32 | Agent Data Model and Authentication | Complete |
-| 33 | Agent Management UI | Not Started |
+| 33 | Agent Management UI | Complete |
 | 34 | Agent MCP Tools and Bot Badge | Not Started |
 | 35 | Agent Polish and Hardening | Not Started |
 
@@ -138,64 +138,64 @@ Deliver the admin panel pages for creating, editing, listing, and managing agent
 
 ### 33.1 Agent List Page
 
-- [ ] Add `Agents` action to `AdminController` that calls `IAdminService.GetAgentUsers()` and returns the agent list view (AGT-20)
-- [ ] Create `Views/Admin/Agents.cshtml`:
-  - [ ] Display table with columns: Display Name, Description (truncated), Status (Active/Paused), Last Active, Assigned Tasks, Actions (AGT-UI-02)
-  - [ ] "Active" status shown as a green badge; "Paused" as a yellow badge
-  - [ ] Include "Create Agent" button linking to the creation form (AGT-UI-03)
-  - [ ] Each row has "Edit" and "Pause/Resume" action links
-  - [ ] Tailwind CSS 4 styling, light/dark theme support (AGT-UI-08)
-- [ ] Add "Agents" link to the admin navigation sidebar/menu (AGT-UI-01)
-- [ ] Write tests verifying the agent list page renders correctly with zero agents, one agent, and multiple agents
+- [x] Add `Agents` action to `AdminController` that calls `IAdminService.GetAgentUsers()` and returns the agent list view (AGT-20)
+- [x] Create `Views/Admin/Agents.cshtml`:
+  - [x] Display table with columns: Display Name, Description (truncated), Status (Active/Paused), Last Active, Assigned Tasks, Actions (AGT-UI-02)
+  - [x] "Active" status shown as a green badge; "Paused" as a yellow badge
+  - [x] Include "Create Agent" button linking to the creation form (AGT-UI-03)
+  - [x] Each row has "Edit" and "Pause/Resume" action links
+  - [x] Tailwind CSS 4 styling, light/dark theme support (AGT-UI-08)
+- [x] Add "Agents" link to the admin navigation sidebar/menu (AGT-UI-01)
+- [x] Write tests verifying the agent list page renders correctly with zero agents, one agent, and multiple agents
 
 ### 33.2 Agent Creation Flow
 
-- [ ] Add `CreateAgent` (GET) action to `AdminController` returning the creation form view
-- [ ] Add `CreateAgent` (POST) action to `AdminController`:
-  - [ ] Accept display name (required) and description (optional) (AGT-11)
-  - [ ] Call `IAdminService.CreateAgentUser(displayName, description)`
-  - [ ] On success, redirect to the agent creation confirmation page with the raw token
-  - [ ] On failure, return the form with validation errors
-- [ ] Create `Views/Admin/CreateAgent.cshtml`:
-  - [ ] Form with Display Name (required text input) and Description (optional textarea) fields (AGT-UI-04)
-  - [ ] "Create" submit button
-  - [ ] Tailwind CSS 4 styling (AGT-UI-08)
-- [ ] Create `Views/Admin/AgentCreated.cshtml` (confirmation page):
-  - [ ] Display the agent's display name and a success message
-  - [ ] Show the raw PAT in a read-only input field with a "Copy to Clipboard" button (AGT-UI-05)
-  - [ ] Display a prominent warning that the token will not be shown again (AGT-UI-05)
-  - [ ] Link to the agent detail page
-- [ ] Write tests verifying creation success, validation errors, and confirmation page rendering (AGT-TEST-13)
+- [x] Add `CreateAgent` (GET) action to `AdminController` returning the creation form view
+- [x] Add `CreateAgent` (POST) action to `AdminController`:
+  - [x] Accept display name (required) and description (optional) (AGT-11)
+  - [x] Call `IAdminService.CreateAgentUser(displayName, description)`
+  - [x] On success, redirect to the agent creation confirmation page with the raw token
+  - [x] On failure, return the form with validation errors
+- [x] Create `Views/Admin/CreateAgent.cshtml`:
+  - [x] Form with Display Name (required text input) and Description (optional textarea) fields (AGT-UI-04)
+  - [x] "Create" submit button
+  - [x] Tailwind CSS 4 styling (AGT-UI-08)
+- [x] Create `Views/Admin/AgentCreated.cshtml` (confirmation page):
+  - [x] Display the agent's display name and a success message
+  - [x] Show the raw PAT in a read-only input field with a "Copy to Clipboard" button (AGT-UI-05)
+  - [x] Display a prominent warning that the token will not be shown again (AGT-UI-05)
+  - [x] Link to the agent detail page
+- [x] Write tests verifying creation success, validation errors, and confirmation page rendering (AGT-TEST-13)
 
 ### 33.3 Agent Edit and Detail Pages
 
-- [ ] Add `EditAgent` (GET) action to `AdminController` that loads the agent user and returns the edit form
-- [ ] Add `EditAgent` (POST) action to `AdminController`:
-  - [ ] Accept display name and description
-  - [ ] Call `IAdminService.UpdateAgentUser(userId, displayName, description)` (AGT-21)
-  - [ ] On success, redirect to the agent detail page
-- [ ] Add `AgentDetail` action to `AdminController` that loads the agent user, their PATs, project memberships, and recent activity (AGT-26)
-- [ ] Create `Views/Admin/EditAgent.cshtml`:
-  - [ ] Form with Display Name, Description, and Active toggle (AGT-UI-06)
-  - [ ] "Save" submit button
-- [ ] Create `Views/Admin/AgentDetail.cshtml`:
-  - [ ] Agent profile information (display name, description, active status, last active) (AGT-UI-07)
-  - [ ] PAT list with name, prefix, creation date, last used, and "Revoke" button per token (AGT-24, AGT-25)
-  - [ ] "Generate New Token" button that creates a PAT and shows the raw value once (AGT-24)
-  - [ ] Project memberships list with "Add to Project" and "Remove" actions (AGT-27)
-  - [ ] Recent activity log entries (AGT-26)
-- [ ] Write tests verifying edit form submission, detail page rendering, PAT management, and project membership actions
+- [x] Add `EditAgent` (GET) action to `AdminController` that loads the agent user and returns the edit form
+- [x] Add `EditAgent` (POST) action to `AdminController`:
+  - [x] Accept display name and description
+  - [x] Call `IAdminService.UpdateAgentUser(userId, displayName, description)` (AGT-21)
+  - [x] On success, redirect to the agent detail page
+- [x] Add `AgentDetail` action to `AdminController` that loads the agent user, their PATs, project memberships, and recent activity (AGT-26)
+- [x] Create `Views/Admin/EditAgent.cshtml`:
+  - [x] Form with Display Name, Description, and Active toggle (AGT-UI-06)
+  - [x] "Save" submit button
+- [x] Create `Views/Admin/AgentDetail.cshtml`:
+  - [x] Agent profile information (display name, description, active status, last active) (AGT-UI-07)
+  - [x] PAT list with name, prefix, creation date, last used, and "Revoke" button per token (AGT-24, AGT-25)
+  - [x] "Generate New Token" button that creates a PAT and shows the raw value once (AGT-24)
+  - [x] Project memberships list with "Add to Project" and "Remove" actions (AGT-27)
+  - [x] Recent activity log entries (AGT-26)
+- [x] Write tests verifying edit form submission, detail page rendering, PAT management, and project membership actions
 
 ### 33.4 Agent Pause/Resume and Deletion
 
-- [ ] Add `ToggleAgentActive` (POST) action to `AdminController`:
-  - [ ] Call `IAdminService.SetAgentActive(userId, !currentActiveStatus)` (AGT-22)
-  - [ ] Redirect back to the agent list or detail page
-- [ ] Add `DeleteAgent` (POST) action to `AdminController`:
-  - [ ] Require confirmation (via a confirmation modal or page)
-  - [ ] Call `IAdminService.DeleteAgentUser(userId, adminUserId)` (AGT-28)
-  - [ ] Redirect to the agent list page
-- [ ] Write tests verifying pause/resume toggle and deletion with PAT revocation (AGT-TEST-14)
+- [x] Add `ToggleAgentActive` (POST) action to `AdminController`:
+  - [x] Call `IAdminService.SetAgentActive(userId, !currentActiveStatus)` (AGT-22)
+  - [x] Redirect back to the agent list or detail page
+- [x] Add `DeleteAgent` (POST) action to `AdminController`:
+  - [x] Require confirmation (via a confirmation modal or page)
+  - [x] Call `IAdminService.DeleteAgentUser(userId, adminUserId)` (AGT-28)
+  - [x] Redirect to the agent list page
+- [x] Write tests verifying pause/resume toggle and deletion with PAT revocation (AGT-TEST-14)
 
 ---
 
