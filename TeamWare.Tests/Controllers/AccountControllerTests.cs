@@ -177,6 +177,44 @@ public class AccountControllerTests : IClassFixture<TeamWareWebApplicationFactor
         Assert.True(await userManager.IsInRoleAsync(user, SeedData.UserRoleName));
     }
 
+    [Fact]
+    public async Task Login_Post_AgentUser_ReturnsInvalidLoginError()
+    {
+        // Create an agent user via UserManager
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+            var agentUser = new ApplicationUser
+            {
+                UserName = "agent-testbot",
+                Email = "agent-testbot@agent.local",
+                DisplayName = "TestBot",
+                IsAgent = true,
+                IsAgentActive = true
+            };
+            await userManager.CreateAsync(agentUser, "TestPass1");
+            await userManager.AddToRoleAsync(agentUser, SeedData.UserRoleName);
+        }
+
+        var antiForgeryToken = await GetAntiForgeryTokenAsync("/Account/Login");
+
+        var formData = new Dictionary<string, string>
+        {
+            { "__RequestVerificationToken", antiForgeryToken },
+            { "Email", "agent-testbot@agent.local" },
+            { "Password", "TestPass1" },
+            { "RememberMe", "false" }
+        };
+
+        var response = await _client.PostAsync("/Account/Login", new FormUrlEncodedContent(formData));
+
+        // Should NOT redirect (login rejected) — returns login page with error
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var content = await response.Content.ReadAsStringAsync();
+        // Uses the same generic error as invalid credentials (does not reveal agent status)
+        Assert.Contains("Invalid login attempt", content);
+    }
+
     private async Task<string> GetAntiForgeryTokenAsync(string url)
     {
         var response = await _client.GetAsync(url);

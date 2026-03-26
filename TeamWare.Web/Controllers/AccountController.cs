@@ -76,6 +76,13 @@ public class AccountController : Controller
             return View(model);
         }
 
+        var user = await _userManager.FindByEmailAsync(model.Email);
+        if (user != null && user.IsAgent)
+        {
+            ModelState.AddModelError(string.Empty, "Invalid login attempt.");
+            return View(model);
+        }
+
         var result = await _signInManager.PasswordSignInAsync(
             model.Email, model.Password, model.RememberMe, lockoutOnFailure: false);
 

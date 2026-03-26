@@ -421,6 +421,49 @@ public class AdminServiceAgentTests : IDisposable
         Assert.False(result.Succeeded);
     }
 
+    // --- Security Hardening ---
+
+    [Fact]
+    public async Task PromoteToAdmin_RejectsAgentUser()
+    {
+        var admin = await CreateAdminUser();
+        var createResult = await _service.CreateAgentUser("CodeBot", null, admin.Id);
+        var agentUserId = createResult.Data!.User.Id;
+
+        var result = await _service.PromoteToAdmin(agentUserId, admin.Id);
+
+        Assert.False(result.Succeeded);
+        Assert.Contains("Agent users cannot be assigned the Admin role", result.Errors[0]);
+    }
+
+    [Fact]
+    public async Task PromoteToAdmin_AllowsHumanUser()
+    {
+        var admin = await CreateAdminUser();
+        var humanUser = await CreateHumanUser("human@test.com", "Human");
+
+        var result = await _service.PromoteToAdmin(humanUser.Id, admin.Id);
+
+        Assert.True(result.Succeeded);
+        Assert.True(await _userManager.IsInRoleAsync(humanUser, SeedData.AdminRoleName));
+    }
+
+    [Fact]
+    public async Task UpdateAgentUser_DoesNotModifyIsAgentFlag()
+    {
+        var admin = await CreateAdminUser();
+        var createResult = await _service.CreateAgentUser("CodeBot", null, admin.Id);
+        var agentUser = createResult.Data!.User;
+
+        await _service.UpdateAgentUser(agentUser.Id, "UpdatedBot", "New description", admin.Id);
+
+        var loaded = await _userManager.FindByIdAsync(agentUser.Id);
+        Assert.NotNull(loaded);
+        Assert.True(loaded!.IsAgent);
+        Assert.Equal("UpdatedBot", loaded.DisplayName);
+        Assert.Equal("New description", loaded.AgentDescription);
+    }
+
     // --- Migration verification ---
 
     [Fact]
