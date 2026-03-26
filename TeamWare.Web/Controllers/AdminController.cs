@@ -2,6 +2,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using TeamWare.Web.Data;
 using TeamWare.Web.Models;
 using TeamWare.Web.Services;
 using TeamWare.Web.ViewModels;
@@ -16,19 +18,22 @@ public class AdminController : Controller
     private readonly IGlobalConfigurationService _configService;
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly IPersonalAccessTokenService _patService;
+    private readonly ApplicationDbContext _context;
 
     public AdminController(
         IAdminService adminService,
         IAdminActivityLogService activityLogService,
         IGlobalConfigurationService configService,
         UserManager<ApplicationUser> userManager,
-        IPersonalAccessTokenService patService)
+        IPersonalAccessTokenService patService,
+        ApplicationDbContext context)
     {
         _adminService = adminService;
         _activityLogService = activityLogService;
         _configService = configService;
         _userManager = userManager;
         _patService = patService;
+        _context = context;
     }
 
     private string GetUserId() => User.FindFirstValue(ClaimTypes.NameIdentifier)!;
@@ -360,5 +365,240 @@ public class AdminController : Controller
         }
 
         return RedirectToAction(nameof(UserTokens), new { id = userId });
+    }
+
+    // --- Agent Management ---
+
+    [HttpGet]
+    public async Task<IActionResult> Agents()
+    {
+        var result = await _adminService.GetAgentUsers();
+        if (!result.Succeeded)
+        {
+            TempData["ErrorMessage"] = result.Errors.FirstOrDefault();
+            return RedirectToAction(nameof(Dashboard));
+        }
+
+        return View(result.Data!);
+    }
+
+    [HttpGet]
+    public IActionResult CreateAgent()
+    {
+        return View(new CreateAgentViewModel());
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> CreateAgent(CreateAgentViewModel model)
+    {
+        if (!ModelState.IsValid)
+        {
+            return View(model);
+        }
+
+        var result = await _adminService.CreateAgentUser(model.DisplayName, model.Description, GetUserId());
+        if (!result.Succeeded)
+        {
+            foreach (var error in result.Errors)
+            {
+                ModelState.AddModelError(string.Empty, error);
+            }
+            return View(model);
+        }
+
+        var (user, rawToken) = result.Data!;
+        var viewModel = new AgentCreatedViewModel
+        {
+            DisplayName = user.DisplayName,
+            UserId = user.Id,
+            RawToken = rawToken
+        };
+
+        return View("AgentCreated", viewModel);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> AgentDetail(string id)
+    {
+        var user = await _userManager.FindByIdAsync(id);
+        if (user == null || !user.IsAgent)
+        {
+            TempData["ErrorMessage"] = "Agent not found.";
+            return RedirectToAction(nameof(Agents));
+        }
+
+        var tokensResult = await _patService.GetTokensForUserAsync(user.Id);
+
+        var projectMemberships = await _context.ProjectMembers
+            .Include(pm => pm.Project)
+            .Where(pm => pm.UserId == user.Id)
+            .Select(pm => new AgentProjectMembership
+            {
+                ProjectId = pm.ProjectId,
+                ProjectName = pm.Project.Name,
+                Role = pm.Role.ToString()
+            })
+            .ToListAsync();
+
+        var recentLogs = await _context.AdminActivityLogs
+            .Include(l => l.AdminUser)
+            .Where(l => l.TargetUserId == user.Id)
+            .OrderByDescending(l => l.CreatedAt)
+            .Take(10)
+            .Select(l => new AdminActivityLogEntryViewModel
+            {
+                Id = l.Id,
+                AdminDisplayName = l.AdminUser != null ? l.AdminUser.DisplayName : "Unknown",
+                Action = l.Action,
+                Details = l.Details,
+                CreatedAt = l.CreatedAt
+            })
+            .ToListAsync();
+
+        var viewModel = new AgentDetailViewModel
+        {
+            UserId = user.Id,
+            DisplayName = user.DisplayName,
+            AgentDescription = user.AgentDescription,
+            IsAgentActive = user.IsAgentActive,
+            LastActiveAt = user.LastActiveAt,
+            Tokens = tokensResult.Succeeded ? tokensResult.Data! : new List<PersonalAccessToken>(),
+            ProjectMemberships = projectMemberships,
+            RecentActivity = recentLogs
+        };
+
+        return View(viewModel);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> EditAgent(string id)
+    {
+        var user = await _userManager.FindByIdAsync(id);
+        if (user == null || !user.IsAgent)
+        {
+            TempData["ErrorMessage"] = "Agent not found.";
+            return RedirectToAction(nameof(Agents));
+        }
+
+        var viewModel = new EditAgentViewModel
+        {
+            UserId = user.Id,
+            DisplayName = user.DisplayName,
+            Description = user.AgentDescription,
+            IsActive = user.IsAgentActive
+        };
+
+        return View(viewModel);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> EditAgent(EditAgentViewModel model)
+    {
+        if (!ModelState.IsValid)
+        {
+            return View(model);
+        }
+
+        var updateResult = await _adminService.UpdateAgentUser(model.UserId, model.DisplayName, model.Description, GetUserId());
+        if (!updateResult.Succeeded)
+        {
+            foreach (var error in updateResult.Errors)
+            {
+                ModelState.AddModelError(string.Empty, error);
+            }
+            return View(model);
+        }
+
+        var user = await _userManager.FindByIdAsync(model.UserId);
+        if (user != null && user.IsAgentActive != model.IsActive)
+        {
+            await _adminService.SetAgentActive(model.UserId, model.IsActive, GetUserId());
+        }
+
+        TempData["SuccessMessage"] = "Agent has been updated.";
+        return RedirectToAction(nameof(AgentDetail), new { id = model.UserId });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ToggleAgentActive(string id)
+    {
+        var user = await _userManager.FindByIdAsync(id);
+        if (user == null || !user.IsAgent)
+        {
+            TempData["ErrorMessage"] = "Agent not found.";
+            return RedirectToAction(nameof(Agents));
+        }
+
+        var result = await _adminService.SetAgentActive(id, !user.IsAgentActive, GetUserId());
+        if (!result.Succeeded)
+        {
+            TempData["ErrorMessage"] = result.Errors.FirstOrDefault();
+        }
+        else
+        {
+            TempData["SuccessMessage"] = user.IsAgentActive ? "Agent has been paused." : "Agent has been resumed.";
+        }
+
+        return RedirectToAction(nameof(Agents));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteAgent(string id)
+    {
+        var result = await _adminService.DeleteAgentUser(id, GetUserId());
+        if (!result.Succeeded)
+        {
+            TempData["ErrorMessage"] = result.Errors.FirstOrDefault();
+        }
+        else
+        {
+            TempData["SuccessMessage"] = "Agent has been deleted.";
+        }
+
+        return RedirectToAction(nameof(Agents));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> GenerateAgentToken(string id)
+    {
+        var user = await _userManager.FindByIdAsync(id);
+        if (user == null || !user.IsAgent)
+        {
+            TempData["ErrorMessage"] = "Agent not found.";
+            return RedirectToAction(nameof(Agents));
+        }
+
+        var result = await _patService.CreateTokenAsync(user.Id, "Agent Token", null);
+        if (!result.Succeeded)
+        {
+            TempData["ErrorMessage"] = result.Errors.FirstOrDefault();
+            return RedirectToAction(nameof(AgentDetail), new { id });
+        }
+
+        TempData["NewToken"] = result.Data;
+        TempData["SuccessMessage"] = "New token generated. Copy it now — it will not be shown again.";
+        return RedirectToAction(nameof(AgentDetail), new { id });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> RevokeAgentToken(string userId, int tokenId)
+    {
+        var result = await _patService.RevokeTokenAsync(tokenId, GetUserId(), isAdmin: true);
+        if (!result.Succeeded)
+        {
+            TempData["ErrorMessage"] = result.Errors.FirstOrDefault();
+        }
+        else
+        {
+            TempData["SuccessMessage"] = "Token has been revoked.";
+        }
+
+        return RedirectToAction(nameof(AgentDetail), new { id = userId });
     }
 }
