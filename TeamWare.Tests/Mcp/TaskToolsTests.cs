@@ -558,4 +558,91 @@ public class TaskToolsTests : IDisposable
         using var doc = JsonDocument.Parse(result);
         Assert.True(doc.RootElement.TryGetProperty("error", out _));
     }
+
+    // --- my_assignments agent filtering ---
+
+    private static ClaimsPrincipal CreateAgentClaimsPrincipal(string userId)
+    {
+        var claims = new[]
+        {
+            new Claim(ClaimTypes.NameIdentifier, userId),
+            new Claim("IsAgent", "true")
+        };
+        return new ClaimsPrincipal(new ClaimsIdentity(claims, "Test"));
+    }
+
+    [Fact]
+    public async Task MyAssignments_AgentUser_ReturnsOnlyToDoAndInProgress()
+    {
+        var (project, owner) = await CreateProjectWithOwner();
+
+        // Create tasks in various statuses, all marked as NextAction
+        var todoResult = await _taskService.CreateTask(project.Id, "ToDo Task", null, TaskItemPriority.High, null, owner.Id);
+        await _taskService.AssignMembers(todoResult.Data!.Id, [owner.Id], owner.Id);
+        await _taskService.MarkAsNextAction(todoResult.Data!.Id, owner.Id);
+
+        var inProgressResult = await _taskService.CreateTask(project.Id, "InProgress Task", null, TaskItemPriority.Medium, null, owner.Id);
+        await _taskService.AssignMembers(inProgressResult.Data!.Id, [owner.Id], owner.Id);
+        await _taskService.MarkAsNextAction(inProgressResult.Data!.Id, owner.Id);
+        await _taskService.ChangeStatus(inProgressResult.Data!.Id, TaskItemStatus.InProgress, owner.Id);
+
+        var inReviewResult = await _taskService.CreateTask(project.Id, "InReview Task", null, TaskItemPriority.Medium, null, owner.Id);
+        await _taskService.AssignMembers(inReviewResult.Data!.Id, [owner.Id], owner.Id);
+        await _taskService.MarkAsNextAction(inReviewResult.Data!.Id, owner.Id);
+        await _taskService.ChangeStatus(inReviewResult.Data!.Id, TaskItemStatus.InReview, owner.Id);
+
+        var agentPrincipal = CreateAgentClaimsPrincipal(owner.Id);
+
+        var result = await TaskTools.my_assignments(agentPrincipal, _taskService);
+
+        using var doc = JsonDocument.Parse(result);
+        var array = doc.RootElement;
+        Assert.Equal(JsonValueKind.Array, array.ValueKind);
+
+        var statuses = new List<string>();
+        foreach (var task in array.EnumerateArray())
+        {
+            statuses.Add(task.GetProperty("status").GetString()!);
+        }
+
+        // Agent should only see ToDo and InProgress, not InReview
+        Assert.Contains("ToDo", statuses);
+        Assert.Contains("InProgress", statuses);
+        Assert.DoesNotContain("InReview", statuses);
+    }
+
+    [Fact]
+    public async Task MyAssignments_HumanUser_ReturnsAllStatuses()
+    {
+        var (project, owner) = await CreateProjectWithOwner();
+
+        // Create tasks in various statuses, all marked as NextAction
+        var todoResult = await _taskService.CreateTask(project.Id, "ToDo Task", null, TaskItemPriority.High, null, owner.Id);
+        await _taskService.AssignMembers(todoResult.Data!.Id, [owner.Id], owner.Id);
+        await _taskService.MarkAsNextAction(todoResult.Data!.Id, owner.Id);
+
+        var inReviewResult = await _taskService.CreateTask(project.Id, "InReview Task", null, TaskItemPriority.Medium, null, owner.Id);
+        await _taskService.AssignMembers(inReviewResult.Data!.Id, [owner.Id], owner.Id);
+        await _taskService.MarkAsNextAction(inReviewResult.Data!.Id, owner.Id);
+        await _taskService.ChangeStatus(inReviewResult.Data!.Id, TaskItemStatus.InReview, owner.Id);
+
+        // Human user (no IsAgent claim)
+        var humanPrincipal = CreateClaimsPrincipal(owner.Id);
+
+        var result = await TaskTools.my_assignments(humanPrincipal, _taskService);
+
+        using var doc = JsonDocument.Parse(result);
+        var array = doc.RootElement;
+        Assert.Equal(JsonValueKind.Array, array.ValueKind);
+
+        var statuses = new List<string>();
+        foreach (var task in array.EnumerateArray())
+        {
+            statuses.Add(task.GetProperty("status").GetString()!);
+        }
+
+        // Human user should see all non-Done statuses including InReview
+        Assert.Contains("ToDo", statuses);
+        Assert.Contains("InReview", statuses);
+    }
 }

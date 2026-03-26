@@ -145,7 +145,15 @@ public class TaskTools
             return JsonSerializer.Serialize(new { error = string.Join("; ", result.Errors) }, JsonOptions);
         }
 
-        var tasks = result.Data!.Select(t => new
+        var isAgent = user.FindFirstValue("IsAgent") == "true";
+        var taskItems = result.Data!.AsEnumerable();
+
+        if (isAgent)
+        {
+            taskItems = taskItems.Where(t => t.Status == TaskItemStatus.ToDo || t.Status == TaskItemStatus.InProgress);
+        }
+
+        var tasks = taskItems.Select(t => new
         {
             t.Id,
             t.Title,
