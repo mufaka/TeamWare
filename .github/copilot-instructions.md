@@ -236,6 +236,6 @@ The following maps implementation plan work items to their canonical GitHub issu
 | Work Item | Canonical Issue | Duplicate Issues |
 |-----------|----------------|------------------|
 | 35.1 Security Hardening | #209 | — |
-| 35.2 Edge Cases and Regression Testing | #206 | — |
+| 35.2 Edge Cases and Regression Testing | #208 | — |
 | 35.3 UI Consistency Review | #207 | — |
-| 35.4 Documentation | #208 | — |
+| 35.4 Documentation | #206 | — |
