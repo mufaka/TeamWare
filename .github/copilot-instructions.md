@@ -103,50 +103,11 @@ Closes #2
 
 The following maps implementation plan work items to their canonical GitHub issues. Use the **Canonical Issue** when committing code.
 
-> **Phases 0-21 (Complete):** All issue mappings for Phases 0-21 have been archived. These phases are fully merged to `master`. For historical reference, see the closed issues in GitHub or the individual implementation plans:
+> **Phases 0-25 (Complete):** All issue mappings for Phases 0-21 have been archived. These phases are fully merged to `master`. For historical reference, see the closed issues in GitHub or the individual implementation plans:
 > - Phases 0-9: `TeamWare.Web/Specifications/ImplementationPlan.md`
 > - Phases 10-14: `TeamWare.Web/Specifications/SocialFeaturesImplementationPlan.md`
 > - Phases 15-21: `TeamWare.Web/Specifications/ProjectLoungeImplementationPlan.md`
-
-### Phase 22: AI Foundation and Configuration (label: `Phase 22: AI Foundation`)
-
-| Work Item | Canonical Issue | Duplicate Issues |
-|-----------|----------------|------------------|
-| 22.1 GlobalConfiguration Seeding | #136 | — |
-| 22.2 OllamaService | #138 | — |
-| 22.3 AiAssistantService | #137 | — |
-| 22.4 AiController Skeleton | #139 | — |
-
-### Phase 23: Content Rewriting (label: `Phase 23: Content Rewriting`)
-
-| Work Item | Canonical Issue | Duplicate Issues |
-|-----------|----------------|------------------|
-| 23.1 Rewrite Controller Actions | #140 | — |
-| 23.2 Rewrite UI - Project Edit Form | #141 | — |
-| 23.3 Rewrite UI - Task Edit Form | #145 | — |
-| 23.4 Rewrite UI - Comment Form | #143 | — |
-| 23.5 Rewrite UI - Inbox Clarify Form | #142 | — |
-| 23.6 Shared AI JavaScript | #144 | — |
-
-### Phase 24: Summary Generation (label: `Phase 24: Summary Generation`)
-
-| Work Item | Canonical Issue | Duplicate Issues |
-|-----------|----------------|------------------|
-| 24.1 Summary Data Gathering | #146 | — |
-| 24.2 Summary Controller Actions | #147 | — |
-| 24.3 Summary UI - Project Dashboard | #148 | — |
-| 24.4 Summary UI - Personal Dashboard | #149 | — |
-| 24.5 Summary UI - GTD Review Page | #150 | — |
-| 24.6 Shared AI Summary JavaScript | #151 | — |
-
-### Phase 25: AI Polish and Hardening (label: `Phase 25: AI Polish`)
-
-| Work Item | Canonical Issue | Duplicate Issues |
-|-----------|----------------|------------------|
-| 25.1 Error Handling and Resilience | #152 | — |
-| 25.2 UI/UX Consistency | #153 | — |
-| 25.3 Security Review | #154 | — |
-| 25.4 Documentation | #155 | — |
+> - Phases 22-25: `TeamWare.Web/Specifications/OllamaIntegrationImplementationPlan.md`
 
 ### Phase 26: MCP Foundation (label: `Phase 26: MCP Foundation`)
 
