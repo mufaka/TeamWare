@@ -4,7 +4,7 @@
 - TeamWare is an ASP.NET Core MVC application. It should not use Razor Pages. Use Controllers and Views instead.
 - One type per file (MAINT-01).
 - Tests accompany every feature. No phase is complete without its test cases.
-- Follow the implementation plan in `TeamWare.Web/Specifications/ImplementationPlan.md`, `TeamWare.Web/Specifications/SocialFeaturesImplementationPlan.md`, `TeamWare.Web/Specifications/ProjectLoungeImplementationPlan.md`, `TeamWare.Web/Specifications/OllamaIntegrationImplementationPlan.md`, `TeamWare.Web/Specifications/McpServerImplementationPlan.md`, and `TeamWare.Web/Specifications/AgentUsersImplementationPlan.md`.
+- Follow the implementation plan in `TeamWare.Web/Specifications/ImplementationPlan.md`, `TeamWare.Web/Specifications/SocialFeaturesImplementationPlan.md`, `TeamWare.Web/Specifications/ProjectLoungeImplementationPlan.md`, `TeamWare.Web/Specifications/OllamaIntegrationImplementationPlan.md`, `TeamWare.Web/Specifications/McpServerImplementationPlan.md`, `TeamWare.Web/Specifications/AgentUsersImplementationPlan.md`, and `TeamWare.Web/Specifications/CopilotAgentImplementationPlan.md`.
 - In `_DashboardProjects.cshtml`, ensure the link to project details is correctly implemented using `asp-controller="Project" asp-action="Details" asp-route-id="@project.Id"`.
 
 ---
@@ -53,6 +53,14 @@ Each phase in the implementation plan gets its own branch created from `master`.
 | Phase 33 | `phase-33/agent-management-ui` |
 | Phase 34 | `phase-34/agent-mcp-bot-badge` |
 | Phase 35 | `phase-35/agent-polish-hardening` |
+| Phase 36 | `phase-36/agent-prerequisites` |
+| Phase 37 | `phase-37/agent-scaffold` |
+| Phase 38 | `phase-38/agent-polling` |
+| Phase 39 | `phase-39/agent-pipeline` |
+| Phase 40 | `phase-40/agent-status-transitions` |
+| Phase 41 | `phase-41/agent-guardrails` |
+| Phase 42 | `phase-42/agent-repository` |
+| Phase 43 | `phase-43/agent-polish` |
 
 When starting a phase:
 1. Create the phase branch from `master` in GitHub.
@@ -200,3 +208,71 @@ The following maps implementation plan work items to their canonical GitHub issu
 | 35.2 Edge Cases and Regression Testing | #208 | — |
 | 35.3 UI Consistency Review | #207 | — |
 | 35.4 Documentation | #206 | — |
+
+### Phase 36: TeamWare Prerequisites (label: `Phase 36: Agent Prerequisites`)
+
+| Work Item | Canonical Issue | Duplicate Issues |
+|-----------|----------------|------------------|
+| 36.1 TaskItemStatus Enum Changes | #216 | — |
+| 36.2 Task Views and Filtering | #215 | — |
+| 36.3 Service and MCP Tool Updates | #217 | — |
+| 36.4 Progress Tracking Updates | #214 | — |
+
+### Phase 37: Agent Project Scaffold and Configuration (label: `Phase 37: Agent Scaffold`)
+
+| Work Item | Canonical Issue | Duplicate Issues |
+|-----------|----------------|------------------|
+| 37.1 Project Creation | #220 | — |
+| 37.2 Configuration Model | #218 | — |
+| 37.3 Agent Hosted Service | #221 | — |
+| 37.4 Test Project Creation | #219 | — |
+
+### Phase 38: Polling Loop and Task Discovery (label: `Phase 38: Agent Polling`)
+
+| Work Item | Canonical Issue | Duplicate Issues |
+|-----------|----------------|------------------|
+| 38.1 Agent Polling Loop | #223 | — |
+| 38.2 Infrastructure Error Handling | #222 | — |
+| 38.3 MCP Client Integration Tests | #224 | — |
+
+### Phase 39: Task Processing Pipeline (label: `Phase 39: Agent Pipeline`)
+
+| Work Item | Canonical Issue | Duplicate Issues |
+|-----------|----------------|------------------|
+| 39.1 Copilot SDK Integration | #225 | — |
+| 39.2 Default System Prompt | #228 | — |
+| 39.3 Pipeline Integration | #226 | — |
+| 39.4 Copilot CLI Error Handling | #227 | — |
+
+### Phase 40: Status Transitions and Reporting (label: `Phase 40: Agent Status Transitions`)
+
+| Work Item | Canonical Issue | Duplicate Issues |
+|-----------|----------------|------------------|
+| 40.1 Status Transition Handler | #229 | — |
+| 40.2 Lounge Message Formatting | #230 | — |
+| 40.3 Pipeline Integration | #231 | — |
+
+### Phase 41: Safety Guardrails and Dry Run (label: `Phase 41: Agent Guardrails`)
+
+| Work Item | Canonical Issue | Duplicate Issues |
+|-----------|----------------|------------------|
+| 41.1 Dry Run Mode | #234 | — |
+| 41.2 Custom Permission Handler | #232 | — |
+| 41.3 Action Restriction Verification | #233 | — |
+
+### Phase 42: Repository Management and Lounge Integration (label: `Phase 42: Agent Repository`)
+
+| Work Item | Canonical Issue | Duplicate Issues |
+|-----------|----------------|------------------|
+| 42.1 Repository Manager | #237 | — |
+| 42.2 End-to-End Lounge Integration Tests | #235 | — |
+| 42.3 Multiple Identity Integration Tests | #236 | — |
+
+### Phase 43: Agent Polish and Hardening (label: `Phase 43: Agent Polish`)
+
+| Work Item | Canonical Issue | Duplicate Issues |
+|-----------|----------------|------------------|
+| 43.1 Security Hardening | #238 | — |
+| 43.2 Edge Cases and Regression Testing | #239 | — |
+| 43.3 Logging Review | #240 | — |
+| 43.4 Documentation | #241 | — |
