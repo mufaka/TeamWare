@@ -1,0 +1,25 @@
+﻿{
+  "Agents": [
+    {
+      "Name": "test-agent",
+      "WorkingDirectory": "/tmp/work",
+      "RepositoryUrl": "https://example.com/repo.git",
+      "RepositoryBranch": "main",
+      "RepositoryAccessToken": "ghp_token123",
+      "PersonalAccessToken": "pat-12345",
+      "PollingIntervalSeconds": 30,
+      "Model": "gpt-4o",
+      "AutoApproveTools": false,
+      "DryRun": true,
+      "SystemPrompt": "You are a helpful agent.",
+      "McpServers": [
+        {
+          "Name": "teamware",
+          "Type": "http",
+          "Url": "https://localhost:5001/mcp",
+          "AuthHeader": "Bearer pat-12345"
+        }
+      ]
+    }
+  ]
+}

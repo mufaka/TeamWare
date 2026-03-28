@@ -8,8 +8,9 @@ This document defines the phased implementation plan for the TeamWare Copilot Ag
 
 | Phase | Description | Status |
 |-------|------------|--------|
+=======
 | 36 | TeamWare Prerequisites (Blocked/Error Statuses) | ✅ Complete |
-| 37 | Agent Project Scaffold and Configuration | Not Started |
+| 37 | Agent Project Scaffold and Configuration | ✅ Complete |
 | 38 | Polling Loop and Task Discovery | Not Started |
 | 39 | Task Processing Pipeline | Not Started |
 | 40 | Status Transitions and Reporting | Not Started |
@@ -110,71 +111,71 @@ Create the `TeamWare.Agent` console application project with the configuration m
 
 ### 37.1 Project Creation
 
-- [ ] Create `TeamWare.Agent` .NET 10 console application project
-- [ ] Add project to the TeamWare solution (`TeamWare.sln`)
-- [ ] Add NuGet package references:
-  - [ ] `GitHub.Copilot.SDK` (Copilot SDK)
-  - [ ] `Microsoft.Extensions.Hosting` (Generic Host for IHostedService)
-  - [ ] `Microsoft.Extensions.Configuration.Json` (appsettings.json)
-  - [ ] `Microsoft.Extensions.Configuration.EnvironmentVariables`
-  - [ ] `Microsoft.Extensions.Logging.Console` (structured logging)
-  - [ ] `Serilog.Extensions.Hosting` (optional, if Serilog is preferred — match TeamWare.Web's logging approach)
-- [ ] Create `Program.cs` with `Host.CreateDefaultBuilder` pattern:
-  - [ ] Configure logging (structured, console output)
-  - [ ] Load configuration from `appsettings.json` and environment variables (CA-14)
-  - [ ] Register hosted service (placeholder for `AgentHostedService`)
-  - [ ] Build and run the host
-- [ ] Create `appsettings.json` with the `Agents` array configuration structure (Spec Section 7.1)
-- [ ] Verify the project builds and runs (exits cleanly with no agents configured)
+- [x] Create `TeamWare.Agent` .NET 10 console application project
+- [x] Add project to the TeamWare solution (`TeamWare.sln`)
+- [x] Add NuGet package references:
+  - [x] `GitHub.Copilot.SDK` (Copilot SDK)
+  - [x] `Microsoft.Extensions.Hosting` (Generic Host for IHostedService)
+  - [x] `Microsoft.Extensions.Configuration.Json` (appsettings.json)
+  - [x] `Microsoft.Extensions.Configuration.EnvironmentVariables`
+  - [x] `Microsoft.Extensions.Logging.Console` (structured logging)
+  - [x] `Serilog.Extensions.Hosting` (optional, if Serilog is preferred — match TeamWare.Web's logging approach)
+- [x] Create `Program.cs` with `Host.CreateDefaultBuilder` pattern:
+  - [x] Configure logging (structured, console output)
+  - [x] Load configuration from `appsettings.json` and environment variables (CA-14)
+  - [x] Register hosted service (placeholder for `AgentHostedService`)
+  - [x] Build and run the host
+- [x] Create `appsettings.json` with the `Agents` array configuration structure (Spec Section 7.1)
+- [x] Verify the project builds and runs (exits cleanly with no agents configured)
 
 ### 37.2 Configuration Model
 
-- [ ] Create `TeamWare.Agent/Configuration/AgentIdentityOptions.cs` — strongly-typed options class (Spec Section 7.2):
-  - [ ] `Name` (string, required)
-  - [ ] `WorkingDirectory` (string, required)
-  - [ ] `RepositoryUrl` (string?, optional)
-  - [ ] `RepositoryBranch` (string?, optional)
-  - [ ] `RepositoryAccessToken` (string?, optional)
-  - [ ] `PersonalAccessToken` (string, required)
-  - [ ] `PollingIntervalSeconds` (int, default 60)
-  - [ ] `Model` (string?, optional)
-  - [ ] `AutoApproveTools` (bool, default true)
-  - [ ] `DryRun` (bool, default false)
-  - [ ] `SystemPrompt` (string?, optional)
-  - [ ] `McpServers` (list of `McpServerOptions`, required)
-- [ ] Create `TeamWare.Agent/Configuration/McpServerOptions.cs` — strongly-typed options class (Spec Section 7.3):
-  - [ ] `Name` (string, required)
-  - [ ] `Type` (string, required — `http` or `stdio`)
-  - [ ] `Url` (string?, required for http)
-  - [ ] `AuthHeader` (string?, optional)
-- [ ] Bind configuration in `Program.cs` using `IOptions<List<AgentIdentityOptions>>` or similar pattern
-- [ ] Write unit tests verifying:
-  - [ ] Configuration loads correctly from JSON
-  - [ ] Required field validation (Name, WorkingDirectory, PersonalAccessToken, McpServers)
-  - [ ] Default values applied (PollingIntervalSeconds = 60, AutoApproveTools = true, DryRun = false)
-  - [ ] Multiple agent identities load correctly
+- [x] Create `TeamWare.Agent/Configuration/AgentIdentityOptions.cs` — strongly-typed options class (Spec Section 7.2):
+  - [x] `Name` (string, required)
+  - [x] `WorkingDirectory` (string, required)
+  - [x] `RepositoryUrl` (string?, optional)
+  - [x] `RepositoryBranch` (string?, optional)
+  - [x] `RepositoryAccessToken` (string?, optional)
+  - [x] `PersonalAccessToken` (string, required)
+  - [x] `PollingIntervalSeconds` (int, default 60)
+  - [x] `Model` (string?, optional)
+  - [x] `AutoApproveTools` (bool, default true)
+  - [x] `DryRun` (bool, default false)
+  - [x] `SystemPrompt` (string?, optional)
+  - [x] `McpServers` (list of `McpServerOptions`, required)
+- [x] Create `TeamWare.Agent/Configuration/McpServerOptions.cs` — strongly-typed options class (Spec Section 7.3):
+  - [x] `Name` (string, required)
+  - [x] `Type` (string, required — `http` or `stdio`)
+  - [x] `Url` (string?, required for http)
+  - [x] `AuthHeader` (string?, optional)
+- [x] Bind configuration in `Program.cs` using `IOptions<List<AgentIdentityOptions>>` or similar pattern
+- [x] Write unit tests verifying:
+  - [x] Configuration loads correctly from JSON
+  - [x] Required field validation (Name, WorkingDirectory, PersonalAccessToken, McpServers)
+  - [x] Default values applied (PollingIntervalSeconds = 60, AutoApproveTools = true, DryRun = false)
+  - [x] Multiple agent identities load correctly
 
 ### 37.3 Agent Hosted Service
 
-- [ ] Create `TeamWare.Agent/AgentHostedService.cs` implementing `IHostedService` (CA-01):
-  - [ ] In `StartAsync`: read the `Agents` configuration array, log the number of configured identities, start a polling loop per identity (as `Task.Run` with `CancellationToken`)
-  - [ ] In `StopAsync`: signal cancellation to all polling loops, await completion (CA-02)
-  - [ ] Log startup and shutdown events (CA-NF-02)
-- [ ] Register `AgentHostedService` in DI in `Program.cs`
-- [ ] For this phase, the polling loop is a placeholder that logs "Polling cycle for {Name}" and waits `PollingIntervalSeconds`
-- [ ] Write unit tests verifying:
-  - [ ] Service starts and stops cleanly
-  - [ ] One loop is started per configured identity (CA-20)
-  - [ ] Graceful shutdown cancels all loops (CA-02)
-  - [ ] No agents configured results in a clean startup with a warning log
+- [x] Create `TeamWare.Agent/AgentHostedService.cs` implementing `IHostedService` (CA-01):
+  - [x] In `StartAsync`: read the `Agents` configuration array, log the number of configured identities, start a polling loop per identity (as `Task.Run` with `CancellationToken`)
+  - [x] In `StopAsync`: signal cancellation to all polling loops, await completion (CA-02)
+  - [x] Log startup and shutdown events (CA-NF-02)
+- [x] Register `AgentHostedService` in DI in `Program.cs`
+- [x] For this phase, the polling loop is a placeholder that logs "Polling cycle for {Name}" and waits `PollingIntervalSeconds`
+- [x] Write unit tests verifying:
+  - [x] Service starts and stops cleanly
+  - [x] One loop is started per configured identity (CA-20)
+  - [x] Graceful shutdown cancels all loops (CA-02)
+  - [x] No agents configured results in a clean startup with a warning log
 
 ### 37.4 Test Project Creation
 
-- [ ] Create `TeamWare.Agent.Tests` xUnit test project
-- [ ] Add project to the TeamWare solution
-- [ ] Add project reference to `TeamWare.Agent`
-- [ ] Add NuGet package references: `xUnit`, `Moq` (or NSubstitute — match TeamWare.Web.Tests conventions), `FluentAssertions` (if used in existing tests), `Microsoft.Extensions.Configuration.Json`
-- [ ] Verify all tests from 37.2 and 37.3 pass
+- [x] Create `TeamWare.Agent.Tests` xUnit test project
+- [x] Add project to the TeamWare solution
+- [x] Add project reference to `TeamWare.Agent`
+- [x] Add NuGet package references: `xUnit`, `Moq` (or NSubstitute — match TeamWare.Web.Tests conventions), `FluentAssertions` (if used in existing tests), `Microsoft.Extensions.Configuration.Json`
+- [x] Verify all tests from 37.2 and 37.3 pass
 
 ---
 
