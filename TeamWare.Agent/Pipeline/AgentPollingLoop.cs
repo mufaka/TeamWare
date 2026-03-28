@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using TeamWare.Agent.Configuration;
 using TeamWare.Agent.Mcp;
+using TeamWare.Agent.Repository;
 
 namespace TeamWare.Agent.Pipeline;
 
@@ -10,6 +11,7 @@ public class AgentPollingLoop
     private readonly ITeamWareMcpClient _mcpClient;
     private readonly ICopilotClientWrapperFactory? _copilotFactory;
     private readonly StatusTransitionHandler _statusHandler;
+    private readonly RepositoryManager _repoManager;
     private readonly ILogger _logger;
 
     public AgentPollingLoop(
@@ -30,6 +32,7 @@ public class AgentPollingLoop
         _mcpClient = mcpClient;
         _copilotFactory = copilotFactory;
         _statusHandler = new StatusTransitionHandler(mcpClient, logger);
+        _repoManager = new RepositoryManager(logger);
         _logger = logger;
     }
 
@@ -135,6 +138,9 @@ public class AgentPollingLoop
 
         try
         {
+            // Ensure repository is up to date before processing (CA-50 through CA-54)
+            await _repoManager.EnsureRepositoryAsync(_options, cancellationToken);
+
             var processor = new TaskProcessor(_options, _copilotFactory, _mcpClient, _logger);
             await processor.ProcessAsync(task, cancellationToken);
 
