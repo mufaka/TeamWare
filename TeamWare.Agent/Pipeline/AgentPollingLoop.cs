@@ -9,6 +9,7 @@ public class AgentPollingLoop
     private readonly AgentIdentityOptions _options;
     private readonly ITeamWareMcpClient _mcpClient;
     private readonly ICopilotClientWrapperFactory? _copilotFactory;
+    private readonly StatusTransitionHandler _statusHandler;
     private readonly ILogger _logger;
 
     public AgentPollingLoop(
@@ -28,6 +29,7 @@ public class AgentPollingLoop
         _options = options;
         _mcpClient = mcpClient;
         _copilotFactory = copilotFactory;
+        _statusHandler = new StatusTransitionHandler(mcpClient, logger);
         _logger = logger;
     }
 
@@ -117,10 +119,30 @@ public class AgentPollingLoop
             return;
         }
 
+        // Read-before-write: verify current task state before processing (CA-100)
+        var currentTask = await _mcpClient.GetTaskAsync(task.Id, cancellationToken);
+        if (!currentTask.Status.Equals("ToDo", StringComparison.OrdinalIgnoreCase))
+        {
+            // Idempotency: skip tasks not in ToDo status (CA-NF-06)
+            _logger.LogInformation(
+                "Agent '{AgentName}': Skipping task #{TaskId} — status is '{Status}', expected 'ToDo'",
+                _options.Name, task.Id, currentTask.Status);
+            return;
+        }
+
+        // Pick up: comment + transition to InProgress (CA-60, CA-65)
+        await _statusHandler.PickUpTaskAsync(task.Id, cancellationToken);
+
         try
         {
             var processor = new TaskProcessor(_options, _copilotFactory, _mcpClient, _logger);
             await processor.ProcessAsync(task, cancellationToken);
+
+            // Success: comment + transition to InReview (CA-61, CA-70)
+            await _statusHandler.CompleteTaskAsync(
+                task.Id,
+                $"I've completed work on this task and moved it to review.",
+                cancellationToken);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -128,11 +150,26 @@ public class AgentPollingLoop
         }
         catch (Exception ex)
         {
-            // Task-level error — log and continue to next task (CA-141)
-            // Status transition to Error is handled in Phase 40
+            // Task-level error — error comment + Error status + lounge message (CA-140, CA-141, CA-142)
             _logger.LogError(ex,
                 "Agent '{AgentName}': Error processing task #{TaskId}: {TaskTitle}",
                 _options.Name, task.Id, task.Title);
+
+            try
+            {
+                await _statusHandler.ErrorTaskAsync(
+                    task.Id,
+                    $"An error occurred while processing this task: {ex.Message}",
+                    task.Title,
+                    task.ProjectId,
+                    cancellationToken);
+            }
+            catch (Exception statusEx)
+            {
+                _logger.LogError(statusEx,
+                    "Agent '{AgentName}': Failed to transition task #{TaskId} to Error status",
+                    _options.Name, task.Id);
+            }
         }
     }
 }

@@ -26,8 +26,9 @@ public class PipelineIntegrationTests
         {
             AssignmentsToReturn =
             [
-                new AgentTask { Id = 1, Title = "Task A", Status = "ToDo", ProjectName = "Proj1" }
-            ]
+                new AgentTask { Id = 1, Title = "Task A", Status = "ToDo", ProjectName = "Proj1", ProjectId = 10 }
+            ],
+            TaskDetailToReturn = new AgentTaskDetail { Id = 1, Title = "Task A", Status = "ToDo" }
         };
         var copilotFactory = new FakeCopilotClientWrapperFactory();
         var logger = new TestLogger<AgentPollingLoop>();
@@ -60,8 +61,10 @@ public class PipelineIntegrationTests
 
         await loop.ExecuteCycleAsync(CancellationToken.None);
 
-        // Tasks should be processed in order
-        Assert.Equal([10, 20, 30], processingOrder);
+        // Tasks should be processed in order (each task gets multiple GetTaskAsync calls
+        // due to read-before-write + TaskProcessor, so deduplicate to verify ordering)
+        var distinctOrder = processingOrder.Distinct().ToList();
+        Assert.Equal([10, 20, 30], distinctOrder);
     }
 
     [Fact]
@@ -71,9 +74,10 @@ public class PipelineIntegrationTests
         {
             AssignmentsToReturn =
             [
-                new AgentTask { Id = 1, Title = "Will Fail", Status = "ToDo", ProjectName = "Proj1" },
-                new AgentTask { Id = 2, Title = "Will Succeed", Status = "ToDo", ProjectName = "Proj1" }
-            ]
+                new AgentTask { Id = 1, Title = "Will Fail", Status = "ToDo", ProjectName = "Proj1", ProjectId = 10 },
+                new AgentTask { Id = 2, Title = "Will Succeed", Status = "ToDo", ProjectName = "Proj1", ProjectId = 10 }
+            ],
+            TaskDetailToReturn = new AgentTaskDetail { Id = 1, Title = "Will Fail", Status = "ToDo" }
         };
         // Factory that fails on first task, succeeds on second
         var copilotFactory = new FailOnFirstTaskFactory();
@@ -124,8 +128,9 @@ public class PipelineIntegrationTests
         {
             AssignmentsToReturn =
             [
-                new AgentTask { Id = 1, Title = "Task A", Status = "ToDo", ProjectName = "Proj1" }
-            ]
+                new AgentTask { Id = 1, Title = "Task A", Status = "ToDo", ProjectName = "Proj1", ProjectId = 10 }
+            ],
+            TaskDetailToReturn = new AgentTaskDetail { Id = 1, Title = "Task A", Status = "ToDo" }
         };
         var copilotFactory = new FakeCopilotClientWrapperFactory { ThrowOnCreate = true };
         var logger = new TestLogger<AgentPollingLoop>();
@@ -174,7 +179,7 @@ public class PipelineIntegrationTests
         public Task<AgentTaskDetail> GetTaskAsync(int taskId, CancellationToken cancellationToken = default)
         {
             _processingOrder.Add(taskId);
-            return Task.FromResult(new AgentTaskDetail { Id = taskId, Title = $"Task {taskId}" });
+            return Task.FromResult(new AgentTaskDetail { Id = taskId, Title = $"Task {taskId}", Status = "ToDo" });
         }
 
         public Task UpdateTaskStatusAsync(int taskId, string status, CancellationToken cancellationToken = default)
