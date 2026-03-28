@@ -13,7 +13,7 @@ This document defines the phased implementation plan for the TeamWare Copilot Ag
 | 37 | Agent Project Scaffold and Configuration | ✅ Complete |
 | 38 | Polling Loop and Task Discovery | ✅ Complete |
 | 39 | Task Processing Pipeline | ✅ Complete |
-| 40 | Status Transitions and Reporting | Not Started |
+| 40 | Status Transitions and Reporting | ✅ Complete |
 | 41 | Safety Guardrails and Dry Run | Not Started |
 | 42 | Repository Management and Lounge Integration | Not Started |
 | 43 | Agent Polish and Hardening | Not Started |
@@ -289,41 +289,41 @@ Implement the complete status transition lifecycle: ToDo → InProgress → InRe
 
 ### 40.1 Status Transition Handler
 
-- [ ] Create `TeamWare.Agent/Pipeline/StatusTransitionHandler.cs` (CA-60 through CA-66):
-  - [ ] `PickUpTask(int taskId)` — post a comment ("Starting work on this task"), change status to `InProgress` (CA-60, CA-65)
-  - [ ] `CompleteTask(int taskId, string summary)` — post a summary comment, change status to `InReview` (CA-61, CA-65, CA-70)
-  - [ ] `BlockTask(int taskId, string reason, string projectName)` — post a comment explaining the block, change status to `Blocked`, post lounge message (CA-63, CA-65, CA-71, CA-73)
-  - [ ] `ErrorTask(int taskId, string errorDetails, string projectName)` — post an error comment, change status to `Error`, post lounge message (CA-64, CA-65, CA-72, CA-74)
-  - [ ] All methods use the `ITeamWareMcpClient` abstraction from Phase 38
-- [ ] Write unit tests verifying (CA-TEST-05, CA-TEST-06, CA-TEST-07):
-  - [ ] A comment is posted before every status change
-  - [ ] Correct status transitions: ToDo → InProgress, InProgress → InReview, InProgress → Error, InProgress → Blocked
-  - [ ] Lounge messages are posted only for Blocked and Error, targeting the project lounge
-  - [ ] Lounge messages use the correct format (CA-176, CA-177)
-  - [ ] No lounge message is posted for InReview transitions (CA-77)
+- [x] Create `TeamWare.Agent/Pipeline/StatusTransitionHandler.cs` (CA-60 through CA-66):
+  - [x] `PickUpTask(int taskId)` — post a comment ("Starting work on this task"), change status to `InProgress` (CA-60, CA-65)
+  - [x] `CompleteTask(int taskId, string summary)` — post a summary comment, change status to `InReview` (CA-61, CA-65, CA-70)
+  - [x] `BlockTask(int taskId, string reason, string projectName)` — post a comment explaining the block, change status to `Blocked`, post lounge message (CA-63, CA-65, CA-71, CA-73)
+  - [x] `ErrorTask(int taskId, string errorDetails, string projectName)` — post an error comment, change status to `Error`, post lounge message (CA-64, CA-65, CA-72, CA-74)
+  - [x] All methods use the `ITeamWareMcpClient` abstraction from Phase 38
+- [x] Write unit tests verifying (CA-TEST-05, CA-TEST-06, CA-TEST-07):
+  - [x] A comment is posted before every status change
+  - [x] Correct status transitions: ToDo → InProgress, InProgress → InReview, InProgress → Error, InProgress → Blocked
+  - [x] Lounge messages are posted only for Blocked and Error, targeting the project lounge
+  - [x] Lounge messages use the correct format (CA-176, CA-177)
+  - [x] No lounge message is posted for InReview transitions (CA-77)
 
 ### 40.2 Lounge Message Formatting
 
-- [ ] Implement lounge message formatting per the specification (CA-175 through CA-178):
-  - [ ] Blocked: `"I need help with Task #{id} — {title}. I've posted a comment explaining what information I need. Can someone take a look?"`
-  - [ ] Error: `"I ran into a problem on Task #{id} — {title}. I've posted a comment with the error details. Someone will need to triage this."`
-  - [ ] Plain text only — no icons, emoticons, or decorative formatting (CA-175)
-  - [ ] Target the project lounge, not the global lounge (CA-178)
-- [ ] Write unit tests verifying message format for both Blocked and Error cases
+- [x] Implement lounge message formatting per the specification (CA-175 through CA-178):
+  - [x] Blocked: `"I need help with Task #{id} — {title}. I've posted a comment explaining what information I need. Can someone take a look?"`
+  - [x] Error: `"I ran into a problem on Task #{id} — {title}. I've posted a comment with the error details. Someone will need to triage this."`
+  - [x] Plain text only — no icons, emoticons, or decorative formatting (CA-175)
+  - [x] Target the project lounge, not the global lounge (CA-178)
+- [x] Write unit tests verifying message format for both Blocked and Error cases
 
 ### 40.3 Pipeline Integration
 
-- [ ] Update `AgentPollingLoop` to call `StatusTransitionHandler.PickUpTask` before passing the task to `TaskProcessor`
-- [ ] Update `TaskProcessor` to call `StatusTransitionHandler.CompleteTask` after successful session completion
-- [ ] Add try/catch around `TaskProcessor` execution:
-  - [ ] On exception, call `StatusTransitionHandler.ErrorTask` with the error details (CA-140, CA-141, CA-142)
-- [ ] Implement read-before-write: call `get_task` before any status change to verify current state (CA-100)
-- [ ] Implement idempotency: skip tasks not in `ToDo` status (CA-NF-06, CA-TEST-10)
-- [ ] Write unit tests verifying:
-  - [ ] Task pickup posts comment and changes status before processing
-  - [ ] Successful processing posts summary and changes to InReview
-  - [ ] Processing exceptions result in Error status with error comment and lounge message
-  - [ ] Tasks not in ToDo status are skipped
+- [x] Update `AgentPollingLoop` to call `StatusTransitionHandler.PickUpTask` before passing the task to `TaskProcessor`
+- [x] Update `TaskProcessor` to call `StatusTransitionHandler.CompleteTask` after successful session completion
+- [x] Add try/catch around `TaskProcessor` execution:
+  - [x] On exception, call `StatusTransitionHandler.ErrorTask` with the error details (CA-140, CA-141, CA-142)
+- [x] Implement read-before-write: call `get_task` before any status change to verify current state (CA-100)
+- [x] Implement idempotency: skip tasks not in `ToDo` status (CA-NF-06, CA-TEST-10)
+- [x] Write unit tests verifying:
+  - [x] Task pickup posts comment and changes status before processing
+  - [x] Successful processing posts summary and changes to InReview
+  - [x] Processing exceptions result in Error status with error comment and lounge message
+  - [x] Tasks not in ToDo status are skipped
 
 ---
 
