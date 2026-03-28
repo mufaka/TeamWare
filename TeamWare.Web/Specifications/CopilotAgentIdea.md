@@ -435,6 +435,8 @@ An autonomous agent that modifies production data needs thorough testing. How do
 
 ### Next Steps
 
-1. **Review and refine** this idea document. Identify which ideas to pursue and which to defer.
-2. **Create a specification** that turns accepted ideas into concrete, testable requirements.
-3. **Build an implementation plan** with phased delivery, starting with the console app scaffold and dry-run pipeline.
+All next steps are complete:
+
+1. ~~**Review and refine** this idea document. Identify which ideas to pursue and which to defer.~~ ✅ Complete — All ideas accepted and refined.
+2. ~~**Create a specification** that turns accepted ideas into concrete, testable requirements.~~ ✅ Complete — See [CopilotAgentSpecification.md](CopilotAgentSpecification.md).
+3. ~~**Build an implementation plan** with phased delivery, starting with the console app scaffold and dry-run pipeline.~~ ✅ Complete — See [CopilotAgentImplementationPlan.md](CopilotAgentImplementationPlan.md). All phases (36-43) implemented and merged.
