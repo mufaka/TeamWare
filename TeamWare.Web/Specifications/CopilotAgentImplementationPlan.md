@@ -15,7 +15,7 @@ This document defines the phased implementation plan for the TeamWare Copilot Ag
 | 39 | Task Processing Pipeline | ✅ Complete |
 | 40 | Status Transitions and Reporting | ✅ Complete |
 | 41 | Safety Guardrails and Dry Run | ✅ Complete |
-| 42 | Repository Management and Lounge Integration | Not Started |
+| 42 | Repository Management and Lounge Integration | ✅ Complete |
 | 43 | Agent Polish and Hardening | Not Started |
 
 ---
@@ -380,38 +380,38 @@ Implement automatic repository clone/pull before task processing and verify end-
 
 ### 42.1 Repository Manager
 
-- [ ] Create `TeamWare.Agent/Repository/RepositoryManager.cs` (CA-50 through CA-54):
-  - [ ] `EnsureRepository(AgentIdentityOptions options)` — called before each task:
-    - [ ] If `RepositoryUrl` is null, do nothing (CA-53)
-    - [ ] If `WorkingDirectory` does not contain a `.git` directory, clone the repository (CA-50)
-    - [ ] If `WorkingDirectory` contains a `.git` directory, pull latest from `RepositoryBranch` (CA-51)
-    - [ ] If `RepositoryAccessToken` is configured, use it for authentication (CA-52)
-  - [ ] Use `git` CLI commands via `Process.Start` (not the Copilot CLI — this runs before the session is created)
-  - [ ] Log clone/pull operations and any errors
-- [ ] Update `AgentPollingLoop` to call `RepositoryManager.EnsureRepository` before each task (after pickup, before session creation)
-- [ ] Write unit tests verifying:
-  - [ ] No-op when `RepositoryUrl` is null
-  - [ ] Clone is performed when directory has no `.git`
-  - [ ] Pull is performed when directory has `.git`
-  - [ ] Access token is used when configured
-  - [ ] Clone/pull errors are logged and treated as task-level errors
+- [x] Create `TeamWare.Agent/Repository/RepositoryManager.cs` (CA-50 through CA-54):
+  - [x] `EnsureRepository(AgentIdentityOptions options)` — called before each task:
+    - [x] If `RepositoryUrl` is null, do nothing (CA-53)
+    - [x] If `WorkingDirectory` does not contain a `.git` directory, clone the repository (CA-50)
+    - [x] If `WorkingDirectory` contains a `.git` directory, pull latest from `RepositoryBranch` (CA-51)
+    - [x] If `RepositoryAccessToken` is configured, use it for authentication (CA-52)
+  - [x] Use `git` CLI commands via `Process.Start` (not the Copilot CLI — this runs before the session is created)
+  - [x] Log clone/pull operations and any errors
+- [x] Update `AgentPollingLoop` to call `RepositoryManager.EnsureRepository` before each task (after pickup, before session creation)
+- [x] Write unit tests verifying:
+  - [x] No-op when `RepositoryUrl` is null
+  - [x] Clone is performed when directory has no `.git`
+  - [x] Pull is performed when directory has `.git`
+  - [x] Access token is used when configured
+  - [x] Clone/pull errors are logged and treated as task-level errors
 
 ### 42.2 End-to-End Lounge Integration Tests
 
-- [ ] Write integration tests verifying the complete lounge notification workflow:
-  - [ ] Agent moves task to Blocked → comment posted, lounge message posted to project lounge
-  - [ ] Agent moves task to Error → comment posted, lounge message posted to project lounge
-  - [ ] Agent moves task to InReview → comment posted, no lounge message
-  - [ ] Lounge messages are plain text with no formatting (CA-175)
-  - [ ] Lounge messages target the project lounge, not global (CA-178)
+- [x] Write integration tests verifying the complete lounge notification workflow:
+  - [x] Agent moves task to Blocked → comment posted, lounge message posted to project lounge
+  - [x] Agent moves task to Error → comment posted, lounge message posted to project lounge
+  - [x] Agent moves task to InReview → comment posted, no lounge message
+  - [x] Lounge messages are plain text with no formatting (CA-175)
+  - [x] Lounge messages target the project lounge, not global (CA-178)
 
 ### 42.3 Multiple Identity Integration Tests
 
-- [ ] Write integration tests verifying concurrent identity execution (CA-TEST-23):
-  - [ ] Two agent identities configured in the same process
-  - [ ] Each polls independently and processes tasks from different projects
-  - [ ] Identities do not share state (CA-22)
-  - [ ] One identity's error does not affect the other
+- [x] Write integration tests verifying concurrent identity execution (CA-TEST-23):
+  - [x] Two agent identities configured in the same process
+  - [x] Each polls independently and processes tasks from different projects
+  - [x] Identities do not share state (CA-22)
+  - [x] One identity's error does not affect the other
 
 ---
 
