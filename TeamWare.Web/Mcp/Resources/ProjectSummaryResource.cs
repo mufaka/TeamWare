@@ -49,7 +49,9 @@ public class ProjectSummaryResource
                 toDo = stats.TaskCountToDo,
                 inProgress = stats.TaskCountInProgress,
                 inReview = stats.TaskCountInReview,
-                done = stats.TaskCountDone
+                done = stats.TaskCountDone,
+                blocked = stats.TaskCountBlocked,
+                error = stats.TaskCountError
             },
             completionPct = stats.CompletionPercentage
         };

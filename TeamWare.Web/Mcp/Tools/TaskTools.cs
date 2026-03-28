@@ -23,7 +23,7 @@ public class TaskTools
         ClaimsPrincipal user,
         ITaskService taskService,
         [Description("The ID of the project to list tasks for.")] int projectId,
-        [Description("Optional status filter: ToDo, InProgress, InReview, or Done.")] string? status = null,
+        [Description("Optional status filter: ToDo, InProgress, InReview, Done, Blocked, or Error.")] string? status = null,
         [Description("Optional priority filter: Low, Medium, High, or Critical.")] string? priority = null,
         [Description("Optional user ID to filter tasks by assignee.")] string? assigneeId = null)
     {
@@ -35,7 +35,7 @@ public class TaskTools
         {
             if (!Enum.TryParse<TaskItemStatus>(status, ignoreCase: true, out var parsed))
             {
-                return JsonSerializer.Serialize(new { error = $"Invalid status value: '{status}'. Valid values are: ToDo, InProgress, InReview, Done." }, JsonOptions);
+                return JsonSerializer.Serialize(new { error = $"Invalid status value: '{status}'. Valid values are: ToDo, InProgress, InReview, Done, Blocked, Error." }, JsonOptions);
             }
             statusFilter = parsed;
         }
@@ -244,14 +244,14 @@ public class TaskTools
         ClaimsPrincipal user,
         ITaskService taskService,
         [Description("The ID of the task to update.")] int taskId,
-        [Description("The new status: ToDo, InProgress, InReview, or Done.")] string status)
+        [Description("The new status: ToDo, InProgress, InReview, Done, Blocked, or Error.")] string status)
     {
         var userId = user.FindFirstValue(ClaimTypes.NameIdentifier)
             ?? throw new InvalidOperationException("User ID not found in claims.");
 
         if (!Enum.TryParse<TaskItemStatus>(status, ignoreCase: true, out var parsedStatus))
         {
-            return JsonSerializer.Serialize(new { error = $"Invalid status value: '{status}'. Valid values are: ToDo, InProgress, InReview, Done." }, JsonOptions);
+            return JsonSerializer.Serialize(new { error = $"Invalid status value: '{status}'. Valid values are: ToDo, InProgress, InReview, Done, Blocked, Error." }, JsonOptions);
         }
 
         var result = await taskService.ChangeStatus(taskId, parsedStatus, userId);

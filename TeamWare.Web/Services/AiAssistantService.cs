@@ -196,6 +196,8 @@ public class AiAssistantService : IAiAssistantService
         sb.AppendLine($"  In Progress: {stats.TaskCountInProgress}");
         sb.AppendLine($"  In Review: {stats.TaskCountInReview}");
         sb.AppendLine($"  Done: {stats.TaskCountDone}");
+        sb.AppendLine($"  Blocked: {stats.TaskCountBlocked}");
+        sb.AppendLine($"  Error: {stats.TaskCountError}");
         sb.AppendLine($"  Completion: {stats.CompletionPercentage}%");
         sb.AppendLine();
 

@@ -16,5 +16,9 @@ public class ProjectDashboard
 
     public int TaskCountDone { get; set; }
 
-    public int TotalTasks => TaskCountToDo + TaskCountInProgress + TaskCountInReview + TaskCountDone;
+    public int TaskCountBlocked { get; set; }
+
+    public int TaskCountError { get; set; }
+
+    public int TotalTasks => TaskCountToDo + TaskCountInProgress + TaskCountInReview + TaskCountDone + TaskCountBlocked + TaskCountError;
 }

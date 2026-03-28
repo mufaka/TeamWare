@@ -645,4 +645,134 @@ public class TaskToolsTests : IDisposable
         Assert.Contains("ToDo", statuses);
         Assert.Contains("InReview", statuses);
     }
+
+    // --- Blocked and Error status support ---
+
+    [Fact]
+    public async Task UpdateTaskStatus_ToBlocked_Success()
+    {
+        var (project, owner) = await CreateProjectWithOwner();
+        var createResult = await _taskService.CreateTask(project.Id, "Task", null, TaskItemPriority.Medium, null, owner.Id);
+        var principal = CreateClaimsPrincipal(owner.Id);
+
+        var result = await TaskTools.update_task_status(principal, _taskService, createResult.Data!.Id, "Blocked");
+
+        using var doc = JsonDocument.Parse(result);
+        Assert.Equal("Blocked", doc.RootElement.GetProperty("status").GetString());
+    }
+
+    [Fact]
+    public async Task UpdateTaskStatus_ToError_Success()
+    {
+        var (project, owner) = await CreateProjectWithOwner();
+        var createResult = await _taskService.CreateTask(project.Id, "Task", null, TaskItemPriority.Medium, null, owner.Id);
+        var principal = CreateClaimsPrincipal(owner.Id);
+
+        var result = await TaskTools.update_task_status(principal, _taskService, createResult.Data!.Id, "Error");
+
+        using var doc = JsonDocument.Parse(result);
+        Assert.Equal("Error", doc.RootElement.GetProperty("status").GetString());
+    }
+
+    [Fact]
+    public async Task ListTasks_WithBlockedStatusFilter_FiltersCorrectly()
+    {
+        var (project, owner) = await CreateProjectWithOwner();
+        var task1 = await _taskService.CreateTask(project.Id, "ToDo Task", null, TaskItemPriority.Medium, null, owner.Id);
+        var task2 = await _taskService.CreateTask(project.Id, "Blocked Task", null, TaskItemPriority.Medium, null, owner.Id);
+        await _taskService.ChangeStatus(task2.Data!.Id, TaskItemStatus.Blocked, owner.Id);
+        var principal = CreateClaimsPrincipal(owner.Id);
+
+        var result = await TaskTools.list_tasks(principal, _taskService, project.Id, status: "Blocked");
+
+        using var doc = JsonDocument.Parse(result);
+        var array = doc.RootElement;
+        Assert.Equal(1, array.GetArrayLength());
+        Assert.Equal("Blocked", array[0].GetProperty("status").GetString());
+    }
+
+    [Fact]
+    public async Task ListTasks_WithErrorStatusFilter_FiltersCorrectly()
+    {
+        var (project, owner) = await CreateProjectWithOwner();
+        var task1 = await _taskService.CreateTask(project.Id, "ToDo Task", null, TaskItemPriority.Medium, null, owner.Id);
+        var task2 = await _taskService.CreateTask(project.Id, "Error Task", null, TaskItemPriority.Medium, null, owner.Id);
+        await _taskService.ChangeStatus(task2.Data!.Id, TaskItemStatus.Error, owner.Id);
+        var principal = CreateClaimsPrincipal(owner.Id);
+
+        var result = await TaskTools.list_tasks(principal, _taskService, project.Id, status: "Error");
+
+        using var doc = JsonDocument.Parse(result);
+        var array = doc.RootElement;
+        Assert.Equal(1, array.GetArrayLength());
+        Assert.Equal("Error", array[0].GetProperty("status").GetString());
+    }
+
+    [Fact]
+    public async Task GetTask_BlockedStatus_ReturnsBlockedInJson()
+    {
+        var (project, owner) = await CreateProjectWithOwner();
+        var createResult = await _taskService.CreateTask(project.Id, "Blocked Task", null, TaskItemPriority.Medium, null, owner.Id);
+        await _taskService.ChangeStatus(createResult.Data!.Id, TaskItemStatus.Blocked, owner.Id);
+        var principal = CreateClaimsPrincipal(owner.Id);
+
+        var result = await TaskTools.get_task(principal, _taskService, _commentService, createResult.Data!.Id);
+
+        using var doc = JsonDocument.Parse(result);
+        Assert.Equal("Blocked", doc.RootElement.GetProperty("status").GetString());
+    }
+
+    [Fact]
+    public async Task GetTask_ErrorStatus_ReturnsErrorInJson()
+    {
+        var (project, owner) = await CreateProjectWithOwner();
+        var createResult = await _taskService.CreateTask(project.Id, "Error Task", null, TaskItemPriority.Medium, null, owner.Id);
+        await _taskService.ChangeStatus(createResult.Data!.Id, TaskItemStatus.Error, owner.Id);
+        var principal = CreateClaimsPrincipal(owner.Id);
+
+        var result = await TaskTools.get_task(principal, _taskService, _commentService, createResult.Data!.Id);
+
+        using var doc = JsonDocument.Parse(result);
+        Assert.Equal("Error", doc.RootElement.GetProperty("status").GetString());
+    }
+
+    [Fact]
+    public async Task MyAssignments_AgentUser_ExcludesBlockedAndErrorTasks()
+    {
+        var (project, owner) = await CreateProjectWithOwner();
+
+        // Create tasks in Blocked and Error statuses, assigned and marked as NextAction
+        var blockedResult = await _taskService.CreateTask(project.Id, "Blocked Task", null, TaskItemPriority.Medium, null, owner.Id);
+        await _taskService.AssignMembers(blockedResult.Data!.Id, [owner.Id], owner.Id);
+        await _taskService.MarkAsNextAction(blockedResult.Data!.Id, owner.Id);
+        await _taskService.ChangeStatus(blockedResult.Data!.Id, TaskItemStatus.Blocked, owner.Id);
+
+        var errorResult = await _taskService.CreateTask(project.Id, "Error Task", null, TaskItemPriority.Medium, null, owner.Id);
+        await _taskService.AssignMembers(errorResult.Data!.Id, [owner.Id], owner.Id);
+        await _taskService.MarkAsNextAction(errorResult.Data!.Id, owner.Id);
+        await _taskService.ChangeStatus(errorResult.Data!.Id, TaskItemStatus.Error, owner.Id);
+
+        // Create a ToDo task that should be returned
+        var todoResult = await _taskService.CreateTask(project.Id, "ToDo Task", null, TaskItemPriority.High, null, owner.Id);
+        await _taskService.AssignMembers(todoResult.Data!.Id, [owner.Id], owner.Id);
+        await _taskService.MarkAsNextAction(todoResult.Data!.Id, owner.Id);
+
+        var agentPrincipal = CreateAgentClaimsPrincipal(owner.Id);
+
+        var result = await TaskTools.my_assignments(agentPrincipal, _taskService);
+
+        using var doc = JsonDocument.Parse(result);
+        var array = doc.RootElement;
+        Assert.Equal(JsonValueKind.Array, array.ValueKind);
+
+        var statuses = new List<string>();
+        foreach (var task in array.EnumerateArray())
+        {
+            statuses.Add(task.GetProperty("status").GetString()!);
+        }
+
+        Assert.Contains("ToDo", statuses);
+        Assert.DoesNotContain("Blocked", statuses);
+        Assert.DoesNotContain("Error", statuses);
+    }
 }

@@ -82,6 +82,8 @@ public class ProjectTools
                 stats.TaskCountInProgress,
                 stats.TaskCountInReview,
                 stats.TaskCountDone,
+                stats.TaskCountBlocked,
+                stats.TaskCountError,
                 stats.CompletionPercentage
             },
             overdueTasks = overdueTasks.Select(t => new

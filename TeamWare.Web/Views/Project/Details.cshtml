@@ -101,6 +101,20 @@
         <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Done</p>
         <p class="mt-1 text-2xl font-bold text-green-600 dark:text-green-400">@Model.TaskCountDone</p>
     </div>
+    @if (Model.TaskCountBlocked > 0)
+    {
+        <div class="rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-700 dark:bg-amber-900/20">
+            <p class="text-sm font-medium text-amber-600 dark:text-amber-400">Blocked</p>
+            <p class="mt-1 text-2xl font-bold text-amber-700 dark:text-amber-300">@Model.TaskCountBlocked</p>
+        </div>
+    }
+    @if (Model.TaskCountError > 0)
+    {
+        <div class="rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-700 dark:bg-red-900/20">
+            <p class="text-sm font-medium text-red-600 dark:text-red-400">Error</p>
+            <p class="mt-1 text-2xl font-bold text-red-700 dark:text-red-300">@Model.TaskCountError</p>
+        </div>
+    }
     @if (Model.OverdueTaskCount > 0)
     {
         <div class="rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-700 dark:bg-red-900/20">
