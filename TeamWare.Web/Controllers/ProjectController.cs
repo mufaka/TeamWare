@@ -171,6 +171,8 @@ public class ProjectController : Controller
             TaskCountInProgress = dashboard.TaskCountInProgress,
             TaskCountInReview = dashboard.TaskCountInReview,
             TaskCountDone = dashboard.TaskCountDone,
+            TaskCountBlocked = dashboard.TaskCountBlocked,
+            TaskCountError = dashboard.TaskCountError,
             CurrentUserRole = currentUserMember?.Role ?? ProjectRole.Member,
             OverdueTaskCount = overdueTasks.Count,
             UpcomingDeadlines = upcomingDeadlines.Select(t => new TaskDeadlineViewModel

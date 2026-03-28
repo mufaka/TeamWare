@@ -176,6 +176,8 @@ public class ProjectService : IProjectService
         dashboard.TaskCountInProgress = taskCounts.FirstOrDefault(t => t.Status == TaskItemStatus.InProgress)?.Count ?? 0;
         dashboard.TaskCountInReview = taskCounts.FirstOrDefault(t => t.Status == TaskItemStatus.InReview)?.Count ?? 0;
         dashboard.TaskCountDone = taskCounts.FirstOrDefault(t => t.Status == TaskItemStatus.Done)?.Count ?? 0;
+        dashboard.TaskCountBlocked = taskCounts.FirstOrDefault(t => t.Status == TaskItemStatus.Blocked)?.Count ?? 0;
+        dashboard.TaskCountError = taskCounts.FirstOrDefault(t => t.Status == TaskItemStatus.Error)?.Count ?? 0;
 
         return ServiceResult<ProjectDashboard>.Success(dashboard);
     }

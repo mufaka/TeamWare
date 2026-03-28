@@ -86,7 +86,9 @@ public class ActivityTools
                 stats.TaskCountToDo,
                 stats.TaskCountInProgress,
                 stats.TaskCountInReview,
-                stats.TaskCountDone
+                stats.TaskCountDone,
+                stats.TaskCountBlocked,
+                stats.TaskCountError
             },
             completionPercentage = stats.CompletionPercentage,
             overdueCount = overdueTasks.Count,

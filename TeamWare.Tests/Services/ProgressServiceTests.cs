@@ -253,6 +253,66 @@ public class ProgressServiceTests : IDisposable
         Assert.Equal("P1 due", upcoming[0].Title);
     }
 
+    // --- Blocked and Error Status Statistics ---
+
+    [Fact]
+    public async Task GetProjectStatistics_WithBlockedAndErrorTasks_ReturnsCounts()
+    {
+        var (project, owner) = await CreateProjectWithOwner();
+
+        var task1 = await CreateTestTask(project.Id, owner.Id, "ToDo Task");
+        var task2 = await CreateTestTask(project.Id, owner.Id, "Blocked Task");
+        var task3 = await CreateTestTask(project.Id, owner.Id, "Error Task");
+        var task4 = await CreateTestTask(project.Id, owner.Id, "Done Task");
+        var task5 = await CreateTestTask(project.Id, owner.Id, "InProgress Task");
+        var task6 = await CreateTestTask(project.Id, owner.Id, "InReview Task");
+
+        await _taskService.ChangeStatus(task2.Id, TaskItemStatus.Blocked, owner.Id);
+        await _taskService.ChangeStatus(task3.Id, TaskItemStatus.Error, owner.Id);
+        await _taskService.ChangeStatus(task4.Id, TaskItemStatus.Done, owner.Id);
+        await _taskService.ChangeStatus(task5.Id, TaskItemStatus.InProgress, owner.Id);
+        await _taskService.ChangeStatus(task6.Id, TaskItemStatus.InReview, owner.Id);
+
+        var stats = await _progressService.GetProjectStatistics(project.Id);
+
+        Assert.Equal(6, stats.TotalTasks);
+        Assert.Equal(1, stats.TaskCountToDo);
+        Assert.Equal(1, stats.TaskCountInProgress);
+        Assert.Equal(1, stats.TaskCountInReview);
+        Assert.Equal(1, stats.TaskCountDone);
+        Assert.Equal(1, stats.TaskCountBlocked);
+        Assert.Equal(1, stats.TaskCountError);
+    }
+
+    [Fact]
+    public async Task GetProjectStatistics_EmptyProject_ReturnsZerosForBlockedAndError()
+    {
+        var (project, owner) = await CreateProjectWithOwner();
+
+        var stats = await _progressService.GetProjectStatistics(project.Id);
+
+        Assert.Equal(0, stats.TaskCountBlocked);
+        Assert.Equal(0, stats.TaskCountError);
+    }
+
+    [Fact]
+    public async Task GetProjectStatistics_BlockedAndErrorIncludedInTotalTasks()
+    {
+        var (project, owner) = await CreateProjectWithOwner();
+
+        var task1 = await CreateTestTask(project.Id, owner.Id, "Blocked");
+        var task2 = await CreateTestTask(project.Id, owner.Id, "Error");
+
+        await _taskService.ChangeStatus(task1.Id, TaskItemStatus.Blocked, owner.Id);
+        await _taskService.ChangeStatus(task2.Id, TaskItemStatus.Error, owner.Id);
+
+        var stats = await _progressService.GetProjectStatistics(project.Id);
+
+        Assert.Equal(2, stats.TotalTasks);
+        Assert.Equal(1, stats.TaskCountBlocked);
+        Assert.Equal(1, stats.TaskCountError);
+    }
+
     public void Dispose()
     {
         _context.Dispose();

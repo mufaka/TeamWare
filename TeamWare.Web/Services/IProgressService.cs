@@ -23,6 +23,10 @@ public class ProjectStatistics
 
     public int TaskCountDone { get; set; }
 
+    public int TaskCountBlocked { get; set; }
+
+    public int TaskCountError { get; set; }
+
     public double CompletionPercentage =>
         TotalTasks > 0 ? Math.Round((double)TaskCountDone / TotalTasks * 100, 1) : 0;
 }

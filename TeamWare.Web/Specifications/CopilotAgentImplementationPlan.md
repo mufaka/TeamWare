@@ -8,7 +8,7 @@ This document defines the phased implementation plan for the TeamWare Copilot Ag
 
 | Phase | Description | Status |
 |-------|------------|--------|
-| 36 | TeamWare Prerequisites (Blocked/Error Statuses) | Not Started |
+| 36 | TeamWare Prerequisites (Blocked/Error Statuses) | ✅ Complete |
 | 37 | Agent Project Scaffold and Configuration | Not Started |
 | 38 | Polling Loop and Task Discovery | Not Started |
 | 39 | Task Processing Pipeline | Not Started |
@@ -70,37 +70,37 @@ Add the `Blocked` and `Error` task statuses to TeamWare.Web. These are required 
 
 ### 36.1 TaskItemStatus Enum Changes
 
-- [ ] Add `Blocked = 4` to `TaskItemStatus` enum in `TeamWare.Web/Models/TaskItemStatus.cs` (Spec CA-63, Section 9.1)
-- [ ] Add `Error = 5` to `TaskItemStatus` enum in `TeamWare.Web/Models/TaskItemStatus.cs` (Spec CA-64, Section 9.1)
-- [ ] Create EF Core migration if needed (enum values stored as integers; verify no schema change is required since EF stores the int value)
-- [ ] Write unit tests verifying the enum values: `Blocked = 4`, `Error = 5`
+- [x] Add `Blocked = 4` to `TaskItemStatus` enum in `TeamWare.Web/Models/TaskItemStatus.cs` (Spec CA-63, Section 9.1)
+- [x] Add `Error = 5` to `TaskItemStatus` enum in `TeamWare.Web/Models/TaskItemStatus.cs` (Spec CA-64, Section 9.1)
+- [x] Create EF Core migration if needed (enum values stored as integers; verify no schema change is required since EF stores the int value)
+- [x] Write unit tests verifying the enum values: `Blocked = 4`, `Error = 5`
 
 ### 36.2 Task Views and Filtering
 
-- [ ] Update task list view (`Views/Task/Index.cshtml`) to display `Blocked` and `Error` statuses with appropriate styling:
-  - [ ] `Blocked` — yellow/amber badge (e.g., `bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300`)
-  - [ ] `Error` — red badge (e.g., `bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300`)
-- [ ] Update task detail view (`Views/Task/Details.cshtml`) to display `Blocked` and `Error` statuses
-- [ ] Update status filter dropdowns to include `Blocked` and `Error` options
-- [ ] Update any status change controls (dropdowns, buttons) in the task detail view to include `Blocked` and `Error` as valid target statuses
-- [ ] Update the project dashboard view to include `Blocked` and `Error` in task count summaries
-- [ ] Write tests verifying new statuses render correctly in all views
+- [x] Update task list view (`Views/Task/Index.cshtml`) to display `Blocked` and `Error` statuses with appropriate styling:
+  - [x] `Blocked` — yellow/amber badge (e.g., `bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300`)
+  - [x] `Error` — red badge (e.g., `bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300`)
+- [x] Update task detail view (`Views/Task/Details.cshtml`) to display `Blocked` and `Error` statuses
+- [x] Update status filter dropdowns to include `Blocked` and `Error` options
+- [x] Update any status change controls (dropdowns, buttons) in the task detail view to include `Blocked` and `Error` as valid target statuses
+- [x] Update the project dashboard view to include `Blocked` and `Error` in task count summaries
+- [x] Write tests verifying new statuses render correctly in all views
 
 ### 36.3 Service and MCP Tool Updates
 
-- [ ] Verify `ITaskService.ChangeStatus` handles transitions to and from `Blocked` and `Error` (the service likely uses the enum directly, so no code change may be needed — verify and add tests)
-- [ ] Verify MCP `update_task_status` tool correctly parses `"Blocked"` and `"Error"` string values to the enum (add tests if the parsing uses `Enum.TryParse`, which should handle new values automatically)
-- [ ] Verify MCP `list_tasks` status filter correctly handles `"Blocked"` and `"Error"` filter values
-- [ ] Verify MCP `get_task` returns the new status values in its JSON response
-- [ ] Verify `my_assignments` for agent users (which filters to `ToDo` and `InProgress`) correctly excludes `Blocked` and `Error` tasks
-- [ ] Update activity log formatting to display `Blocked` and `Error` status names in activity entries
-- [ ] Write integration tests verifying end-to-end status transitions involving `Blocked` and `Error` through both the web UI and MCP tools
+- [x] Verify `ITaskService.ChangeStatus` handles transitions to and from `Blocked` and `Error` (the service likely uses the enum directly, so no code change may be needed — verify and add tests)
+- [x] Verify MCP `update_task_status` tool correctly parses `"Blocked"` and `"Error"` string values to the enum (add tests if the parsing uses `Enum.TryParse`, which should handle new values automatically)
+- [x] Verify MCP `list_tasks` status filter correctly handles `"Blocked"` and `"Error"` filter values
+- [x] Verify MCP `get_task` returns the new status values in its JSON response
+- [x] Verify `my_assignments` for agent users (which filters to `ToDo` and `InProgress`) correctly excludes `Blocked` and `Error` tasks
+- [x] Update activity log formatting to display `Blocked` and `Error` status names in activity entries
+- [x] Write integration tests verifying end-to-end status transitions involving `Blocked` and `Error` through both the web UI and MCP tools
 
 ### 36.4 Progress Tracking Updates
 
-- [ ] Update `IProgressService.GetProjectStatistics` to include `Blocked` and `Error` counts in the project statistics (or verify it already handles unknown statuses gracefully)
-- [ ] Update the project dashboard progress display (if it shows per-status breakdowns) to include `Blocked` and `Error`
-- [ ] Write tests verifying statistics correctly count tasks in `Blocked` and `Error` statuses
+- [x] Update `IProgressService.GetProjectStatistics` to include `Blocked` and `Error` counts in the project statistics (or verify it already handles unknown statuses gracefully)
+- [x] Update the project dashboard progress display (if it shows per-status breakdowns) to include `Blocked` and `Error`
+- [x] Write tests verifying statistics correctly count tasks in `Blocked` and `Error` statuses
 
 ---
 

@@ -622,6 +622,152 @@ public class TaskServiceTests : IDisposable
         Assert.Equal(4, dashboard.Data.TotalTasks);
     }
 
+    // --- ChangeStatus to Blocked and Error ---
+
+    [Fact]
+    public async Task ChangeStatus_ToBlocked_Success()
+    {
+        var (project, owner) = await CreateProjectWithOwner();
+        var create = await _taskService.CreateTask(project.Id, "Blocked Task", null,
+            TaskItemPriority.Medium, null, owner.Id);
+
+        var result = await _taskService.ChangeStatus(create.Data!.Id, TaskItemStatus.Blocked, owner.Id);
+
+        Assert.True(result.Succeeded);
+        Assert.Equal(TaskItemStatus.Blocked, result.Data!.Status);
+    }
+
+    [Fact]
+    public async Task ChangeStatus_ToError_Success()
+    {
+        var (project, owner) = await CreateProjectWithOwner();
+        var create = await _taskService.CreateTask(project.Id, "Error Task", null,
+            TaskItemPriority.Medium, null, owner.Id);
+
+        var result = await _taskService.ChangeStatus(create.Data!.Id, TaskItemStatus.Error, owner.Id);
+
+        Assert.True(result.Succeeded);
+        Assert.Equal(TaskItemStatus.Error, result.Data!.Status);
+    }
+
+    [Fact]
+    public async Task ChangeStatus_FromInProgressToBlocked_Success()
+    {
+        var (project, owner) = await CreateProjectWithOwner();
+        var create = await _taskService.CreateTask(project.Id, "Task", null,
+            TaskItemPriority.Medium, null, owner.Id);
+        await _taskService.ChangeStatus(create.Data!.Id, TaskItemStatus.InProgress, owner.Id);
+
+        var result = await _taskService.ChangeStatus(create.Data.Id, TaskItemStatus.Blocked, owner.Id);
+
+        Assert.True(result.Succeeded);
+        Assert.Equal(TaskItemStatus.Blocked, result.Data!.Status);
+    }
+
+    [Fact]
+    public async Task ChangeStatus_FromInProgressToError_Success()
+    {
+        var (project, owner) = await CreateProjectWithOwner();
+        var create = await _taskService.CreateTask(project.Id, "Task", null,
+            TaskItemPriority.Medium, null, owner.Id);
+        await _taskService.ChangeStatus(create.Data!.Id, TaskItemStatus.InProgress, owner.Id);
+
+        var result = await _taskService.ChangeStatus(create.Data.Id, TaskItemStatus.Error, owner.Id);
+
+        Assert.True(result.Succeeded);
+        Assert.Equal(TaskItemStatus.Error, result.Data!.Status);
+    }
+
+    [Fact]
+    public async Task ChangeStatus_FromBlockedToInProgress_Success()
+    {
+        var (project, owner) = await CreateProjectWithOwner();
+        var create = await _taskService.CreateTask(project.Id, "Task", null,
+            TaskItemPriority.Medium, null, owner.Id);
+        await _taskService.ChangeStatus(create.Data!.Id, TaskItemStatus.Blocked, owner.Id);
+
+        var result = await _taskService.ChangeStatus(create.Data.Id, TaskItemStatus.InProgress, owner.Id);
+
+        Assert.True(result.Succeeded);
+        Assert.Equal(TaskItemStatus.InProgress, result.Data!.Status);
+    }
+
+    [Fact]
+    public async Task ChangeStatus_FromErrorToToDo_Success()
+    {
+        var (project, owner) = await CreateProjectWithOwner();
+        var create = await _taskService.CreateTask(project.Id, "Task", null,
+            TaskItemPriority.Medium, null, owner.Id);
+        await _taskService.ChangeStatus(create.Data!.Id, TaskItemStatus.Error, owner.Id);
+
+        var result = await _taskService.ChangeStatus(create.Data.Id, TaskItemStatus.ToDo, owner.Id);
+
+        Assert.True(result.Succeeded);
+        Assert.Equal(TaskItemStatus.ToDo, result.Data!.Status);
+    }
+
+    [Fact]
+    public async Task ChangeStatus_ToBlocked_LogsActivity()
+    {
+        var (project, owner) = await CreateProjectWithOwner();
+        var create = await _taskService.CreateTask(project.Id, "Task", null,
+            TaskItemPriority.Medium, null, owner.Id);
+
+        await _taskService.ChangeStatus(create.Data!.Id, TaskItemStatus.Blocked, owner.Id);
+
+        var activities = await _context.ActivityLogEntries
+            .Where(a => a.TaskItemId == create.Data.Id && a.ChangeType == ActivityChangeType.StatusChanged)
+            .ToListAsync();
+        Assert.Contains(activities, a => a.NewValue == "Blocked");
+    }
+
+    [Fact]
+    public async Task ChangeStatus_ToError_LogsActivity()
+    {
+        var (project, owner) = await CreateProjectWithOwner();
+        var create = await _taskService.CreateTask(project.Id, "Task", null,
+            TaskItemPriority.Medium, null, owner.Id);
+
+        await _taskService.ChangeStatus(create.Data!.Id, TaskItemStatus.Error, owner.Id);
+
+        var activities = await _context.ActivityLogEntries
+            .Where(a => a.TaskItemId == create.Data.Id && a.ChangeType == ActivityChangeType.StatusChanged)
+            .ToListAsync();
+        Assert.Contains(activities, a => a.NewValue == "Error");
+    }
+
+    // --- ProjectDashboard with Blocked and Error counts ---
+
+    [Fact]
+    public async Task ProjectDashboard_ShowsBlockedAndErrorCounts()
+    {
+        var (project, owner) = await CreateProjectWithOwner();
+
+        var t1 = await _taskService.CreateTask(project.Id, "ToDo", null, TaskItemPriority.Medium, null, owner.Id);
+        var t2 = await _taskService.CreateTask(project.Id, "Blocked", null, TaskItemPriority.Medium, null, owner.Id);
+        var t3 = await _taskService.CreateTask(project.Id, "Error", null, TaskItemPriority.Medium, null, owner.Id);
+        var t4 = await _taskService.CreateTask(project.Id, "Done", null, TaskItemPriority.Medium, null, owner.Id);
+        var t5 = await _taskService.CreateTask(project.Id, "InProgress", null, TaskItemPriority.Medium, null, owner.Id);
+        var t6 = await _taskService.CreateTask(project.Id, "InReview", null, TaskItemPriority.Medium, null, owner.Id);
+
+        await _taskService.ChangeStatus(t2.Data!.Id, TaskItemStatus.Blocked, owner.Id);
+        await _taskService.ChangeStatus(t3.Data!.Id, TaskItemStatus.Error, owner.Id);
+        await _taskService.ChangeStatus(t4.Data!.Id, TaskItemStatus.Done, owner.Id);
+        await _taskService.ChangeStatus(t5.Data!.Id, TaskItemStatus.InProgress, owner.Id);
+        await _taskService.ChangeStatus(t6.Data!.Id, TaskItemStatus.InReview, owner.Id);
+
+        var dashboard = await _projectService.GetProjectDashboard(project.Id, owner.Id);
+
+        Assert.True(dashboard.Succeeded);
+        Assert.Equal(1, dashboard.Data!.TaskCountToDo);
+        Assert.Equal(1, dashboard.Data.TaskCountInProgress);
+        Assert.Equal(1, dashboard.Data.TaskCountInReview);
+        Assert.Equal(1, dashboard.Data.TaskCountDone);
+        Assert.Equal(1, dashboard.Data.TaskCountBlocked);
+        Assert.Equal(1, dashboard.Data.TaskCountError);
+        Assert.Equal(6, dashboard.Data.TotalTasks);
+    }
+
     public void Dispose()
     {
         _context.Dispose();
