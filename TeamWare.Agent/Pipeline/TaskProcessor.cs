@@ -2,7 +2,9 @@
 using GitHub.Copilot.SDK;
 using Microsoft.Extensions.Logging;
 using TeamWare.Agent.Configuration;
+using TeamWare.Agent.Logging;
 using TeamWare.Agent.Mcp;
+using TeamWare.Agent.Permissions;
 
 namespace TeamWare.Agent.Pipeline;
 
@@ -70,6 +72,9 @@ public class TaskProcessor
 
     /// <summary>
     /// Builds the SessionConfig for the Copilot session.
+    /// When DryRun is enabled, write operations are blocked and logged via DryRunLogger (CA-120, CA-121).
+    /// When AutoApproveTools is false, uses AgentPermissionHandler for safety guardrails (CA-131).
+    /// When AutoApproveTools is true (and not dry run), uses PermissionHandler.ApproveAll (CA-130).
     /// </summary>
     internal SessionConfig BuildSessionConfig()
     {
@@ -79,9 +84,7 @@ public class TaskProcessor
 
         var config = new SessionConfig
         {
-            OnPermissionRequest = _options.AutoApproveTools
-                ? PermissionHandler.ApproveAll
-                : CreateDefaultPermissionHandler(),
+            OnPermissionRequest = CreatePermissionHandler(),
             SystemMessage = new SystemMessageConfig
             {
                 Mode = SystemMessageMode.Append,
@@ -96,6 +99,34 @@ public class TaskProcessor
         }
 
         return config;
+    }
+
+    /// <summary>
+    /// Creates the appropriate permission handler based on configuration.
+    /// Priority: DryRun > AutoApproveTools=false > ApproveAll
+    /// DryRun mode is independent of AutoApproveTools (CA-132).
+    /// </summary>
+    internal PermissionRequestHandler CreatePermissionHandler()
+    {
+        if (_options.DryRun)
+        {
+            _logger.LogInformation(
+                "Dry run mode enabled for agent '{AgentName}' — write operations will be logged, not executed",
+                _options.Name);
+            var dryRunLogger = new DryRunLogger(_logger);
+            return dryRunLogger.CreateHandler();
+        }
+
+        if (!_options.AutoApproveTools)
+        {
+            _logger.LogInformation(
+                "Custom permission handler enabled for agent '{AgentName}'",
+                _options.Name);
+            var permissionHandler = new AgentPermissionHandler(_logger);
+            return permissionHandler.CreateHandler();
+        }
+
+        return PermissionHandler.ApproveAll;
     }
 
     /// <summary>
@@ -133,18 +164,4 @@ public class TaskProcessor
         return sb.ToString();
     }
 
-    private PermissionRequestHandler CreateDefaultPermissionHandler()
-    {
-        return (request, invocation) =>
-        {
-            _logger.LogDebug(
-                "Permission request: Kind={Kind}",
-                request.Kind);
-
-            return Task.FromResult(new PermissionRequestResult
-            {
-                Kind = PermissionRequestResultKind.Approved
-            });
-        };
     }
-}

@@ -1,6 +1,7 @@
 ﻿using GitHub.Copilot.SDK;
 using Microsoft.Extensions.Logging;
 using TeamWare.Agent.Configuration;
+using TeamWare.Agent.Logging;
 using TeamWare.Agent.Mcp;
 using TeamWare.Agent.Pipeline;
 
@@ -12,6 +13,7 @@ public class TaskProcessorTests
         string name = "test-agent",
         string? model = null,
         bool autoApproveTools = true,
+        bool dryRun = false,
         string? systemPrompt = null)
     {
         return new AgentIdentityOptions
@@ -21,6 +23,7 @@ public class TaskProcessorTests
             PersonalAccessToken = "test-pat",
             Model = model,
             AutoApproveTools = autoApproveTools,
+            DryRun = dryRun,
             SystemPrompt = systemPrompt
         };
     }
@@ -442,5 +445,214 @@ public class TaskProcessorTests
                 return ValueTask.CompletedTask;
             }
         }
+    }
+
+    // 41.1 Tests — Dry Run Mode
+
+    [Fact]
+    public void CreatePermissionHandler_DryRun_ReturnsDryRunHandler()
+    {
+        var options = CreateOptions(dryRun: true, autoApproveTools: true);
+        var copilotFactory = new FakeCopilotClientWrapperFactory();
+        var mcpClient = new FakeMcpClient();
+        var logger = new TestLogger<TaskProcessor>();
+
+        var processor = new TaskProcessor(options, copilotFactory, mcpClient, logger);
+        var handler = processor.CreatePermissionHandler();
+
+        // DryRun takes priority over AutoApproveTools
+        Assert.NotEqual(PermissionHandler.ApproveAll, handler);
+    }
+
+    [Fact]
+    public void CreatePermissionHandler_DryRunFalse_AutoApproveTrue_ReturnsApproveAll()
+    {
+        var options = CreateOptions(dryRun: false, autoApproveTools: true);
+        var copilotFactory = new FakeCopilotClientWrapperFactory();
+        var mcpClient = new FakeMcpClient();
+        var logger = new TestLogger<TaskProcessor>();
+
+        var processor = new TaskProcessor(options, copilotFactory, mcpClient, logger);
+        var handler = processor.CreatePermissionHandler();
+
+        Assert.Equal(PermissionHandler.ApproveAll, handler);
+    }
+
+    [Fact]
+    public void CreatePermissionHandler_DryRunFalse_AutoApproveFalse_ReturnsCustomHandler()
+    {
+        var options = CreateOptions(dryRun: false, autoApproveTools: false);
+        var copilotFactory = new FakeCopilotClientWrapperFactory();
+        var mcpClient = new FakeMcpClient();
+        var logger = new TestLogger<TaskProcessor>();
+
+        var processor = new TaskProcessor(options, copilotFactory, mcpClient, logger);
+        var handler = processor.CreatePermissionHandler();
+
+        Assert.NotEqual(PermissionHandler.ApproveAll, handler);
+    }
+
+    [Fact]
+    public async Task CreatePermissionHandler_DryRun_DeniesShellCommands()
+    {
+        var options = CreateOptions(dryRun: true);
+        var copilotFactory = new FakeCopilotClientWrapperFactory();
+        var mcpClient = new FakeMcpClient();
+        var logger = new TestLogger<TaskProcessor>();
+
+        var processor = new TaskProcessor(options, copilotFactory, mcpClient, logger);
+        var handler = processor.CreatePermissionHandler();
+
+        var result = await handler(PermissionRequestFactory.Shell(fullCommandText: "dotnet build"), default!);
+        Assert.Equal(PermissionRequestResultKind.DeniedByRules, result.Kind);
+    }
+
+    [Fact]
+    public async Task CreatePermissionHandler_DryRun_AllowsReadOnlyMcpTools()
+    {
+        var options = CreateOptions(dryRun: true);
+        var copilotFactory = new FakeCopilotClientWrapperFactory();
+        var mcpClient = new FakeMcpClient();
+        var logger = new TestLogger<TaskProcessor>();
+
+        var processor = new TaskProcessor(options, copilotFactory, mcpClient, logger);
+        var handler = processor.CreatePermissionHandler();
+
+        var result = await handler(PermissionRequestFactory.Mcp(toolName: "get_task", serverName: "tw", readOnly: true), default!);
+        Assert.Equal(PermissionRequestResultKind.Approved, result.Kind);
+    }
+
+    [Fact]
+    public async Task CreatePermissionHandler_DryRun_DeniesWriteMcpTools()
+    {
+        var options = CreateOptions(dryRun: true);
+        var copilotFactory = new FakeCopilotClientWrapperFactory();
+        var mcpClient = new FakeMcpClient();
+        var logger = new TestLogger<TaskProcessor>();
+
+        var processor = new TaskProcessor(options, copilotFactory, mcpClient, logger);
+        var handler = processor.CreatePermissionHandler();
+
+        var result = await handler(PermissionRequestFactory.Mcp(toolName: "update_task", serverName: "tw", readOnly: false), default!);
+        Assert.Equal(PermissionRequestResultKind.DeniedByRules, result.Kind);
+    }
+
+    [Fact]
+    public void CreatePermissionHandler_DryRun_LogsDryRunModeEnabled()
+    {
+        var options = CreateOptions(dryRun: true);
+        var copilotFactory = new FakeCopilotClientWrapperFactory();
+        var mcpClient = new FakeMcpClient();
+        var logger = new TestLogger<TaskProcessor>();
+
+        var processor = new TaskProcessor(options, copilotFactory, mcpClient, logger);
+        processor.CreatePermissionHandler();
+
+        Assert.Contains(logger.Entries, e =>
+            e.Level == LogLevel.Information &&
+            e.Message.Contains("Dry run mode enabled"));
+    }
+
+    [Fact]
+    public async Task ProcessAsync_DryRun_SessionCreatedWithDryRunHandler()
+    {
+        var options = CreateOptions(dryRun: true);
+        var copilotFactory = new FakeCopilotClientWrapperFactory();
+        var mcpClient = new FakeMcpClient();
+        var logger = new TestLogger<TaskProcessor>();
+
+        var processor = new TaskProcessor(options, copilotFactory, mcpClient, logger);
+        await processor.ProcessAsync(CreateTask(), CancellationToken.None);
+
+        var config = copilotFactory.LastCreatedClient!.LastSessionConfig!;
+        Assert.NotNull(config.OnPermissionRequest);
+        Assert.NotEqual(PermissionHandler.ApproveAll, config.OnPermissionRequest);
+    }
+
+    // 41.1 — Dry run mode is configurable per identity (CA-123)
+
+    [Fact]
+    public void CreatePermissionHandler_DryRunTrue_IndependentOfAutoApprove()
+    {
+        // DryRun=true, AutoApproveTools=false — DryRun should still take priority
+        var options = CreateOptions(dryRun: true, autoApproveTools: false);
+        var copilotFactory = new FakeCopilotClientWrapperFactory();
+        var mcpClient = new FakeMcpClient();
+        var logger = new TestLogger<TaskProcessor>();
+
+        var processor = new TaskProcessor(options, copilotFactory, mcpClient, logger);
+        var handler = processor.CreatePermissionHandler();
+
+        Assert.NotEqual(PermissionHandler.ApproveAll, handler);
+        Assert.Contains(logger.Entries, e =>
+            e.Message.Contains("Dry run mode enabled"));
+    }
+
+    // 41.3 Tests — Action Restriction Verification
+
+    [Fact]
+    public void DefaultSystemPrompt_ContainsNoDoneRule()
+    {
+        Assert.Contains("Never set a task to Done", DefaultSystemPrompt.Text);
+    }
+
+    [Fact]
+    public void DefaultSystemPrompt_ContainsNoCreateDeleteRule()
+    {
+        Assert.Contains("Never create or delete tasks", DefaultSystemPrompt.Text);
+    }
+
+    [Fact]
+    public void DefaultSystemPrompt_ContainsNoReassignRule()
+    {
+        Assert.Contains("Never reassign tasks", DefaultSystemPrompt.Text);
+    }
+
+    [Fact]
+    public void DefaultSystemPrompt_ContainsNoDeleteCommentsRule()
+    {
+        Assert.Contains("Never delete comments", DefaultSystemPrompt.Text);
+    }
+
+    [Fact]
+    public void DefaultSystemPrompt_ContainsCommentBeforeStatusRule()
+    {
+        Assert.Contains("Always post a comment before changing task status", DefaultSystemPrompt.Text);
+    }
+
+    [Fact]
+    public void DefaultSystemPrompt_ContainsFeatureBranchRule()
+    {
+        Assert.Contains("feature branch", DefaultSystemPrompt.Text);
+        Assert.Contains("agent/", DefaultSystemPrompt.Text);
+    }
+
+    [Fact]
+    public void DefaultSystemPrompt_ContainsBlockedRule()
+    {
+        Assert.Contains("Blocked", DefaultSystemPrompt.Text);
+    }
+
+    [Fact]
+    public async Task ProcessAsync_DefaultSystemPrompt_IncludedInSession()
+    {
+        var options = CreateOptions(systemPrompt: null);
+        var copilotFactory = new FakeCopilotClientWrapperFactory();
+        var mcpClient = new FakeMcpClient();
+        var logger = new TestLogger<TaskProcessor>();
+
+        var processor = new TaskProcessor(options, copilotFactory, mcpClient, logger);
+        await processor.ProcessAsync(CreateTask(), CancellationToken.None);
+
+        var config = copilotFactory.LastCreatedClient!.LastSessionConfig!;
+        Assert.Equal(SystemMessageMode.Append, config.SystemMessage!.Mode);
+        Assert.Equal(DefaultSystemPrompt.Text, config.SystemMessage.Content);
+
+        // Verify the prompt contains all action restrictions
+        var prompt = config.SystemMessage.Content!;
+        Assert.Contains("Never set a task to Done", prompt);
+        Assert.Contains("Never create or delete tasks", prompt);
+        Assert.Contains("Never reassign tasks", prompt);
+        Assert.Contains("Never delete comments", prompt);
     }
 }
