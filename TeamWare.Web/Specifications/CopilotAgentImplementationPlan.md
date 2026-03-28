@@ -12,7 +12,7 @@ This document defines the phased implementation plan for the TeamWare Copilot Ag
 | 36 | TeamWare Prerequisites (Blocked/Error Statuses) | ✅ Complete |
 | 37 | Agent Project Scaffold and Configuration | ✅ Complete |
 | 38 | Polling Loop and Task Discovery | ✅ Complete |
-| 39 | Task Processing Pipeline | Not Started |
+| 39 | Task Processing Pipeline | ✅ Complete |
 | 40 | Status Transitions and Reporting | Not Started |
 | 41 | Safety Guardrails and Dry Run | Not Started |
 | 42 | Repository Management and Lounge Integration | Not Started |
@@ -233,53 +233,53 @@ Integrate the GitHub Copilot SDK to create LLM sessions for each task. The agent
 
 ### 39.1 Copilot SDK Integration
 
-- [ ] Create `TeamWare.Agent/Pipeline/TaskProcessor.cs` (CA-40 through CA-45):
-  - [ ] Accept an `AgentIdentityOptions`, a task object (from `my_assignments`), and `CancellationToken`
-  - [ ] Create a `CopilotClient` with `Cwd` set to the identity's `WorkingDirectory` (CA-44)
-  - [ ] Create a session via `client.CreateSessionAsync()` with:
-    - [ ] Model from identity config (CA-41)
-    - [ ] System prompt appended via `SystemMessageMode.Append` (CA-41)
-    - [ ] MCP servers from identity config (CA-41)
-    - [ ] Permission handler: `PermissionHandler.ApproveAll` if `AutoApproveTools` is true, custom handler otherwise (CA-130, CA-131)
-  - [ ] Construct the task prompt with: task ID, title, description, priority, status, project name, existing comments (CA-42)
-  - [ ] Call `session.SendAndWaitAsync()` with the task prompt (CA-42)
-  - [ ] Dispose of the session and client after processing
-- [ ] Write unit tests verifying (CA-TEST-03, CA-TEST-04):
-  - [ ] Session is created with correct model selection
-  - [ ] Session is created with correct system prompt
-  - [ ] Session is created with correct MCP server configuration
-  - [ ] Task prompt includes all required fields
-  - [ ] Session and client are properly disposed
+- [x] Create `TeamWare.Agent/Pipeline/TaskProcessor.cs` (CA-40 through CA-45):
+  - [x] Accept an `AgentIdentityOptions`, a task object (from `my_assignments`), and `CancellationToken`
+  - [x] Create a `CopilotClient` with `Cwd` set to the identity's `WorkingDirectory` (CA-44)
+  - [x] Create a session via `client.CreateSessionAsync()` with:
+    - [x] Model from identity config (CA-41)
+    - [x] System prompt appended via `SystemMessageMode.Append` (CA-41)
+    - [x] MCP servers from identity config (CA-41)
+    - [x] Permission handler: `PermissionHandler.ApproveAll` if `AutoApproveTools` is true, custom handler otherwise (CA-130, CA-131)
+  - [x] Construct the task prompt with: task ID, title, description, priority, status, project name, existing comments (CA-42)
+  - [x] Call `session.SendAndWaitAsync()` with the task prompt (CA-42)
+  - [x] Dispose of the session and client after processing
+- [x] Write unit tests verifying (CA-TEST-03, CA-TEST-04):
+  - [x] Session is created with correct model selection
+  - [x] Session is created with correct system prompt
+  - [x] Session is created with correct MCP server configuration
+  - [x] Task prompt includes all required fields
+  - [x] Session and client are properly disposed
 
 ### 39.2 Default System Prompt
 
-- [ ] Create a constant or resource file containing the default system prompt (Spec Section 3.9, CA-82, CA-83):
-  - [ ] Include all 8 steps (read, assess scope, explore, change, build/test, commit, comment, update status)
-  - [ ] Include all rules (no Done, no create/delete, no reassign, no delete comments, comment-before-status, feature branch naming, Blocked for unclear/too-large)
-- [ ] If the identity's `SystemPrompt` config is null or empty, use the default
-- [ ] If the identity's `SystemPrompt` config is provided, use it instead
-- [ ] Write unit tests verifying default prompt is used when config is empty, and custom prompt is used when provided (CA-81)
+- [x] Create a constant or resource file containing the default system prompt (Spec Section 3.9, CA-82, CA-83):
+  - [x] Include all 8 steps (read, assess scope, explore, change, build/test, commit, comment, update status)
+  - [x] Include all rules (no Done, no create/delete, no reassign, no delete comments, comment-before-status, feature branch naming, Blocked for unclear/too-large)
+- [x] If the identity's `SystemPrompt` config is null or empty, use the default
+- [x] If the identity's `SystemPrompt` config is provided, use it instead
+- [x] Write unit tests verifying default prompt is used when config is empty, and custom prompt is used when provided (CA-81)
 
 ### 39.3 Pipeline Integration
 
-- [ ] Update `AgentPollingLoop` to call `TaskProcessor` for each discovered `ToDo` task instead of logging a placeholder
-- [ ] Process tasks one at a time in order (CA-21, CA-34)
-- [ ] Wrap `TaskProcessor` calls in try/catch — errors are handled in Phase 40
-- [ ] Write unit tests verifying:
-  - [ ] Tasks are processed sequentially, one at a time
-  - [ ] Processing one task completes before the next begins
-  - [ ] An exception in one task does not prevent processing subsequent tasks
+- [x] Update `AgentPollingLoop` to call `TaskProcessor` for each discovered `ToDo` task instead of logging a placeholder
+- [x] Process tasks one at a time in order (CA-21, CA-34)
+- [x] Wrap `TaskProcessor` calls in try/catch — errors are handled in Phase 40
+- [x] Write unit tests verifying:
+  - [x] Tasks are processed sequentially, one at a time
+  - [x] Processing one task completes before the next begins
+  - [x] An exception in one task does not prevent processing subsequent tasks
 
 ### 39.4 Copilot CLI Error Handling
 
-- [ ] Implement error handling for Copilot SDK failures (CA-151, CA-152):
-  - [ ] If `CopilotClient` fails to create, log the error and skip to the next polling cycle
-  - [ ] If `CreateSessionAsync` fails, log the error and treat as a task-level error
-  - [ ] If `SendAndWaitAsync` fails (LLM timeout, rate limit, etc.), log the error and treat as a task-level error
-- [ ] Write unit tests verifying:
-  - [ ] Client creation failure is logged and does not crash the loop
-  - [ ] Session creation failure is logged and the task is skipped
-  - [ ] LLM provider errors are handled as task-level errors
+- [x] Implement error handling for Copilot SDK failures (CA-151, CA-152):
+  - [x] If `CopilotClient` fails to create, log the error and skip to the next polling cycle
+  - [x] If `CreateSessionAsync` fails, log the error and treat as a task-level error
+  - [x] If `SendAndWaitAsync` fails (LLM timeout, rate limit, etc.), log the error and treat as a task-level error
+- [x] Write unit tests verifying:
+  - [x] Client creation failure is logged and does not crash the loop
+  - [x] Session creation failure is logged and the task is skipped
+  - [x] LLM provider errors are handled as task-level errors
 
 ---
 

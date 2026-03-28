@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Options;
 using TeamWare.Agent.Configuration;
 using TeamWare.Agent.Mcp;
+using TeamWare.Agent.Pipeline;
 
 namespace TeamWare.Agent.Tests;
 
@@ -15,13 +16,15 @@ public class AgentHostedServiceTests
     private static AgentHostedService CreateService(
         List<AgentIdentityOptions>? agents = null,
         TestLogger<AgentHostedService>? logger = null,
-        ITeamWareMcpClientFactory? factory = null)
+        ITeamWareMcpClientFactory? factory = null,
+        ICopilotClientWrapperFactory? copilotFactory = null)
     {
         logger ??= new TestLogger<AgentHostedService>();
         factory ??= new FakeMcpClientFactory();
+        copilotFactory ??= new FakeCopilotClientWrapperFactory();
         var loggerFactory = new TestLoggerFactory(logger);
 
-        return new AgentHostedService(CreateOptions(agents), factory, loggerFactory, logger);
+        return new AgentHostedService(CreateOptions(agents), factory, copilotFactory, loggerFactory, logger);
     }
 
     [Fact]
