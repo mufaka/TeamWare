@@ -16,7 +16,7 @@ This document defines the phased implementation plan for the TeamWare Copilot Ag
 | 40 | Status Transitions and Reporting | ✅ Complete |
 | 41 | Safety Guardrails and Dry Run | ✅ Complete |
 | 42 | Repository Management and Lounge Integration | ✅ Complete |
-| 43 | Agent Polish and Hardening | Not Started |
+| 43 | Agent Polish and Hardening | ✅ Complete |
 
 ---
 
@@ -421,71 +421,71 @@ Final review, edge case handling, security hardening, and documentation. Ensure 
 
 ### 43.1 Security Hardening
 
-- [ ] Verify PATs are never logged, committed to source control, or included in error messages (CA-SEC-02):
-  - [ ] Audit all logging statements for token leakage
-  - [ ] Ensure configuration loading does not log sensitive values
-  - [ ] Write tests verifying PATs are redacted in logs
-- [ ] Verify `RepositoryAccessToken` follows the same security practices (CA-SEC-03)
-- [ ] Verify the kill switch works at both levels (CA-SEC-07):
-  - [ ] Client-side: `get_my_profile` check causes identity to skip the cycle
-  - [ ] Server-side: `PatAuthenticationHandler` rejects paused agents
-  - [ ] Write integration test: agent is active, processes a task, is paused mid-cycle, next poll is skipped
-- [ ] Verify the agent is subject to project membership authorization (CA-SEC-05):
-  - [ ] Write integration test: agent attempts to access a project it is not a member of via MCP tools
+- [x] Verify PATs are never logged, committed to source control, or included in error messages (CA-SEC-02):
+  - [x] Audit all logging statements for token leakage
+  - [x] Ensure configuration loading does not log sensitive values
+  - [x] Write tests verifying PATs are redacted in logs
+- [x] Verify `RepositoryAccessToken` follows the same security practices (CA-SEC-03)
+- [x] Verify the kill switch works at both levels (CA-SEC-07):
+  - [x] Client-side: `get_my_profile` check causes identity to skip the cycle
+  - [x] Server-side: `PatAuthenticationHandler` rejects paused agents
+  - [x] Write integration test: agent is active, processes a task, is paused mid-cycle, next poll is skipped
+- [x] Verify the agent is subject to project membership authorization (CA-SEC-05):
+  - [x] Write integration test: agent attempts to access a project it is not a member of via MCP tools
 
 ### 43.2 Edge Cases and Regression Testing
 
-- [ ] Verify idempotency: re-running the agent against the same task list produces no side effects (CA-NF-06):
-  - [ ] Task already in InProgress — skipped
-  - [ ] Task already in InReview — skipped
-  - [ ] Task already in Blocked — skipped
-  - [ ] Task already in Error — skipped
-  - [ ] Task already in Done — skipped
-- [ ] Verify graceful shutdown during task processing (CA-02):
-  - [ ] SIGTERM during a session — agent finishes current task or posts Error comment and exits
-  - [ ] SIGTERM during polling wait — agent exits immediately
-- [ ] Verify zero-task polling cycles:
-  - [ ] No tasks available — agent logs and waits, no errors
-  - [ ] All tasks in non-ToDo statuses — agent logs and waits, no errors
-- [ ] Verify configuration edge cases:
-  - [ ] Zero agents configured — process starts and logs a warning
-  - [ ] Agent with invalid PAT — authentication fails, logged, polling continues
-  - [ ] Agent with unreachable MCP endpoint — network error logged, polling continues
-  - [ ] Agent with nonexistent WorkingDirectory — error logged at startup
-- [ ] Verify multiple agent identities do not interfere:
-  - [ ] Different working directories
-  - [ ] Different PATs
-  - [ ] Different polling intervals
-  - [ ] One identity fails, others continue
+- [x] Verify idempotency: re-running the agent against the same task list produces no side effects (CA-NF-06):
+  - [x] Task already in InProgress — skipped
+  - [x] Task already in InReview — skipped
+  - [x] Task already in Blocked — skipped
+  - [x] Task already in Error — skipped
+  - [x] Task already in Done — skipped
+- [x] Verify graceful shutdown during task processing (CA-02):
+  - [x] SIGTERM during a session — agent finishes current task or posts Error comment and exits
+  - [x] SIGTERM during polling wait — agent exits immediately
+- [x] Verify zero-task polling cycles:
+  - [x] No tasks available — agent logs and waits, no errors
+  - [x] All tasks in non-ToDo statuses — agent logs and waits, no errors
+- [x] Verify configuration edge cases:
+  - [x] Zero agents configured — process starts and logs a warning
+  - [x] Agent with invalid PAT — authentication fails, logged, polling continues
+  - [x] Agent with unreachable MCP endpoint — network error logged, polling continues
+  - [x] Agent with nonexistent WorkingDirectory — error logged at startup
+- [x] Verify multiple agent identities do not interfere:
+  - [x] Different working directories
+  - [x] Different PATs
+  - [x] Different polling intervals
+  - [x] One identity fails, others continue
 
 ### 43.3 Logging Review
 
-- [ ] Verify structured logging is used throughout (CA-NF-02):
-  - [ ] Polling cycle start/end with identity name
-  - [ ] Task pickup with task ID and title
-  - [ ] Status transitions with task ID, old status, new status
-  - [ ] Tool invocations (in dry run mode, all calls; in normal mode, significant events)
-  - [ ] Errors with full exception details
-  - [ ] Startup and shutdown events
-- [ ] Verify log levels are appropriate:
-  - [ ] `Information` for normal operations (polling, task pickup, status changes)
-  - [ ] `Warning` for recoverable issues (network errors, paused agent)
-  - [ ] `Error` for failures (task errors, CLI crashes)
-  - [ ] `Debug` for detailed tool call logging
+- [x] Verify structured logging is used throughout (CA-NF-02):
+  - [x] Polling cycle start/end with identity name
+  - [x] Task pickup with task ID and title
+  - [x] Status transitions with task ID, old status, new status
+  - [x] Tool invocations (in dry run mode, all calls; in normal mode, significant events)
+  - [x] Errors with full exception details
+  - [x] Startup and shutdown events
+- [x] Verify log levels are appropriate:
+  - [x] `Information` for normal operations (polling, task pickup, status changes)
+  - [x] `Warning` for recoverable issues (network errors, paused agent)
+  - [x] `Error` for failures (task errors, CLI crashes)
+  - [x] `Debug` for detailed tool call logging
 
 ### 43.4 Documentation
 
-- [ ] Update the [copilot-instructions.md](../../.github/copilot-instructions.md) with:
-  - [ ] Phase 36-43 branch names in the Branch Strategy table
-  - [ ] Phase 36-43 GitHub issue mappings in the GitHub Issue Map section (create issues as work begins)
-- [ ] Review and finalize the [Copilot Agent Idea document](CopilotAgentIdea.md) — mark all next steps as complete
-- [ ] Review and finalize the [Copilot Agent Specification](CopilotAgentSpecification.md) — verify all requirements are implemented
-- [ ] Create a `TeamWare.Agent/README.md` with:
-  - [ ] Overview and purpose
-  - [ ] Prerequisites (GitHub Copilot subscription or BYOK, git, .NET 10)
-  - [ ] Configuration reference (all fields with descriptions and defaults)
-  - [ ] Quick start guide (create agent user in TeamWare, configure PAT, configure appsettings.json, run)
-  - [ ] Dry run mode instructions
-  - [ ] Deployment options (terminal, systemd, Docker)
-  - [ ] Troubleshooting common issues (authentication failures, network errors, Copilot CLI not found)
-- [ ] Create a sample `appsettings.example.json` in `TeamWare.Agent/` with commented configuration showing all options
+- [x] Update the [copilot-instructions.md](../../.github/copilot-instructions.md) with:
+  - [x] Phase 36-43 branch names in the Branch Strategy table
+  - [x] Phase 36-43 GitHub issue mappings in the GitHub Issue Map section (create issues as work begins)
+- [x] Review and finalize the [Copilot Agent Idea document](CopilotAgentIdea.md) — mark all next steps as complete
+- [x] Review and finalize the [Copilot Agent Specification](CopilotAgentSpecification.md) — verify all requirements are implemented
+- [x] Create a `TeamWare.Agent/README.md` with:
+  - [x] Overview and purpose
+  - [x] Prerequisites (GitHub Copilot subscription or BYOK, git, .NET 10)
+  - [x] Configuration reference (all fields with descriptions and defaults)
+  - [x] Quick start guide (create agent user in TeamWare, configure PAT, configure appsettings.json, run)
+  - [x] Dry run mode instructions
+  - [x] Deployment options (terminal, systemd, Docker)
+  - [x] Troubleshooting common issues (authentication failures, network errors, Copilot CLI not found)
+- [x] Create a sample `appsettings.example.json` in `TeamWare.Agent/` with commented configuration showing all options
