@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using TeamWare.Agent.Configuration;
+using TeamWare.Agent.Mcp;
 
 namespace TeamWare.Agent.Tests;
 
@@ -11,11 +12,23 @@ public class AgentHostedServiceTests
         return Options.Create(agents ?? []);
     }
 
+    private static AgentHostedService CreateService(
+        List<AgentIdentityOptions>? agents = null,
+        TestLogger<AgentHostedService>? logger = null,
+        ITeamWareMcpClientFactory? factory = null)
+    {
+        logger ??= new TestLogger<AgentHostedService>();
+        factory ??= new FakeMcpClientFactory();
+        var loggerFactory = new TestLoggerFactory(logger);
+
+        return new AgentHostedService(CreateOptions(agents), factory, loggerFactory, logger);
+    }
+
     [Fact]
     public async Task StartAsync_NoAgents_LogsWarning()
     {
         var logger = new TestLogger<AgentHostedService>();
-        var service = new AgentHostedService(CreateOptions(), logger);
+        var service = CreateService(logger: logger);
 
         await service.StartAsync(CancellationToken.None);
 
@@ -33,10 +46,9 @@ public class AgentHostedServiceTests
             new() { Name = "agent-2", PollingIntervalSeconds = 1 }
         };
         var logger = new TestLogger<AgentHostedService>();
-        var service = new AgentHostedService(CreateOptions(agents), logger);
+        var service = CreateService(agents, logger);
 
         await service.StartAsync(CancellationToken.None);
-        // Give the polling loops a moment to start
         await Task.Delay(100);
         await service.StopAsync(CancellationToken.None);
 
@@ -54,7 +66,7 @@ public class AgentHostedServiceTests
             new() { Name = "agent-beta", PollingIntervalSeconds = 1 }
         };
         var logger = new TestLogger<AgentHostedService>();
-        var service = new AgentHostedService(CreateOptions(agents), logger);
+        var service = CreateService(agents, logger);
 
         await service.StartAsync(CancellationToken.None);
         await Task.Delay(100);
@@ -76,7 +88,7 @@ public class AgentHostedServiceTests
             new() { Name = "agent-stop", PollingIntervalSeconds = 60 }
         };
         var logger = new TestLogger<AgentHostedService>();
-        var service = new AgentHostedService(CreateOptions(agents), logger);
+        var service = CreateService(agents, logger);
 
         await service.StartAsync(CancellationToken.None);
         await Task.Delay(100);
@@ -96,7 +108,7 @@ public class AgentHostedServiceTests
             new() { Name = "clean-agent", PollingIntervalSeconds = 60 }
         };
         var logger = new TestLogger<AgentHostedService>();
-        var service = new AgentHostedService(CreateOptions(agents), logger);
+        var service = CreateService(agents, logger);
 
         await service.StartAsync(CancellationToken.None);
         await Task.Delay(100);
@@ -114,12 +126,33 @@ public class AgentHostedServiceTests
     public async Task StartAsync_NoAgents_CompletesWithoutStartingLoops()
     {
         var logger = new TestLogger<AgentHostedService>();
-        var service = new AgentHostedService(CreateOptions(), logger);
+        var service = CreateService(logger: logger);
 
         await service.StartAsync(CancellationToken.None);
         await service.StopAsync(CancellationToken.None);
 
         Assert.DoesNotContain(logger.Entries, e =>
             e.Message.Contains("Starting polling loop"));
+    }
+
+    [Fact]
+    public async Task StartAsync_McpClientCreationFails_LogsErrorAndContinues()
+    {
+        var agents = new List<AgentIdentityOptions>
+        {
+            new() { Name = "failing-agent", PollingIntervalSeconds = 1 }
+        };
+        var logger = new TestLogger<AgentHostedService>();
+        var factory = new FakeMcpClientFactory { ThrowOnCreate = true };
+        var service = CreateService(agents, logger, factory);
+
+        await service.StartAsync(CancellationToken.None);
+        await Task.Delay(200);
+        await service.StopAsync(CancellationToken.None);
+
+        Assert.Contains(logger.Entries, e =>
+            e.Level == LogLevel.Error &&
+            e.Message.Contains("Failed to create MCP client") &&
+            e.Message.Contains("'failing-agent'"));
     }
 }

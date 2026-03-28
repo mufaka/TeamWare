@@ -11,7 +11,7 @@ This document defines the phased implementation plan for the TeamWare Copilot Ag
 =======
 | 36 | TeamWare Prerequisites (Blocked/Error Statuses) | ✅ Complete |
 | 37 | Agent Project Scaffold and Configuration | ✅ Complete |
-| 38 | Polling Loop and Task Discovery | Not Started |
+| 38 | Polling Loop and Task Discovery | ✅ Complete |
 | 39 | Task Processing Pipeline | Not Started |
 | 40 | Status Transitions and Reporting | Not Started |
 | 41 | Safety Guardrails and Dry Run | Not Started |
@@ -185,45 +185,45 @@ Connect the polling loop to TeamWare's MCP endpoint. The agent authenticates, ch
 
 ### 38.1 Agent Polling Loop
 
-- [ ] Create `TeamWare.Agent/Pipeline/AgentPollingLoop.cs` (CA-30 through CA-36):
-  - [ ] Accept an `AgentIdentityOptions` instance and `CancellationToken`
-  - [ ] Run a loop: each cycle calls `get_my_profile`, checks active status, calls `my_assignments` if active, then waits `PollingIntervalSeconds`
-  - [ ] If `get_my_profile` returns `isAgentActive = false`, log a message and skip to the next cycle (CA-31)
-  - [ ] Filter `my_assignments` results to tasks with status `ToDo` only (CA-33)
-  - [ ] Log discovered tasks: count, IDs, titles
-  - [ ] For this phase, do not process tasks — just log "Would process task #{id}: {title}"
-  - [ ] Constant polling interval — no backoff or acceleration (CA-36)
-- [ ] Define an interface or abstraction for MCP tool invocation (to allow mocking):
-  - [ ] `ITeamWareMcpClient` (or similar) with methods: `GetMyProfileAsync()`, `GetMyAssignmentsAsync()`, `GetTaskAsync(int taskId)`, `UpdateTaskStatusAsync(int taskId, string status)`, `AddCommentAsync(int taskId, string content)`, `PostLoungeMessageAsync(int? projectId, string content)`
-  - [ ] HTTP-based implementation that calls the TeamWare MCP endpoint using the PAT from configuration
-- [ ] Update `AgentHostedService` to create an `AgentPollingLoop` per identity instead of the placeholder loop
-- [ ] Write unit tests verifying (CA-TEST-01, CA-TEST-02):
-  - [ ] Polling loop calls `get_my_profile` at the start of each cycle
-  - [ ] Loop skips processing when `isAgentActive = false`
-  - [ ] Loop calls `my_assignments` when active
-  - [ ] Loop filters for `ToDo` tasks only
-  - [ ] Loop waits the correct interval between cycles
-  - [ ] Loop handles cancellation gracefully
+- [x] Create `TeamWare.Agent/Pipeline/AgentPollingLoop.cs` (CA-30 through CA-36):
+  - [x] Accept an `AgentIdentityOptions` instance and `CancellationToken`
+  - [x] Run a loop: each cycle calls `get_my_profile`, checks active status, calls `my_assignments` if active, then waits `PollingIntervalSeconds`
+  - [x] If `get_my_profile` returns `isAgentActive = false`, log a message and skip to the next cycle (CA-31)
+  - [x] Filter `my_assignments` results to tasks with status `ToDo` only (CA-33)
+  - [x] Log discovered tasks: count, IDs, titles
+  - [x] For this phase, do not process tasks — just log "Would process task #{id}: {title}"
+  - [x] Constant polling interval — no backoff or acceleration (CA-36)
+- [x] Define an interface or abstraction for MCP tool invocation (to allow mocking):
+  - [x] `ITeamWareMcpClient` (or similar) with methods: `GetMyProfileAsync()`, `GetMyAssignmentsAsync()`, `GetTaskAsync(int taskId)`, `UpdateTaskStatusAsync(int taskId, string status)`, `AddCommentAsync(int taskId, string content)`, `PostLoungeMessageAsync(int? projectId, string content)`
+  - [x] HTTP-based implementation that calls the TeamWare MCP endpoint using the PAT from configuration
+- [x] Update `AgentHostedService` to create an `AgentPollingLoop` per identity instead of the placeholder loop
+- [x] Write unit tests verifying (CA-TEST-01, CA-TEST-02):
+  - [x] Polling loop calls `get_my_profile` at the start of each cycle
+  - [x] Loop skips processing when `isAgentActive = false`
+  - [x] Loop calls `my_assignments` when active
+  - [x] Loop filters for `ToDo` tasks only
+  - [x] Loop waits the correct interval between cycles
+  - [x] Loop handles cancellation gracefully
 
 ### 38.2 Infrastructure Error Handling
 
-- [ ] Implement error handling in `AgentPollingLoop` for MCP connectivity issues (CA-150):
-  - [ ] If `get_my_profile` or `my_assignments` throws a network/HTTP error, log the error and wait for the next cycle
-  - [ ] Do not crash the polling loop on transient errors
-  - [ ] Do not crash other agent identities if one identity's loop fails
-- [ ] Write unit tests verifying (CA-TEST-09):
-  - [ ] Network errors during profile check are logged and the loop continues
-  - [ ] Network errors during task discovery are logged and the loop continues
-  - [ ] One identity's error does not affect other identities
+- [x] Implement error handling in `AgentPollingLoop` for MCP connectivity issues (CA-150):
+  - [x] If `get_my_profile` or `my_assignments` throws a network/HTTP error, log the error and wait for the next cycle
+  - [x] Do not crash the polling loop on transient errors
+  - [x] Do not crash other agent identities if one identity's loop fails
+- [x] Write unit tests verifying (CA-TEST-09):
+  - [x] Network errors during profile check are logged and the loop continues
+  - [x] Network errors during task discovery are logged and the loop continues
+  - [x] One identity's error does not affect other identities
 
 ### 38.3 MCP Client Integration Tests
 
-- [ ] Write integration tests verifying end-to-end connectivity (CA-TEST-20):
-  - [ ] Agent identity authenticates via PAT to a running TeamWare instance
-  - [ ] `get_my_profile` returns the correct agent identity
-  - [ ] `my_assignments` returns tasks assigned to the agent
-  - [ ] Invalid PAT is rejected
-  - [ ] Paused agent (`IsActive = false`) is rejected at the MCP level (CA-TEST-22)
+- [x] Write integration tests verifying end-to-end connectivity (CA-TEST-20):
+  - [x] Agent identity authenticates via PAT to a running TeamWare instance
+  - [x] `get_my_profile` returns the correct agent identity
+  - [x] `my_assignments` returns tasks assigned to the agent
+  - [x] Invalid PAT is rejected
+  - [x] Paused agent (`IsActive = false`) is rejected at the MCP level (CA-TEST-22)
 
 ---
 

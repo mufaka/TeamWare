@@ -2,21 +2,29 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using TeamWare.Agent.Configuration;
+using TeamWare.Agent.Mcp;
+using TeamWare.Agent.Pipeline;
 
 namespace TeamWare.Agent;
 
 public class AgentHostedService : IHostedService
 {
     private readonly List<AgentIdentityOptions> _agents;
+    private readonly ITeamWareMcpClientFactory _mcpClientFactory;
+    private readonly ILoggerFactory _loggerFactory;
     private readonly ILogger<AgentHostedService> _logger;
     private readonly List<Task> _pollingTasks = [];
     private CancellationTokenSource? _cts;
 
     public AgentHostedService(
         IOptions<List<AgentIdentityOptions>> agents,
+        ITeamWareMcpClientFactory mcpClientFactory,
+        ILoggerFactory loggerFactory,
         ILogger<AgentHostedService> logger)
     {
         _agents = agents.Value;
+        _mcpClientFactory = mcpClientFactory;
+        _loggerFactory = loggerFactory;
         _logger = logger;
     }
 
@@ -67,30 +75,35 @@ public class AgentHostedService : IHostedService
 
     private async Task RunPollingLoopAsync(AgentIdentityOptions agent, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Polling loop started for agent identity '{AgentName}'", agent.Name);
+        ITeamWareMcpClient? mcpClient = null;
 
-        while (!cancellationToken.IsCancellationRequested)
+        try
         {
-            try
-            {
-                _logger.LogDebug("Polling cycle for '{AgentName}'", agent.Name);
-                // Placeholder: actual polling logic will be added in Phase 38
-            }
-            catch (Exception ex) when (ex is not OperationCanceledException)
-            {
-                _logger.LogError(ex, "Error in polling cycle for agent identity '{AgentName}'", agent.Name);
-            }
-
-            try
-            {
-                await Task.Delay(TimeSpan.FromSeconds(agent.PollingIntervalSeconds), cancellationToken);
-            }
-            catch (OperationCanceledException)
-            {
-                break;
-            }
+            mcpClient = await _mcpClientFactory.CreateAsync(agent, cancellationToken);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _logger.LogError(ex,
+                "Failed to create MCP client for agent identity '{AgentName}'. Polling loop will not start",
+                agent.Name);
+            return;
         }
 
-        _logger.LogInformation("Polling loop stopped for agent identity '{AgentName}'", agent.Name);
+        try
+        {
+            var pollingLoop = new AgentPollingLoop(
+                agent,
+                mcpClient,
+                _loggerFactory.CreateLogger<AgentPollingLoop>());
+
+            await pollingLoop.RunAsync(cancellationToken);
+        }
+        finally
+        {
+            if (mcpClient is not null)
+            {
+                await mcpClient.DisposeAsync();
+            }
+        }
     }
 }
