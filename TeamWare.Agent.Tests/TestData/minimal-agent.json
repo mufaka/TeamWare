@@ -1,0 +1,16 @@
+﻿{
+  "Agents": [
+    {
+      "Name": "minimal-agent",
+      "WorkingDirectory": "/tmp/work",
+      "PersonalAccessToken": "pat-minimal",
+      "McpServers": [
+        {
+          "Name": "teamware",
+          "Type": "http",
+          "Url": "https://localhost:5001/mcp"
+        }
+      ]
+    }
+  ]
+}

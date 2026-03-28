@@ -1,0 +1,28 @@
+﻿{
+  "Agents": [
+    {
+      "Name": "agent-one",
+      "WorkingDirectory": "/tmp/work1",
+      "PersonalAccessToken": "pat-one",
+      "McpServers": [
+        {
+          "Name": "teamware",
+          "Type": "http",
+          "Url": "https://localhost:5001/mcp"
+        }
+      ]
+    },
+    {
+      "Name": "agent-two",
+      "WorkingDirectory": "/tmp/work2",
+      "PersonalAccessToken": "pat-two",
+      "McpServers": [
+        {
+          "Name": "teamware",
+          "Type": "http",
+          "Url": "https://localhost:5001/mcp"
+        }
+      ]
+    }
+  ]
+}
