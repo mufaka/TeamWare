@@ -14,7 +14,7 @@ This document defines the phased implementation plan for the TeamWare Copilot Ag
 | 38 | Polling Loop and Task Discovery | ✅ Complete |
 | 39 | Task Processing Pipeline | ✅ Complete |
 | 40 | Status Transitions and Reporting | ✅ Complete |
-| 41 | Safety Guardrails and Dry Run | Not Started |
+| 41 | Safety Guardrails and Dry Run | ✅ Complete |
 | 42 | Repository Management and Lounge Integration | Not Started |
 | 43 | Agent Polish and Hardening | Not Started |
 
@@ -333,44 +333,44 @@ Implement dry run mode, the custom permission handler, and verify all safety gua
 
 ### 41.1 Dry Run Mode
 
-- [ ] Create `TeamWare.Agent/Logging/DryRunLogger.cs` (CA-120 through CA-123):
-  - [ ] Intercept write tool calls and log them instead of executing
-  - [ ] Log tool name, parameters, and the LLM's reasoning
-  - [ ] Allow read tools to execute normally
-- [ ] Implement dry run mode in `TaskProcessor`:
-  - [ ] When `DryRun = true`, configure the session or permission handler to block all write operations (CA-121)
-  - [ ] Log all would-be tool calls via `DryRunLogger` (CA-122)
-  - [ ] The full pipeline still runs: polling, task discovery, session creation, LLM reasoning — only writes are blocked
-- [ ] Write unit tests verifying (CA-TEST-08):
-  - [ ] Dry run mode prevents all write tool invocations
-  - [ ] Read/reasoning pipeline still executes
-  - [ ] Tool calls are logged with name, parameters, and reasoning
-  - [ ] Dry run mode is configurable per identity
+- [x] Create `TeamWare.Agent/Logging/DryRunLogger.cs` (CA-120 through CA-123):
+  - [x] Intercept write tool calls and log them instead of executing
+  - [x] Log tool name, parameters, and the LLM's reasoning
+  - [x] Allow read tools to execute normally
+- [x] Implement dry run mode in `TaskProcessor`:
+  - [x] When `DryRun = true`, configure the session or permission handler to block all write operations (CA-121)
+  - [x] Log all would-be tool calls via `DryRunLogger` (CA-122)
+  - [x] The full pipeline still runs: polling, task discovery, session creation, LLM reasoning — only writes are blocked
+- [x] Write unit tests verifying (CA-TEST-08):
+  - [x] Dry run mode prevents all write tool invocations
+  - [x] Read/reasoning pipeline still executes
+  - [x] Tool calls are logged with name, parameters, and reasoning
+  - [x] Dry run mode is configurable per identity
 
 ### 41.2 Custom Permission Handler
 
-- [ ] Create `TeamWare.Agent/Permissions/AgentPermissionHandler.cs` (CA-131):
-  - [ ] Implement the SDK's permission handler callback interface
-  - [ ] Inspect each tool call before approving
-  - [ ] Optionally block dangerous operations (e.g., `rm -rf`, `git push --force`, commits to main/master) (CA-SEC-06)
-  - [ ] Log approved and denied tool calls
-- [ ] Wire up the permission handler: use `PermissionHandler.ApproveAll` when `AutoApproveTools = true`, use `AgentPermissionHandler` when `false` (CA-130)
-- [ ] Write unit tests verifying:
-  - [ ] `AutoApproveTools = true` uses `PermissionHandler.ApproveAll`
-  - [ ] `AutoApproveTools = false` uses the custom handler
-  - [ ] Custom handler logs decisions
-  - [ ] Permission handler is independent of dry run mode (CA-132)
+- [x] Create `TeamWare.Agent/Permissions/AgentPermissionHandler.cs` (CA-131):
+  - [x] Implement the SDK's permission handler callback interface
+  - [x] Inspect each tool call before approving
+  - [x] Optionally block dangerous operations (e.g., `rm -rf`, `git push --force`, commits to main/master) (CA-SEC-06)
+  - [x] Log approved and denied tool calls
+- [x] Wire up the permission handler: use `PermissionHandler.ApproveAll` when `AutoApproveTools = true`, use `AgentPermissionHandler` when `false` (CA-130)
+- [x] Write unit tests verifying:
+  - [x] `AutoApproveTools = true` uses `PermissionHandler.ApproveAll`
+  - [x] `AutoApproveTools = false` uses the custom handler
+  - [x] Custom handler logs decisions
+  - [x] Permission handler is independent of dry run mode (CA-132)
 
 ### 41.3 Action Restriction Verification
 
-- [ ] Verify all action restrictions from the specification are enforced by the system prompt and/or the MCP tool layer (CA-90 through CA-94):
-  - [ ] Agent cannot create tasks (system prompt rule, not enforced at SDK level)
-  - [ ] Agent cannot delete tasks (no delete tool exists)
-  - [ ] Agent cannot delete comments (no delete tool exists)
-  - [ ] Agent cannot reassign tasks (system prompt rule)
-  - [ ] Agent cannot set status to Done (system prompt rule)
-- [ ] Write integration tests verifying the system prompt is correctly included in the session
-- [ ] Document that action restrictions beyond the system prompt (e.g., hard-blocking `create_task` calls) are the responsibility of the `OnPermissionRequest` handler when `AutoApproveTools = false`
+- [x] Verify all action restrictions from the specification are enforced by the system prompt and/or the MCP tool layer (CA-90 through CA-94):
+  - [x] Agent cannot create tasks (system prompt rule, not enforced at SDK level)
+  - [x] Agent cannot delete tasks (no delete tool exists)
+  - [x] Agent cannot delete comments (no delete tool exists)
+  - [x] Agent cannot reassign tasks (system prompt rule)
+  - [x] Agent cannot set status to Done (system prompt rule)
+- [x] Write integration tests verifying the system prompt is correctly included in the session
+- [x] Document that action restrictions beyond the system prompt (e.g., hard-blocking `create_task` calls) are the responsibility of the `OnPermissionRequest` handler when `AutoApproveTools = false`
 
 ---
 
