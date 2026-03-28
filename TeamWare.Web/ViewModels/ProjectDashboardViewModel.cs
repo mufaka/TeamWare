@@ -22,7 +22,11 @@ public class ProjectDashboardViewModel
 
     public int TaskCountDone { get; set; }
 
-    public int TotalTasks => TaskCountToDo + TaskCountInProgress + TaskCountInReview + TaskCountDone;
+    public int TaskCountBlocked { get; set; }
+
+    public int TaskCountError { get; set; }
+
+    public int TotalTasks => TaskCountToDo + TaskCountInProgress + TaskCountInReview + TaskCountDone + TaskCountBlocked + TaskCountError;
 
     public List<ProjectMemberViewModel> Members { get; set; } = new();
 

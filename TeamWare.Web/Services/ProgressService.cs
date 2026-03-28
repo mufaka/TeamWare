@@ -27,6 +27,8 @@ public class ProgressService : IProgressService
             TaskCountInProgress = tasks.FirstOrDefault(t => t.Status == TaskItemStatus.InProgress)?.Count ?? 0,
             TaskCountInReview = tasks.FirstOrDefault(t => t.Status == TaskItemStatus.InReview)?.Count ?? 0,
             TaskCountDone = tasks.FirstOrDefault(t => t.Status == TaskItemStatus.Done)?.Count ?? 0,
+            TaskCountBlocked = tasks.FirstOrDefault(t => t.Status == TaskItemStatus.Blocked)?.Count ?? 0,
+            TaskCountError = tasks.FirstOrDefault(t => t.Status == TaskItemStatus.Error)?.Count ?? 0,
             TotalTasks = tasks.Sum(t => t.Count)
         };
     }
