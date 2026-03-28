@@ -11,6 +11,7 @@ public class AgentHostedService : IHostedService
 {
     private readonly List<AgentIdentityOptions> _agents;
     private readonly ITeamWareMcpClientFactory _mcpClientFactory;
+    private readonly ICopilotClientWrapperFactory _copilotFactory;
     private readonly ILoggerFactory _loggerFactory;
     private readonly ILogger<AgentHostedService> _logger;
     private readonly List<Task> _pollingTasks = [];
@@ -19,11 +20,13 @@ public class AgentHostedService : IHostedService
     public AgentHostedService(
         IOptions<List<AgentIdentityOptions>> agents,
         ITeamWareMcpClientFactory mcpClientFactory,
+        ICopilotClientWrapperFactory copilotFactory,
         ILoggerFactory loggerFactory,
         ILogger<AgentHostedService> logger)
     {
         _agents = agents.Value;
         _mcpClientFactory = mcpClientFactory;
+        _copilotFactory = copilotFactory;
         _loggerFactory = loggerFactory;
         _logger = logger;
     }
@@ -94,6 +97,7 @@ public class AgentHostedService : IHostedService
             var pollingLoop = new AgentPollingLoop(
                 agent,
                 mcpClient,
+                _copilotFactory,
                 _loggerFactory.CreateLogger<AgentPollingLoop>());
 
             await pollingLoop.RunAsync(cancellationToken);
