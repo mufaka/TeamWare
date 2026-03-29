@@ -63,7 +63,8 @@ public class TaskProcessor
             task.Id);
 
         // Send prompt and wait for the session to complete (CA-42)
-        await session.SendAndWaitAsync(prompt, cancellationToken: cancellationToken);
+        var timeout = TimeSpan.FromSeconds(_options.TaskTimeoutSeconds);
+        await session.SendAndWaitAsync(prompt, timeout, cancellationToken);
 
         _logger.LogInformation(
             "Copilot session completed for task #{TaskId}: {TaskTitle}",

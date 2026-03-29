@@ -103,6 +103,7 @@ public class AgentIdentityOptionsTests
         Assert.Equal(60, agent.PollingIntervalSeconds);
         Assert.True(agent.AutoApproveTools);
         Assert.False(agent.DryRun);
+        Assert.Equal(600, agent.TaskTimeoutSeconds);
         Assert.Null(agent.Model);
         Assert.Null(agent.SystemPrompt);
         Assert.Null(agent.RepositoryUrl);

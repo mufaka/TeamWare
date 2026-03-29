@@ -12,6 +12,7 @@ public class AgentIdentityOptions
     public string? Model { get; set; }
     public bool AutoApproveTools { get; set; } = true;
     public bool DryRun { get; set; }
+    public int TaskTimeoutSeconds { get; set; } = 600;
     public string? SystemPrompt { get; set; }
     public List<McpServerOptions> McpServers { get; set; } = [];
 }
