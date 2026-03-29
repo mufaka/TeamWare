@@ -20,4 +20,13 @@
     <PackageReference Include="ModelContextProtocol" Version="1.1.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="appsettings.example.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>
