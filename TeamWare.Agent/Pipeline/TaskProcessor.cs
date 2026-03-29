@@ -19,6 +19,7 @@ public class TaskProcessor
     private readonly AgentIdentityOptions _options;
     private readonly ICopilotClientWrapperFactory _clientFactory;
     private readonly ITeamWareMcpClient _mcpClient;
+    private readonly string? _workingDirectoryOverride;
     private readonly ILogger _logger;
 
     public TaskProcessor(
@@ -26,10 +27,21 @@ public class TaskProcessor
         ICopilotClientWrapperFactory clientFactory,
         ITeamWareMcpClient mcpClient,
         ILogger logger)
+        : this(options, clientFactory, mcpClient, workingDirectory: null, logger)
+    {
+    }
+
+    public TaskProcessor(
+        AgentIdentityOptions options,
+        ICopilotClientWrapperFactory clientFactory,
+        ITeamWareMcpClient mcpClient,
+        string? workingDirectory,
+        ILogger logger)
     {
         _options = options;
         _clientFactory = clientFactory;
         _mcpClient = mcpClient;
+        _workingDirectoryOverride = workingDirectory;
         _logger = logger;
     }
 
@@ -45,8 +57,9 @@ public class TaskProcessor
         // Fetch full task details including description and comments (CA-42)
         var taskDetail = await _mcpClient.GetTaskAsync(task.Id, cancellationToken);
 
-        // Create the Copilot client (CA-44)
-        await using var client = _clientFactory.Create(_options, _logger);
+        // Create the Copilot client with the resolved working directory (CA-44)
+        var cwd = _workingDirectoryOverride ?? _options.WorkingDirectory;
+        await using var client = _clientFactory.Create(_options, cwd, _logger);
         await client.StartAsync();
 
         // Build session configuration (CA-41)
@@ -59,8 +72,8 @@ public class TaskProcessor
         var prompt = BuildTaskPrompt(taskDetail, task.ProjectName);
 
         _logger.LogDebug(
-            "Sending task prompt for task #{TaskId} to Copilot session",
-            task.Id);
+            "Sending task prompt for task #{TaskId} to Copilot session (cwd: {Cwd})",
+            task.Id, cwd);
 
         // Send prompt and wait for the session to complete (CA-42)
         var timeout = TimeSpan.FromSeconds(_options.TaskTimeoutSeconds);

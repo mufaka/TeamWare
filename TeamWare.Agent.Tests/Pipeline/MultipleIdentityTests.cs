@@ -311,5 +311,8 @@ public class MultipleIdentityTests
         {
             return new FakeCopilotClientWrapper { ThrowOnCreateSession = true };
         }
+
+        public ICopilotClientWrapper Create(AgentIdentityOptions options, string workingDirectory, ILogger logger)
+            => Create(options, logger);
     }
 }

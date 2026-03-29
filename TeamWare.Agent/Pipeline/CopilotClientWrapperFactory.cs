@@ -11,9 +11,14 @@ public class CopilotClientWrapperFactory : ICopilotClientWrapperFactory
 {
     public ICopilotClientWrapper Create(AgentIdentityOptions options, ILogger logger)
     {
+        return Create(options, options.WorkingDirectory, logger);
+    }
+
+    public ICopilotClientWrapper Create(AgentIdentityOptions options, string workingDirectory, ILogger logger)
+    {
         var clientOptions = new CopilotClientOptions
         {
-            Cwd = options.WorkingDirectory,
+            Cwd = workingDirectory,
             Logger = logger,
             AutoStart = false
         };

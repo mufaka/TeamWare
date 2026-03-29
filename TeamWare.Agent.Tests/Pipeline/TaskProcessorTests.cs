@@ -395,6 +395,9 @@ public class TaskProcessorTests
         {
             return new FakeCopilotClientWrapper { ThrowOnStart = true };
         }
+
+        public ICopilotClientWrapper Create(AgentIdentityOptions options, string workingDirectory, ILogger logger)
+            => Create(options, logger);
     }
 
     private class ThrowOnCreateSessionCopilotFactory : ICopilotClientWrapperFactory
@@ -403,6 +406,9 @@ public class TaskProcessorTests
         {
             return new FakeCopilotClientWrapper { ThrowOnCreateSession = true };
         }
+
+        public ICopilotClientWrapper Create(AgentIdentityOptions options, string workingDirectory, ILogger logger)
+            => Create(options, logger);
     }
 
     private class ThrowOnSendCopilotFactory : ICopilotClientWrapperFactory
@@ -418,6 +424,9 @@ public class TaskProcessorTests
             LastSession = session;
             return client;
         }
+
+        public ICopilotClientWrapper Create(AgentIdentityOptions options, string workingDirectory, ILogger logger)
+            => Create(options, logger);
 
         private class ThrowOnSendClient : ICopilotClientWrapper
         {

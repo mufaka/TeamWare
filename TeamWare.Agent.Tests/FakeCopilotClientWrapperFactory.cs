@@ -23,4 +23,7 @@ public class FakeCopilotClientWrapperFactory : ICopilotClientWrapperFactory
         LastCreatedClient = new FakeCopilotClientWrapper();
         return LastCreatedClient;
     }
+
+    public ICopilotClientWrapper Create(AgentIdentityOptions options, string workingDirectory, ILogger logger)
+        => Create(options, logger);
 }

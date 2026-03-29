@@ -26,79 +26,93 @@ public class RepositoryManager
     /// </summary>
     public async Task EnsureRepositoryAsync(AgentIdentityOptions options, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(options.RepositoryUrl))
+        var resolved = new ResolvedRepository(
+            options.RepositoryUrl,
+            options.RepositoryBranch ?? "main",
+            options.RepositoryAccessToken,
+            options.WorkingDirectory);
+
+        await EnsureRepositoryAsync(resolved, options.Name, cancellationToken);
+    }
+
+    /// <summary>
+    /// Ensures the working directory for a resolved repository has the latest code.
+    /// If no RepositoryUrl is configured, this is a no-op (CA-53).
+    /// If the directory has no .git, clones the repository (CA-50).
+    /// If the directory has .git, pulls the latest from the configured branch (CA-51).
+    /// </summary>
+    public async Task EnsureRepositoryAsync(ResolvedRepository repo, string agentName, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(repo.RepositoryUrl))
         {
             _logger.LogDebug(
                 "Agent '{AgentName}': No RepositoryUrl configured — skipping repository sync",
-                options.Name);
+                agentName);
             return;
         }
 
-        var gitDir = Path.Combine(options.WorkingDirectory, ".git");
+        var gitDir = Path.Combine(repo.WorkingDirectory, ".git");
 
         if (Directory.Exists(gitDir))
         {
-            await PullLatestAsync(options, cancellationToken);
+            await PullLatestAsync(repo, agentName, cancellationToken);
         }
         else
         {
-            await CloneRepositoryAsync(options, cancellationToken);
+            await CloneRepositoryAsync(repo, agentName, cancellationToken);
         }
     }
 
-    private async Task CloneRepositoryAsync(AgentIdentityOptions options, CancellationToken cancellationToken)
+    private async Task CloneRepositoryAsync(ResolvedRepository repo, string agentName, CancellationToken cancellationToken)
     {
-        var repoUrl = BuildAuthenticatedUrl(options.RepositoryUrl!, options.RepositoryAccessToken);
-        var branch = options.RepositoryBranch ?? "main";
+        var repoUrl = BuildAuthenticatedUrl(repo.RepositoryUrl!, repo.AccessToken);
 
         _logger.LogInformation(
             "Agent '{AgentName}': Cloning repository to '{WorkingDirectory}' (branch: {Branch})",
-            options.Name, options.WorkingDirectory, branch);
+            agentName, repo.WorkingDirectory, repo.Branch);
 
         // Ensure parent directory exists
-        var parentDir = Path.GetDirectoryName(options.WorkingDirectory);
+        var parentDir = Path.GetDirectoryName(repo.WorkingDirectory);
         if (!string.IsNullOrEmpty(parentDir) && !Directory.Exists(parentDir))
         {
             Directory.CreateDirectory(parentDir);
         }
 
-        var args = $"clone --branch {branch} --single-branch {repoUrl} {options.WorkingDirectory}";
-        await RunGitCommandAsync(args, workingDirectory: null, options.Name, cancellationToken);
+        var args = $"clone --branch {repo.Branch} --single-branch {repoUrl} {repo.WorkingDirectory}";
+        await RunGitCommandAsync(args, workingDirectory: null, agentName, cancellationToken);
 
         _logger.LogInformation(
             "Agent '{AgentName}': Repository cloned successfully",
-            options.Name);
+            agentName);
     }
 
-    private async Task PullLatestAsync(AgentIdentityOptions options, CancellationToken cancellationToken)
+    private async Task PullLatestAsync(ResolvedRepository repo, string agentName, CancellationToken cancellationToken)
     {
-        var branch = options.RepositoryBranch ?? "main";
-
         _logger.LogInformation(
             "Agent '{AgentName}': Pulling latest from branch '{Branch}' in '{WorkingDirectory}'",
-            options.Name, branch, options.WorkingDirectory);
+            agentName, repo.Branch, repo.WorkingDirectory);
 
         // If access token is configured, update the remote URL
-        if (!string.IsNullOrWhiteSpace(options.RepositoryAccessToken) &&
-            !string.IsNullOrWhiteSpace(options.RepositoryUrl))
+        if (!string.IsNullOrWhiteSpace(repo.AccessToken) &&
+            !string.IsNullOrWhiteSpace(repo.RepositoryUrl))
         {
-            var authenticatedUrl = BuildAuthenticatedUrl(options.RepositoryUrl, options.RepositoryAccessToken);
+            var authenticatedUrl = BuildAuthenticatedUrl(repo.RepositoryUrl, repo.AccessToken);
             await RunGitCommandAsync(
                 $"remote set-url origin {authenticatedUrl}",
-                options.WorkingDirectory,
-                options.Name,
+                repo.WorkingDirectory,
+                agentName,
                 cancellationToken);
         }
 
         await RunGitCommandAsync(
-            $"pull origin {branch}",
-            options.WorkingDirectory,
-            options.Name,
+            $"pull origin {repo.Branch}",
+            repo.WorkingDirectory,
+            agentName,
             cancellationToken);
 
         _logger.LogInformation(
             "Agent '{AgentName}': Pull completed successfully",
-            options.Name);
+            agentName);
     }
 
     internal async Task<(int ExitCode, string Output, string Error)> RunGitCommandAsync(

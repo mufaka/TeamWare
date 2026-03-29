@@ -1,0 +1,30 @@
+﻿{
+  "Agents": [
+    {
+      "Name": "multi-repo-agent",
+      "WorkingDirectory": "/tmp/work",
+      "PersonalAccessToken": "pat-multi",
+      "PollingIntervalSeconds": 45,
+      "Repositories": [
+        {
+          "ProjectName": "Frontend",
+          "Url": "https://github.com/org/frontend.git",
+          "Branch": "dev",
+          "AccessToken": "ghp_frontend"
+        },
+        {
+          "ProjectName": "Backend",
+          "Url": "https://github.com/org/backend.git"
+        }
+      ],
+      "McpServers": [
+        {
+          "Name": "teamware",
+          "Type": "http",
+          "Url": "https://localhost:5001/mcp",
+          "AuthHeader": "Bearer pat-multi"
+        }
+      ]
+    }
+  ]
+}
