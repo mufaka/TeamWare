@@ -73,22 +73,39 @@ public class ProjectInvitationService : IProjectInvitationService
             ProjectId = projectId,
             InvitedUserId = invitedUserId,
             InvitedByUserId = invitedByUserId,
-            Status = InvitationStatus.Pending,
+            Status = invitedUser.IsAgent ? InvitationStatus.Accepted : InvitationStatus.Pending,
             Role = role,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
+            RespondedAt = invitedUser.IsAgent ? DateTime.UtcNow : null
         };
 
         _context.ProjectInvitations.Add(invitation);
+
+        if (invitedUser.IsAgent)
+        {
+            var newMember = new ProjectMember
+            {
+                ProjectId = projectId,
+                UserId = invitedUserId,
+                Role = role,
+                JoinedAt = DateTime.UtcNow
+            };
+            _context.ProjectMembers.Add(newMember);
+        }
+
         await _context.SaveChangesAsync();
 
-        var inviterUser = await _context.Users.FindAsync(invitedByUserId);
-        var inviterName = inviterUser?.DisplayName ?? "Someone";
+        if (!invitedUser.IsAgent)
+        {
+            var inviterUser = await _context.Users.FindAsync(invitedByUserId);
+            var inviterName = inviterUser?.DisplayName ?? "Someone";
 
-        await _notificationService.CreateNotification(
-            invitedUserId,
-            $"{inviterName} invited you to join project \"{project.Name}\"",
-            NotificationType.ProjectInvitation,
-            invitation.Id);
+            await _notificationService.CreateNotification(
+                invitedUserId,
+                $"{inviterName} invited you to join project \"{project.Name}\"",
+                NotificationType.ProjectInvitation,
+                invitation.Id);
+        }
 
         return ServiceResult<ProjectInvitation>.Success(invitation);
     }
@@ -251,5 +268,112 @@ public class ProjectInvitationService : IProjectInvitationService
             .ToListAsync();
 
         return ServiceResult<List<ProjectInvitation>>.Success(invitations);
+    }
+
+    public async Task<ServiceResult> CancelInvitation(int invitationId, string cancelledByUserId)
+    {
+        if (string.IsNullOrEmpty(cancelledByUserId))
+        {
+            return ServiceResult.Failure("User ID is required.");
+        }
+
+        var invitation = await _context.ProjectInvitations.FindAsync(invitationId);
+
+        if (invitation == null)
+        {
+            return ServiceResult.Failure("Invitation not found.");
+        }
+
+        if (invitation.Status != InvitationStatus.Pending)
+        {
+            return ServiceResult.Failure("Only pending invitations can be cancelled.");
+        }
+
+        var cancellerMembership = await _context.ProjectMembers
+            .FirstOrDefaultAsync(pm => pm.ProjectId == invitation.ProjectId && pm.UserId == cancelledByUserId);
+
+        if (cancellerMembership == null || (cancellerMembership.Role != ProjectRole.Owner && cancellerMembership.Role != ProjectRole.Admin))
+        {
+            return ServiceResult.Failure("Only project owners and admins can cancel invitations.");
+        }
+
+        invitation.Status = InvitationStatus.Cancelled;
+        invitation.RespondedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+
+        return ServiceResult.Success();
+    }
+
+    public async Task<ServiceResult<ProjectInvitation>> ResendInvitation(int invitationId, string resentByUserId)
+    {
+        if (string.IsNullOrEmpty(resentByUserId))
+        {
+            return ServiceResult<ProjectInvitation>.Failure("User ID is required.");
+        }
+
+        var invitation = await _context.ProjectInvitations
+            .Include(i => i.Project)
+            .FirstOrDefaultAsync(i => i.Id == invitationId);
+
+        if (invitation == null)
+        {
+            return ServiceResult<ProjectInvitation>.Failure("Invitation not found.");
+        }
+
+        if (invitation.Status != InvitationStatus.Pending)
+        {
+            return ServiceResult<ProjectInvitation>.Failure("Only pending invitations can be resent.");
+        }
+
+        var resenderMembership = await _context.ProjectMembers
+            .FirstOrDefaultAsync(pm => pm.ProjectId == invitation.ProjectId && pm.UserId == resentByUserId);
+
+        if (resenderMembership == null || (resenderMembership.Role != ProjectRole.Owner && resenderMembership.Role != ProjectRole.Admin))
+        {
+            return ServiceResult<ProjectInvitation>.Failure("Only project owners and admins can resend invitations.");
+        }
+
+        var invitedUser = await _context.Users.FindAsync(invitation.InvitedUserId);
+        if (invitedUser == null)
+        {
+            return ServiceResult<ProjectInvitation>.Failure("Invited user not found.");
+        }
+
+        if (invitedUser.IsAgent)
+        {
+            invitation.Status = InvitationStatus.Accepted;
+            invitation.RespondedAt = DateTime.UtcNow;
+
+            var existingMembership = await _context.ProjectMembers
+                .AnyAsync(pm => pm.ProjectId == invitation.ProjectId && pm.UserId == invitation.InvitedUserId);
+
+            if (!existingMembership)
+            {
+                var newMember = new ProjectMember
+                {
+                    ProjectId = invitation.ProjectId,
+                    UserId = invitation.InvitedUserId,
+                    Role = invitation.Role,
+                    JoinedAt = DateTime.UtcNow
+                };
+                _context.ProjectMembers.Add(newMember);
+            }
+        }
+        else
+        {
+            var resenderUser = await _context.Users.FindAsync(resentByUserId);
+            var resenderName = resenderUser?.DisplayName ?? "Someone";
+
+            await _notificationService.CreateNotification(
+                invitation.InvitedUserId,
+                $"{resenderName} reminded you about the invitation to join project \"{invitation.Project.Name}\"",
+                NotificationType.ProjectInvitation,
+                invitation.Id);
+        }
+
+        await _context.SaveChangesAsync();
+
+        return ServiceResult<ProjectInvitation>.Success(invitation);
     }
 }

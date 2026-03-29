@@ -15,4 +15,8 @@ public interface IProjectInvitationService
     Task<ServiceResult<List<ProjectInvitation>>> GetPendingInvitationsForProject(int projectId, string requestingUserId);
 
     Task<ServiceResult<List<ProjectInvitation>>> GetPendingInvitationsForUser(string userId);
+
+    Task<ServiceResult> CancelInvitation(int invitationId, string cancelledByUserId);
+
+    Task<ServiceResult<ProjectInvitation>> ResendInvitation(int invitationId, string resentByUserId);
 }

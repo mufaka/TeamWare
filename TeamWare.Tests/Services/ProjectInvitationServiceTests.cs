@@ -656,6 +656,357 @@ public class ProjectInvitationServiceTests : IDisposable
         Assert.True(result.Succeeded);
     }
 
+    // --- Agent auto-accept ---
+
+    private ApplicationUser CreateAgentUser(string email, string displayName)
+    {
+        var user = new ApplicationUser
+        {
+            UserName = email,
+            Email = email,
+            DisplayName = displayName,
+            IsAgent = true
+        };
+        _context.Users.Add(user);
+        _context.SaveChanges();
+        return user;
+    }
+
+    [Fact]
+    public async Task SendInvitation_AgentUser_AutoAcceptsInvitation()
+    {
+        var owner = CreateUser("agent-owner@test.com", "Owner");
+        var agent = CreateAgentUser("agent@test.com", "Agent Bot");
+        var project = await CreateProjectWithOwner(owner);
+
+        var result = await _invitationService.SendInvitation(project.Id, agent.Id, ProjectRole.Member, owner.Id);
+
+        Assert.True(result.Succeeded);
+        Assert.Equal(InvitationStatus.Accepted, result.Data!.Status);
+        Assert.NotNull(result.Data.RespondedAt);
+    }
+
+    [Fact]
+    public async Task SendInvitation_AgentUser_CreatesProjectMember()
+    {
+        var owner = CreateUser("agent-member-owner@test.com", "Owner");
+        var agent = CreateAgentUser("agent-member@test.com", "Agent Bot");
+        var project = await CreateProjectWithOwner(owner);
+
+        await _invitationService.SendInvitation(project.Id, agent.Id, ProjectRole.Member, owner.Id);
+
+        var isMember = await _context.ProjectMembers
+            .AnyAsync(pm => pm.ProjectId == project.Id && pm.UserId == agent.Id);
+        Assert.True(isMember);
+    }
+
+    [Fact]
+    public async Task SendInvitation_AgentUser_SetsCorrectRole()
+    {
+        var owner = CreateUser("agent-role-owner@test.com", "Owner");
+        var agent = CreateAgentUser("agent-role@test.com", "Agent Bot");
+        var project = await CreateProjectWithOwner(owner);
+
+        await _invitationService.SendInvitation(project.Id, agent.Id, ProjectRole.Admin, owner.Id);
+
+        var member = await _context.ProjectMembers
+            .FirstOrDefaultAsync(pm => pm.ProjectId == project.Id && pm.UserId == agent.Id);
+        Assert.NotNull(member);
+        Assert.Equal(ProjectRole.Admin, member.Role);
+    }
+
+    [Fact]
+    public async Task SendInvitation_AgentUser_DoesNotCreateNotification()
+    {
+        var owner = CreateUser("agent-notif-owner@test.com", "Owner");
+        var agent = CreateAgentUser("agent-notif@test.com", "Agent Bot");
+        var project = await CreateProjectWithOwner(owner);
+
+        await _invitationService.SendInvitation(project.Id, agent.Id, ProjectRole.Member, owner.Id);
+
+        var notifications = await _context.Notifications
+            .Where(n => n.UserId == agent.Id)
+            .ToListAsync();
+        Assert.Empty(notifications);
+    }
+
+    [Fact]
+    public async Task SendInvitation_NonAgentUser_StillCreatesPendingInvitation()
+    {
+        var owner = CreateUser("noagent-owner@test.com", "Owner");
+        var invitee = CreateUser("noagent-invitee@test.com", "Invitee");
+        var project = await CreateProjectWithOwner(owner);
+
+        var result = await _invitationService.SendInvitation(project.Id, invitee.Id, ProjectRole.Member, owner.Id);
+
+        Assert.True(result.Succeeded);
+        Assert.Equal(InvitationStatus.Pending, result.Data!.Status);
+        Assert.Null(result.Data.RespondedAt);
+    }
+
+    // --- CancelInvitation ---
+
+    [Fact]
+    public async Task CancelInvitation_AsOwner_Succeeds()
+    {
+        var owner = CreateUser("cancel-owner@test.com", "Owner");
+        var invitee = CreateUser("cancel-invitee@test.com", "Invitee");
+        var project = await CreateProjectWithOwner(owner);
+        var send = await _invitationService.SendInvitation(project.Id, invitee.Id, ProjectRole.Member, owner.Id);
+
+        var result = await _invitationService.CancelInvitation(send.Data!.Id, owner.Id);
+
+        Assert.True(result.Succeeded);
+    }
+
+    [Fact]
+    public async Task CancelInvitation_SetsStatusToCancelled()
+    {
+        var owner = CreateUser("cancel-status-owner@test.com", "Owner");
+        var invitee = CreateUser("cancel-status-invitee@test.com", "Invitee");
+        var project = await CreateProjectWithOwner(owner);
+        var send = await _invitationService.SendInvitation(project.Id, invitee.Id, ProjectRole.Member, owner.Id);
+
+        await _invitationService.CancelInvitation(send.Data!.Id, owner.Id);
+
+        var invitation = await _context.ProjectInvitations.FindAsync(send.Data.Id);
+        Assert.Equal(InvitationStatus.Cancelled, invitation!.Status);
+        Assert.NotNull(invitation.RespondedAt);
+    }
+
+    [Fact]
+    public async Task CancelInvitation_AsAdmin_Succeeds()
+    {
+        var owner = CreateUser("cancel-admin-owner@test.com", "Owner");
+        var admin = CreateUser("cancel-admin@test.com", "Admin");
+        var invitee = CreateUser("cancel-admin-invitee@test.com", "Invitee");
+        var project = await CreateProjectWithOwner(owner);
+        AddMember(project.Id, admin.Id, ProjectRole.Admin);
+        var send = await _invitationService.SendInvitation(project.Id, invitee.Id, ProjectRole.Member, owner.Id);
+
+        var result = await _invitationService.CancelInvitation(send.Data!.Id, admin.Id);
+
+        Assert.True(result.Succeeded);
+    }
+
+    [Fact]
+    public async Task CancelInvitation_AsMember_Fails()
+    {
+        var owner = CreateUser("cancel-mem-owner@test.com", "Owner");
+        var member = CreateUser("cancel-member@test.com", "Member");
+        var invitee = CreateUser("cancel-mem-invitee@test.com", "Invitee");
+        var project = await CreateProjectWithOwner(owner);
+        AddMember(project.Id, member.Id, ProjectRole.Member);
+        var send = await _invitationService.SendInvitation(project.Id, invitee.Id, ProjectRole.Member, owner.Id);
+
+        var result = await _invitationService.CancelInvitation(send.Data!.Id, member.Id);
+
+        Assert.False(result.Succeeded);
+        Assert.Contains("Only project owners and admins can cancel invitations.", result.Errors);
+    }
+
+    [Fact]
+    public async Task CancelInvitation_AlreadyAccepted_Fails()
+    {
+        var owner = CreateUser("cancel-acc-owner@test.com", "Owner");
+        var invitee = CreateUser("cancel-acc-invitee@test.com", "Invitee");
+        var project = await CreateProjectWithOwner(owner);
+        var send = await _invitationService.SendInvitation(project.Id, invitee.Id, ProjectRole.Member, owner.Id);
+        await _invitationService.AcceptInvitation(send.Data!.Id, invitee.Id);
+
+        var result = await _invitationService.CancelInvitation(send.Data.Id, owner.Id);
+
+        Assert.False(result.Succeeded);
+        Assert.Contains("Only pending invitations can be cancelled.", result.Errors);
+    }
+
+    [Fact]
+    public async Task CancelInvitation_InvalidId_Fails()
+    {
+        var owner = CreateUser("cancel-invalid-owner@test.com", "Owner");
+
+        var result = await _invitationService.CancelInvitation(9999, owner.Id);
+
+        Assert.False(result.Succeeded);
+        Assert.Contains("Invitation not found.", result.Errors);
+    }
+
+    [Fact]
+    public async Task CancelInvitation_EmptyUserId_Fails()
+    {
+        var result = await _invitationService.CancelInvitation(1, "");
+
+        Assert.False(result.Succeeded);
+        Assert.Contains("User ID is required.", result.Errors);
+    }
+
+    // --- ResendInvitation ---
+
+    [Fact]
+    public async Task ResendInvitation_AsOwner_Succeeds()
+    {
+        var owner = CreateUser("resend-owner@test.com", "Owner");
+        var invitee = CreateUser("resend-invitee@test.com", "Invitee");
+        var project = await CreateProjectWithOwner(owner);
+        var send = await _invitationService.SendInvitation(project.Id, invitee.Id, ProjectRole.Member, owner.Id);
+
+        var result = await _invitationService.ResendInvitation(send.Data!.Id, owner.Id);
+
+        Assert.True(result.Succeeded);
+    }
+
+    [Fact]
+    public async Task ResendInvitation_CreatesNotificationForNonAgent()
+    {
+        var owner = CreateUser("resend-notif-owner@test.com", "Owner");
+        var invitee = CreateUser("resend-notif-invitee@test.com", "Invitee");
+        var project = await CreateProjectWithOwner(owner);
+        var send = await _invitationService.SendInvitation(project.Id, invitee.Id, ProjectRole.Member, owner.Id);
+
+        // Clear existing notifications
+        var existingNotifications = _context.Notifications.Where(n => n.UserId == invitee.Id);
+        _context.Notifications.RemoveRange(existingNotifications);
+        await _context.SaveChangesAsync();
+
+        await _invitationService.ResendInvitation(send.Data!.Id, owner.Id);
+
+        var notifications = await _context.Notifications
+            .Where(n => n.UserId == invitee.Id)
+            .ToListAsync();
+        Assert.Single(notifications);
+        Assert.Contains("reminded you", notifications[0].Message);
+    }
+
+    [Fact]
+    public async Task ResendInvitation_AgentUser_AutoAccepts()
+    {
+        var owner = CreateUser("resend-agent-owner@test.com", "Owner");
+        var agent = CreateAgentUser("resend-agent@test.com", "Agent Bot");
+        var project = await CreateProjectWithOwner(owner);
+
+        // Agent invitations are auto-accepted, so we need to set up a pending invitation manually
+        var invitation = new ProjectInvitation
+        {
+            ProjectId = project.Id,
+            InvitedUserId = agent.Id,
+            InvitedByUserId = owner.Id,
+            Status = InvitationStatus.Pending,
+            Role = ProjectRole.Member,
+            CreatedAt = DateTime.UtcNow
+        };
+        _context.ProjectInvitations.Add(invitation);
+        await _context.SaveChangesAsync();
+
+        var result = await _invitationService.ResendInvitation(invitation.Id, owner.Id);
+
+        Assert.True(result.Succeeded);
+        Assert.Equal(InvitationStatus.Accepted, result.Data!.Status);
+    }
+
+    [Fact]
+    public async Task ResendInvitation_AgentUser_CreatesProjectMember()
+    {
+        var owner = CreateUser("resend-agentmem-owner@test.com", "Owner");
+        var agent = CreateAgentUser("resend-agentmem@test.com", "Agent Bot");
+        var project = await CreateProjectWithOwner(owner);
+
+        var invitation = new ProjectInvitation
+        {
+            ProjectId = project.Id,
+            InvitedUserId = agent.Id,
+            InvitedByUserId = owner.Id,
+            Status = InvitationStatus.Pending,
+            Role = ProjectRole.Member,
+            CreatedAt = DateTime.UtcNow
+        };
+        _context.ProjectInvitations.Add(invitation);
+        await _context.SaveChangesAsync();
+
+        await _invitationService.ResendInvitation(invitation.Id, owner.Id);
+
+        var isMember = await _context.ProjectMembers
+            .AnyAsync(pm => pm.ProjectId == project.Id && pm.UserId == agent.Id);
+        Assert.True(isMember);
+    }
+
+    [Fact]
+    public async Task ResendInvitation_AgentUser_DoesNotCreateNotification()
+    {
+        var owner = CreateUser("resend-agentnotif-owner@test.com", "Owner");
+        var agent = CreateAgentUser("resend-agentnotif@test.com", "Agent Bot");
+        var project = await CreateProjectWithOwner(owner);
+
+        var invitation = new ProjectInvitation
+        {
+            ProjectId = project.Id,
+            InvitedUserId = agent.Id,
+            InvitedByUserId = owner.Id,
+            Status = InvitationStatus.Pending,
+            Role = ProjectRole.Member,
+            CreatedAt = DateTime.UtcNow
+        };
+        _context.ProjectInvitations.Add(invitation);
+        await _context.SaveChangesAsync();
+
+        await _invitationService.ResendInvitation(invitation.Id, owner.Id);
+
+        var notifications = await _context.Notifications
+            .Where(n => n.UserId == agent.Id)
+            .ToListAsync();
+        Assert.Empty(notifications);
+    }
+
+    [Fact]
+    public async Task ResendInvitation_AsMember_Fails()
+    {
+        var owner = CreateUser("resend-mem-owner@test.com", "Owner");
+        var member = CreateUser("resend-member@test.com", "Member");
+        var invitee = CreateUser("resend-mem-invitee@test.com", "Invitee");
+        var project = await CreateProjectWithOwner(owner);
+        AddMember(project.Id, member.Id, ProjectRole.Member);
+        var send = await _invitationService.SendInvitation(project.Id, invitee.Id, ProjectRole.Member, owner.Id);
+
+        var result = await _invitationService.ResendInvitation(send.Data!.Id, member.Id);
+
+        Assert.False(result.Succeeded);
+        Assert.Contains("Only project owners and admins can resend invitations.", result.Errors);
+    }
+
+    [Fact]
+    public async Task ResendInvitation_AlreadyAccepted_Fails()
+    {
+        var owner = CreateUser("resend-acc-owner@test.com", "Owner");
+        var invitee = CreateUser("resend-acc-invitee@test.com", "Invitee");
+        var project = await CreateProjectWithOwner(owner);
+        var send = await _invitationService.SendInvitation(project.Id, invitee.Id, ProjectRole.Member, owner.Id);
+        await _invitationService.AcceptInvitation(send.Data!.Id, invitee.Id);
+
+        var result = await _invitationService.ResendInvitation(send.Data.Id, owner.Id);
+
+        Assert.False(result.Succeeded);
+        Assert.Contains("Only pending invitations can be resent.", result.Errors);
+    }
+
+    [Fact]
+    public async Task ResendInvitation_InvalidId_Fails()
+    {
+        var owner = CreateUser("resend-invalid-owner@test.com", "Owner");
+
+        var result = await _invitationService.ResendInvitation(9999, owner.Id);
+
+        Assert.False(result.Succeeded);
+        Assert.Contains("Invitation not found.", result.Errors);
+    }
+
+    [Fact]
+    public async Task ResendInvitation_EmptyUserId_Fails()
+    {
+        var result = await _invitationService.ResendInvitation(1, "");
+
+        Assert.False(result.Succeeded);
+        Assert.Contains("User ID is required.", result.Errors);
+    }
+
     public void Dispose()
     {
         _context.Dispose();

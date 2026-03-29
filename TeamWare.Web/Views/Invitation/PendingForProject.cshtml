@@ -56,6 +56,25 @@
                             <span class="inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300">
                                 Pending
                             </span>
+                            <form asp-controller="Invitation" asp-action="Resend" method="post" class="inline">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@invitation.Id" />
+                                <input type="hidden" name="projectId" value="@projectId" />
+                                <button type="submit"
+                                    class="inline-flex items-center rounded-md border border-gray-300 bg-white px-2.5 py-1 text-xs font-medium text-gray-700 shadow-sm hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
+                                    Resend
+                                </button>
+                            </form>
+                            <form asp-controller="Invitation" asp-action="Cancel" method="post" class="inline">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@invitation.Id" />
+                                <input type="hidden" name="projectId" value="@projectId" />
+                                <button type="submit"
+                                    class="inline-flex items-center rounded-md border border-red-300 bg-white px-2.5 py-1 text-xs font-medium text-red-700 shadow-sm hover:bg-red-50 dark:border-red-600 dark:bg-gray-700 dark:text-red-400 dark:hover:bg-gray-600"
+                                    onclick="return confirm('Cancel this invitation?');">
+                                    Cancel
+                                </button>
+                            </form>
                         </div>
                     </div>
                 }

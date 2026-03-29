@@ -155,7 +155,8 @@ public class TeamWareMcpClient : ITeamWareMcpClient
         try
         {
             using var doc = JsonDocument.Parse(json);
-            if (doc.RootElement.TryGetProperty("error", out var errorElement))
+            if (doc.RootElement.ValueKind == JsonValueKind.Object &&
+                doc.RootElement.TryGetProperty("error", out var errorElement))
             {
                 var errorMessage = errorElement.GetString() ?? "Unknown error";
                 throw new McpToolException(toolName, errorMessage);

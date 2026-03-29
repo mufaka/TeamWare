@@ -117,6 +117,52 @@ public class InvitationController : Controller
         return View(viewModel);
     }
 
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Cancel(int id, int projectId, string? returnTo = null)
+    {
+        var result = await _invitationService.CancelInvitation(id, GetUserId());
+
+        if (!result.Succeeded)
+        {
+            TempData["ErrorMessage"] = result.Errors.FirstOrDefault();
+        }
+        else
+        {
+            TempData["SuccessMessage"] = "Invitation cancelled.";
+        }
+
+        if (returnTo == "details")
+        {
+            return RedirectToAction("Details", "Project", new { id = projectId });
+        }
+
+        return RedirectToAction(nameof(PendingForProject), new { projectId });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Resend(int id, int projectId, string? returnTo = null)
+    {
+        var result = await _invitationService.ResendInvitation(id, GetUserId());
+
+        if (!result.Succeeded)
+        {
+            TempData["ErrorMessage"] = result.Errors.FirstOrDefault();
+        }
+        else
+        {
+            TempData["SuccessMessage"] = "Invitation resent.";
+        }
+
+        if (returnTo == "details")
+        {
+            return RedirectToAction("Details", "Project", new { id = projectId });
+        }
+
+        return RedirectToAction(nameof(PendingForProject), new { projectId });
+    }
+
     private static ProjectInvitationViewModel MapToViewModel(ProjectInvitation invitation)
     {
         return new ProjectInvitationViewModel

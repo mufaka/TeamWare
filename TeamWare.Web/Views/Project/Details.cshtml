@@ -284,8 +284,12 @@
     @if (isOwnerOrAdmin && Model.PendingInvitations.Any())
     {
         <div class="border-b border-gray-200 bg-yellow-50 dark:border-gray-700 dark:bg-yellow-900/10">
-            <div class="px-5 py-3">
+            <div class="flex items-center justify-between px-5 py-3">
                 <h3 class="text-sm font-medium text-yellow-800 dark:text-yellow-300">Pending Invitations (@Model.PendingInvitations.Count)</h3>
+                <a asp-controller="Invitation" asp-action="PendingForProject" asp-route-projectId="@Model.Id"
+                   class="text-xs font-medium text-yellow-700 hover:text-yellow-900 dark:text-yellow-400 dark:hover:text-yellow-200">
+                    Manage All &rarr;
+                </a>
             </div>
             <div class="divide-y divide-yellow-100 dark:divide-yellow-900/20">
                 @foreach (var invitation in Model.PendingInvitations)
@@ -300,9 +304,32 @@
                                 <p class="text-xs text-gray-500 dark:text-gray-400">@invitation.InvitedUserEmail - invited by @invitation.InvitedByUserDisplayName</p>
                             </div>
                         </div>
-                        <span class="inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300">
-                            Pending
-                        </span>
+                        <div class="flex items-center gap-2">
+                            <span class="inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300">
+                                Pending
+                            </span>
+                            <form asp-controller="Invitation" asp-action="Resend" method="post" class="inline">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@invitation.Id" />
+                                <input type="hidden" name="projectId" value="@Model.Id" />
+                                <input type="hidden" name="returnTo" value="details" />
+                                <button type="submit"
+                                    class="inline-flex items-center rounded-md border border-gray-300 bg-white px-2 py-1 text-xs font-medium text-gray-700 shadow-sm hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
+                                    Resend
+                                </button>
+                            </form>
+                            <form asp-controller="Invitation" asp-action="Cancel" method="post" class="inline">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@invitation.Id" />
+                                <input type="hidden" name="projectId" value="@Model.Id" />
+                                <input type="hidden" name="returnTo" value="details" />
+                                <button type="submit"
+                                    class="inline-flex items-center rounded-md border border-red-300 bg-white px-2 py-1 text-xs font-medium text-red-700 shadow-sm hover:bg-red-50 dark:border-red-600 dark:bg-gray-700 dark:text-red-400 dark:hover:bg-gray-600"
+                                    onclick="return confirm('Cancel this invitation?');">
+                                    Cancel
+                                </button>
+                            </form>
+                        </div>
                     </div>
                 }
             </div>
