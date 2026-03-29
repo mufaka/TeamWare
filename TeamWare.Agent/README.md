@@ -112,9 +112,12 @@ Each entry in the `McpServers` array configures an MCP server connection:
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `Name` | string | Yes | Display name for this MCP server |
-| `Type` | string | Yes | Server type: `"http"` or `"stdio"` |
+| `Type` | string | Yes | Server type: `"http"` or `"stdio"` (also accepts `"local"`) |
 | `Url` | string | Yes (http) | MCP endpoint URL (required for HTTP servers) |
 | `AuthHeader` | string | No | Custom `Authorization` header value; falls back to `Bearer {PAT}` if not set |
+| `Command` | string | Yes (stdio) | Path to the executable for stdio/local MCP servers |
+| `Args` | string[] | No | Command-line arguments for the stdio server executable |
+| `Env` | object | No | Environment variables to set for the stdio server process |
 
 ## Dry Run Mode
 

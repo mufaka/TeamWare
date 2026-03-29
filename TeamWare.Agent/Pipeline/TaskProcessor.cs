@@ -99,6 +99,13 @@ public class TaskProcessor
             config.Model = _options.Model;
         }
 
+        // Configure MCP servers for the Copilot session (CA-41)
+        var mcpServers = BuildMcpServersDictionary();
+        if (mcpServers.Count > 0)
+        {
+            config.McpServers = mcpServers;
+        }
+
         return config;
     }
 
@@ -128,6 +135,71 @@ public class TaskProcessor
         }
 
         return PermissionHandler.ApproveAll;
+    }
+
+    /// <summary>
+    /// Builds the MCP servers dictionary for the Copilot session configuration.
+    /// HTTP servers use McpRemoteServerConfig; local/stdio servers use McpLocalServerConfig.
+    /// </summary>
+    internal Dictionary<string, object> BuildMcpServersDictionary()
+    {
+        var servers = new Dictionary<string, object>();
+
+        foreach (var mcp in _options.McpServers)
+        {
+            if (mcp.Type.Equals("http", StringComparison.OrdinalIgnoreCase))
+            {
+                var httpConfig = new McpRemoteServerConfig
+                {
+                    Type = "http",
+                    Url = mcp.Url ?? string.Empty,
+                    Tools = new List<string> { "*" }
+                };
+
+                if (!string.IsNullOrEmpty(mcp.AuthHeader))
+                {
+                    httpConfig.Headers = new Dictionary<string, string>
+                    {
+                        ["Authorization"] = mcp.AuthHeader
+                    };
+                }
+                else if (!string.IsNullOrEmpty(_options.PersonalAccessToken))
+                {
+                    httpConfig.Headers = new Dictionary<string, string>
+                    {
+                        ["Authorization"] = $"Bearer {_options.PersonalAccessToken}"
+                    };
+                }
+
+                servers[mcp.Name] = httpConfig;
+            }
+            else if (mcp.Type.Equals("stdio", StringComparison.OrdinalIgnoreCase)
+                     || mcp.Type.Equals("local", StringComparison.OrdinalIgnoreCase))
+            {
+                var localConfig = new McpLocalServerConfig
+                {
+                    Type = "local",
+                    Command = mcp.Command ?? string.Empty,
+                    Args = mcp.Args,
+                    Tools = new List<string> { "*" }
+                };
+
+                if (mcp.Env.Count > 0)
+                {
+                    localConfig.Env = mcp.Env;
+                }
+
+                servers[mcp.Name] = localConfig;
+            }
+            else
+            {
+                _logger.LogWarning(
+                    "Unknown MCP server type '{Type}' for server '{Name}', skipping",
+                    mcp.Type, mcp.Name);
+            }
+        }
+
+        return servers;
     }
 
     /// <summary>
