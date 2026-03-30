@@ -93,18 +93,19 @@ Each entry in the `Agents` array configures one agent identity:
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
 | `Name` | string | Yes | — | Display name for this agent identity (used in logs) |
-| `WorkingDirectory` | string | Yes | — | Local directory where the agent works (clones repos, runs commands) |
-| `RepositoryUrl` | string | No | `null` | Git repository URL to clone/pull before processing tasks |
-| `RepositoryBranch` | string | No | `"main"` | Branch to clone/pull from |
-| `RepositoryAccessToken` | string | No | `null` | Token for git authentication (inserted into HTTPS URLs) |
-| `PersonalAccessToken` | string | Yes | — | TeamWare PAT for MCP authentication |
-| `PollingIntervalSeconds` | int | No | `60` | Seconds between polling cycles |
-| `Model` | string | No | `null` | Copilot model to use (e.g., `"gpt-4o"`) — uses SDK default if null |
-| `AutoApproveTools` | bool | No | `true` | Auto-approve all tool calls; set `false` for custom permission handling |
-| `DryRun` | bool | No | `false` | Log write operations instead of executing them |
-| `SystemPrompt` | string | No | `null` | Custom system prompt; uses the built-in default if null |
-| `Repositories` | array | No | `[]` | Per-project repository mappings (see below) |
-| `McpServers` | array | Yes | — | MCP server connections (at least one HTTP server required) |
+| `WorkingDirectory` | string | Yes | — | Local directory where the agent works (clones repos, runs commands). Never overwritten by server config. |
+| `RepositoryUrl` | string | No | `null` | Git repository URL to clone/pull before processing tasks. Server value applied if local is null. |
+| `RepositoryBranch` | string | No | `"main"` | Branch to clone/pull from. Server value applied if local is null. |
+| `RepositoryAccessToken` | string | No | `null` | Token for git authentication (inserted into HTTPS URLs). Server value applied if local is null. |
+| `PersonalAccessToken` | string | Yes | — | TeamWare PAT for MCP authentication. Never overwritten by server config. |
+| `PollingIntervalSeconds` | int | No | `60` | Seconds between polling cycles. Server value applied if local is default (60). |
+| `Model` | string | No | `null` | Copilot model to use (e.g., `"gpt-4o"`) — uses SDK default if null. Server value applied if local is null. |
+| `AutoApproveTools` | bool | No | `true` | Auto-approve all tool calls; set `false` for custom permission handling. Server value applied if local is default (true). |
+| `DryRun` | bool | No | `false` | Log write operations instead of executing them. Server value applied if local is default (false). |
+| `TaskTimeoutSeconds` | int | No | `600` | Seconds before a task processing session times out. Server value applied if local is default (600). |
+| `SystemPrompt` | string | No | `null` | Custom system prompt; uses the built-in default if null. Server value applied if local is null. |
+| `Repositories` | array | No | `[]` | Per-project repository mappings (see below). Merged with server entries by ProjectName. |
+| `McpServers` | array | Yes | — | MCP server connections (at least one HTTP server required). Merged with server entries by Name. |
 
 ### MCP Server Options
 
@@ -164,6 +165,61 @@ In this example:
 - Tasks from the "Backend" project clone into `/tmp/work/Backend/` on the `main` branch
 - Tasks from any other project fall back to `RepositoryUrl`/`WorkingDirectory`
 
+### Server-Side Configuration
+
+TeamWare supports centralized agent configuration through the admin panel. Administrators can set behavioral options, repository mappings, and MCP server connections directly in the TeamWare web UI. These settings are delivered to the agent via the `get_my_profile` MCP tool response on each polling cycle.
+
+**How it works:**
+
+1. An administrator configures the agent in **Admin > Agent Users > Edit Agent**
+2. On each polling cycle, the agent calls `get_my_profile` which returns a `configuration` block
+3. The agent merges server-side values into its local options using the rules below
+
+**Merge precedence — local always wins:**
+
+| Field | Applied when local value is… |
+|-------|------------------------------|
+| `PollingIntervalSeconds` | Default (`60`) |
+| `Model` | `null` |
+| `AutoApproveTools` | Default (`true`) |
+| `DryRun` | Default (`false`) |
+| `TaskTimeoutSeconds` | Default (`600`) |
+| `SystemPrompt` | `null` |
+| `RepositoryUrl` | `null` |
+| `RepositoryBranch` | `null` |
+| `RepositoryAccessToken` | `null` |
+| `Repositories` | Merged by `ProjectName` (case-insensitive) — local entries win on collision, server-only entries are appended |
+| `McpServers` | Merged by `Name` (case-insensitive) — local entries win on collision, server-only entries are appended |
+| `WorkingDirectory` | **Never overwritten** — always local |
+| `PersonalAccessToken` | **Never overwritten** — always local |
+
+**Minimal bootstrap configuration:**
+
+With server-side configuration, an agent only needs the bare minimum in `appsettings.json`:
+
+```json
+{
+  "Agents": [
+    {
+      "Name": "my-agent",
+      "WorkingDirectory": "/path/to/working/directory",
+      "PersonalAccessToken": "your-pat-token-here",
+      "McpServers": [
+        {
+          "Name": "teamware",
+          "Type": "http",
+          "Url": "https://your-teamware-instance/mcp"
+        }
+      ]
+    }
+  ]
+}
+```
+
+All other settings (model, polling interval, repositories, additional MCP servers) can be managed centrally via the admin panel. Changes take effect on the next polling cycle without restarting the agent.
+
+**Backward compatibility:** Agents with full local configuration continue to work unchanged. Server-side configuration is entirely optional — if no server-side config exists, the agent uses its local settings as before.
+
 ## Dry Run Mode
 
 Dry run mode is the recommended starting point for new agent deployments. When `DryRun` is `true`:
@@ -210,7 +266,8 @@ without making any changes to your project or TeamWare data.
 For each polling cycle:
 
 1. **Profile Check** — `get_my_profile` verifies the agent is active
-2. **Task Discovery** — `my_assignments` returns assigned tasks, filtered to `ToDo`
+2. **Configuration Merge** — Server-side configuration (if any) is merged into local options
+3. **Task Discovery** — `my_assignments` returns assigned tasks, filtered to `ToDo`
 3. **Read-Before-Write** — `get_task` verifies the task is still in `ToDo` (idempotency)
 4. **Pickup** — Comment posted + status changed to `InProgress`
 5. **Repository Resolution** — Task's `ProjectName` matched against `Repositories` to determine repo and working directory
