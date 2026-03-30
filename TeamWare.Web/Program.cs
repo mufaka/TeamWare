@@ -67,6 +67,7 @@ builder.Services.AddScoped<IAttachmentService, AttachmentService>();
 builder.Services.AddScoped<IOllamaService, OllamaService>();
 builder.Services.AddScoped<IAiAssistantService, AiAssistantService>();
 builder.Services.AddScoped<IPersonalAccessTokenService, PersonalAccessTokenService>();
+builder.Services.AddSingleton<IAgentSecretEncryptor, AgentSecretEncryptor>();
 
 builder.Services.AddMemoryCache();
 builder.Services.AddHttpClient("Ollama");
