@@ -1,5 +1,9 @@
 ﻿namespace TeamWare.Web.ViewModels;
 
+/// <summary>
+/// Read-only representation of an agent's repository mapping.
+/// The <see cref="AccessToken"/> is masked or decrypted depending on context.
+/// </summary>
 public class AgentRepositoryDto
 {
     public int Id { get; set; }

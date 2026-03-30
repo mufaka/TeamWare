@@ -2,6 +2,10 @@
 
 namespace TeamWare.Web.Models;
 
+/// <summary>
+/// Server-side configuration for an agent user. One-to-one with ApplicationUser.
+/// Secrets (access tokens, auth headers) are stored encrypted at rest.
+/// </summary>
 public class AgentConfiguration
 {
     public int Id { get; set; }

@@ -1,5 +1,10 @@
 ﻿namespace TeamWare.Web.ViewModels;
 
+/// <summary>
+/// Read-only representation of an agent's server-side configuration.
+/// Secrets are either masked (for admin UI display) or fully decrypted (for MCP tool responses),
+/// depending on which service method was used to load it.
+/// </summary>
 public class AgentConfigurationDto
 {
     public int Id { get; set; }

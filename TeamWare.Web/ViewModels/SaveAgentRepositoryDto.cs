@@ -1,5 +1,9 @@
 ﻿namespace TeamWare.Web.ViewModels;
 
+/// <summary>
+/// Input DTO for creating or updating an agent repository mapping.
+/// The <see cref="AccessToken"/> is provided in plaintext and encrypted before storage.
+/// </summary>
 public class SaveAgentRepositoryDto
 {
     public string ProjectName { get; set; } = string.Empty;

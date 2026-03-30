@@ -5,6 +5,10 @@ using TeamWare.Web.ViewModels;
 
 namespace TeamWare.Web.Services;
 
+/// <summary>
+/// Implements agent configuration CRUD with encrypted secret storage.
+/// All operations validate that the target user has IsAgent = true.
+/// </summary>
 public class AgentConfigurationService : IAgentConfigurationService
 {
     private readonly ApplicationDbContext _context;

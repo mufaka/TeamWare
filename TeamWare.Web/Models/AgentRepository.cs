@@ -2,6 +2,10 @@
 
 namespace TeamWare.Web.Models;
 
+/// <summary>
+/// Maps an agent to a Git repository by TeamWare project name.
+/// Unique constraint on (AgentConfigurationId, ProjectName).
+/// </summary>
 public class AgentRepository
 {
     public int Id { get; set; }

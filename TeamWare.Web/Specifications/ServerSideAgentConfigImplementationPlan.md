@@ -12,7 +12,7 @@ This document defines the phased implementation plan for moving agent configurat
 | 45 | Agent Configuration Admin UI | Complete |
 | 46 | MCP Profile Configuration Response | Complete |
 | 47 | Agent-Side Configuration Merge | Complete |
-| 48 | Server-Side Config Polish and Hardening | Not Started |
+| 48 | Server-Side Config Polish and Hardening | Complete |
 
 ---
 
@@ -279,33 +279,33 @@ Final phase: security review, edge cases, UI polish, and documentation.
 
 ### 48.1 Security Hardening
 
-- [ ] Verify encrypted fields are never logged at any level (SACFG-NF-06, SACFG-TEST-10)
-- [ ] Verify decrypted secrets are only included in MCP responses, never in admin UI HTML
-- [ ] Verify admin authorization is enforced on all configuration endpoints
-- [ ] Verify an agent can only read its own configuration via MCP (not other agents')
-- [ ] Pen-test the mask display logic for edge cases (short tokens, empty strings)
+- [x] Verify encrypted fields are never logged at any level (SACFG-NF-06, SACFG-TEST-10)
+- [x] Verify decrypted secrets are only included in MCP responses, never in admin UI HTML
+- [x] Verify admin authorization is enforced on all configuration endpoints
+- [x] Verify an agent can only read its own configuration via MCP (not other agents')
+- [x] Pen-test the mask display logic for edge cases (short tokens, empty strings)
 
 ### 48.2 Edge Cases and Regression Testing
 
-- [ ] Agent with server config and no local repos → server repos used
-- [ ] Agent with local repos and no server config → local repos used
-- [ ] Agent with both → merged correctly
-- [ ] Agent with server MCP servers and local MCP servers with same name → local wins
-- [ ] Agent configuration deleted while agent is running → next cycle uses local config
-- [ ] Very large system prompt (10,000 characters) → handled correctly
-- [ ] Unicode characters in project names, repo URLs → handled correctly
-- [ ] Data Protection key rotation → existing encrypted values can still be decrypted (ASP.NET Core handles this automatically)
+- [x] Agent with server config and no local repos → server repos used
+- [x] Agent with local repos and no server config → local repos used
+- [x] Agent with both → merged correctly
+- [x] Agent with server MCP servers and local MCP servers with same name → local wins
+- [x] Agent configuration deleted while agent is running → next cycle uses local config
+- [x] Very large system prompt (10,000 characters) → handled correctly
+- [x] Unicode characters in project names, repo URLs → handled correctly
+- [x] Data Protection key rotation → existing encrypted values can still be decrypted (ASP.NET Core handles this automatically)
 
 ### 48.3 UI Consistency Review
 
-- [ ] Verify all new form fields match existing Tailwind CSS patterns
-- [ ] Verify HTMX interactions work smoothly (no flicker, proper loading states)
-- [ ] Verify validation messages display correctly for all fields
-- [ ] Verify responsive layout works on mobile for the expanded Edit Agent page
-- [ ] Verify dark mode styling for all new UI elements
+- [x] Verify all new form fields match existing Tailwind CSS patterns
+- [x] Verify HTMX interactions work smoothly (no flicker, proper loading states)
+- [x] Verify validation messages display correctly for all fields
+- [x] Verify responsive layout works on mobile for the expanded Edit Agent page
+- [x] Verify dark mode styling for all new UI elements
 
 ### 48.4 Documentation
 
-- [ ] Update `TeamWare.Web/Specifications/ServerSideAgentConfigSpecification.md` with any changes from implementation
-- [ ] Add configuration management to the admin help/guide if one exists
-- [ ] Verify all new DTOs and services have XML doc comments
+- [x] Update `TeamWare.Web/Specifications/ServerSideAgentConfigSpecification.md` with any changes from implementation
+- [x] Add configuration management to the admin help/guide if one exists
+- [x] Verify all new DTOs and services have XML doc comments

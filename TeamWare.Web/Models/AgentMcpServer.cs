@@ -2,6 +2,11 @@
 
 namespace TeamWare.Web.Models;
 
+/// <summary>
+/// Configures an MCP server connection for an agent.
+/// Supports both HTTP (Url + AuthHeader) and stdio (Command + Args + Env) types.
+/// Sensitive fields (AuthHeader, Env) are stored encrypted.
+/// </summary>
 public class AgentMcpServer
 {
     public int Id { get; set; }
