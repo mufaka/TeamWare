@@ -62,6 +62,21 @@ public class ProfileTools
         return JsonSerializer.Serialize(profile, JsonOptions);
     }
 
+    private static JsonElement? ParseJsonOrNull(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+            return null;
+
+        try
+        {
+            return JsonDocument.Parse(json).RootElement.Clone();
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
+
     private static object BuildConfigurationObject(ViewModels.AgentConfigurationDto config)
     {
         var repositories = config.Repositories.Count > 0
@@ -82,8 +97,8 @@ public class ProfileTools
                 url = s.Url,
                 authHeader = s.AuthHeader,
                 command = s.Command,
-                args = s.Args,
-                env = s.Env
+                args = ParseJsonOrNull(s.Args),
+                env = ParseJsonOrNull(s.Env)
             }).ToArray()
             : null;
 

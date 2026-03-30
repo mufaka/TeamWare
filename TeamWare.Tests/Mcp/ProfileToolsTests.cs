@@ -295,4 +295,54 @@ public class ProfileToolsTests : IDisposable
         Assert.Equal("https://mcp.github.com", server.GetProperty("url").GetString());
         Assert.Equal("Bearer ghp_secret", server.GetProperty("authHeader").GetString());
     }
+
+    [Fact]
+    public async Task GetMyProfile_AgentWithStdioMcpServer_ArgsAndEnvSerializedAsJsonStructures()
+    {
+        var agentUser = new ApplicationUser
+        {
+            UserName = "agent-stdio",
+            Email = "agent-stdio@agent.local",
+            DisplayName = "Stdio Agent",
+            IsAgent = true,
+            IsAgentActive = true
+        };
+        await _userManager.CreateAsync(agentUser, "TestPass1");
+
+        await _agentConfigService.AddMcpServerAsync(agentUser.Id, new SaveAgentMcpServerDto
+        {
+            Name = "local-mcp",
+            Type = "stdio",
+            Command = "npx",
+            Args = "[\"--yes\", \"@modelcontextprotocol/server\"]",
+            Env = "{\"NODE_ENV\":\"production\",\"PORT\":\"3000\"}"
+        });
+
+        var principal = CreateClaimsPrincipal(agentUser.Id);
+        var result = await ProfileTools.get_my_profile(principal, _userManager, _agentConfigService);
+        var json = JsonDocument.Parse(result);
+        var root = json.RootElement;
+
+        var config = root.GetProperty("configuration");
+        var servers = config.GetProperty("mcpServers");
+        Assert.Equal(1, servers.GetArrayLength());
+
+        var server = servers[0];
+        Assert.Equal("local-mcp", server.GetProperty("name").GetString());
+        Assert.Equal("stdio", server.GetProperty("type").GetString());
+        Assert.Equal("npx", server.GetProperty("command").GetString());
+
+        // Args must be a JSON array, not a double-encoded string
+        var args = server.GetProperty("args");
+        Assert.Equal(JsonValueKind.Array, args.ValueKind);
+        Assert.Equal(2, args.GetArrayLength());
+        Assert.Equal("--yes", args[0].GetString());
+        Assert.Equal("@modelcontextprotocol/server", args[1].GetString());
+
+        // Env must be a JSON object, not a double-encoded string
+        var env = server.GetProperty("env");
+        Assert.Equal(JsonValueKind.Object, env.ValueKind);
+        Assert.Equal("production", env.GetProperty("NODE_ENV").GetString());
+        Assert.Equal("3000", env.GetProperty("PORT").GetString());
+    }
 }
