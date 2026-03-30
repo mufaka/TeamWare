@@ -21,6 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\TeamWare.Agent\TeamWare.Agent.csproj" />
     <ProjectReference Include="..\TeamWare.Web\TeamWare.Web.csproj" />
   </ItemGroup>
 
