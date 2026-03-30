@@ -1,5 +1,6 @@
 ﻿using System.Security.Claims;
 using System.Text.Json;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
@@ -25,6 +26,7 @@ public class AgentEdgeCaseTests : IDisposable
     private readonly ActivityLogService _activityLogService;
     private readonly NotificationService _notificationService;
     private readonly AdminService _adminService;
+    private readonly IAgentConfigurationService _agentConfigService;
 
     public AgentEdgeCaseTests()
     {
@@ -46,6 +48,12 @@ public class AgentEdgeCaseTests : IDisposable
             })
             .AddEntityFrameworkStores<ApplicationDbContext>()
             .AddDefaultTokenProviders();
+
+        services.AddDataProtection()
+            .UseEphemeralDataProtectionProvider();
+
+        services.AddSingleton<IAgentSecretEncryptor, AgentSecretEncryptor>();
+        services.AddScoped<IAgentConfigurationService, AgentConfigurationService>();
 
         services.AddLogging();
 
@@ -71,6 +79,7 @@ public class AgentEdgeCaseTests : IDisposable
         var activityLogSvc = new AdminActivityLogService(_context);
         var tokenService = new PersonalAccessTokenService(_context);
         _adminService = new AdminService(_context, _userManager, activityLogSvc, tokenService);
+        _agentConfigService = _serviceProvider.GetRequiredService<IAgentConfigurationService>();
     }
 
     public void Dispose()
@@ -363,7 +372,7 @@ public class AgentEdgeCaseTests : IDisposable
         var agent = await CreateAgentUser("ProfileBot");
         var principal = CreateAgentClaimsPrincipal(agent.Id);
 
-        var result = await ProfileTools.get_my_profile(principal, _userManager);
+        var result = await ProfileTools.get_my_profile(principal, _userManager, _agentConfigService);
 
         using var doc = JsonDocument.Parse(result);
         Assert.True(doc.RootElement.GetProperty("isAgent").GetBoolean());
@@ -379,7 +388,7 @@ public class AgentEdgeCaseTests : IDisposable
 
         var principal = CreateClaimsPrincipal(human.Id);
 
-        var result = await ProfileTools.get_my_profile(principal, _userManager);
+        var result = await ProfileTools.get_my_profile(principal, _userManager, _agentConfigService);
 
         using var doc = JsonDocument.Parse(result);
         Assert.False(doc.RootElement.GetProperty("isAgent").GetBoolean());
