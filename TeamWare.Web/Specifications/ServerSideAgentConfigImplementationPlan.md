@@ -8,8 +8,8 @@ This document defines the phased implementation plan for moving agent configurat
 
 | Phase | Description | Status |
 |-------|------------|--------|
-| 44 | Agent Configuration Data Model | Not Started |
-| 45 | Agent Configuration Admin UI | Not Started |
+| 44 | Agent Configuration Data Model | Complete |
+| 45 | Agent Configuration Admin UI | In Progress |
 | 46 | MCP Profile Configuration Response | Not Started |
 | 47 | Agent-Side Configuration Merge | Not Started |
 | 48 | Server-Side Config Polish and Hardening | Not Started |

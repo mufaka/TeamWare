@@ -178,6 +178,136 @@
         }
     </div>
 
+    @* Configuration Summary *@
+    <div class="mb-6">
+        <h2 class="mb-3 text-lg font-semibold text-gray-900 dark:text-white">Configuration</h2>
+
+        @if (Model.Configuration == null)
+        {
+            <div class="rounded-lg border border-gray-200 bg-white p-4 text-center dark:border-gray-700 dark:bg-gray-800">
+                <p class="text-sm text-gray-500 dark:text-gray-400">Using agent defaults.</p>
+            </div>
+        }
+        else
+        {
+            <div class="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
+                <dl class="grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2">
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Polling Interval</dt>
+                        <dd class="mt-1 text-sm text-gray-900 dark:text-white">@(Model.Configuration.PollingIntervalSeconds.HasValue ? $"{Model.Configuration.PollingIntervalSeconds}s" : "Default (60s)")</dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Model</dt>
+                        <dd class="mt-1 text-sm text-gray-900 dark:text-white">@(Model.Configuration.Model ?? "Default")</dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Auto-Approve Tools</dt>
+                        <dd class="mt-1 text-sm text-gray-900 dark:text-white">@(Model.Configuration.AutoApproveTools.HasValue ? (Model.Configuration.AutoApproveTools.Value ? "On" : "Off") : "Default (On)")</dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Dry Run</dt>
+                        <dd class="mt-1 text-sm text-gray-900 dark:text-white">@(Model.Configuration.DryRun.HasValue ? (Model.Configuration.DryRun.Value ? "On" : "Off") : "Default (Off)")</dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Task Timeout</dt>
+                        <dd class="mt-1 text-sm text-gray-900 dark:text-white">@(Model.Configuration.TaskTimeoutSeconds.HasValue ? $"{Model.Configuration.TaskTimeoutSeconds}s" : "Default (600s)")</dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">System Prompt</dt>
+                        <dd class="mt-1 text-sm text-gray-900 dark:text-white">@(!string.IsNullOrEmpty(Model.Configuration.SystemPrompt) ? "Custom" : "Default")</dd>
+                    </div>
+                    @if (!string.IsNullOrEmpty(Model.Configuration.RepositoryUrl))
+                    {
+                        <div class="sm:col-span-2">
+                            <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Default Repository</dt>
+                            <dd class="mt-1 text-sm text-gray-900 dark:text-white">@Model.Configuration.RepositoryUrl (@(Model.Configuration.RepositoryBranch ?? "main"))</dd>
+                        </div>
+                    }
+                </dl>
+            </div>
+        }
+    </div>
+
+    @* Repositories *@
+    <div class="mb-6">
+        <h2 class="mb-3 text-lg font-semibold text-gray-900 dark:text-white">Repositories</h2>
+
+        @if (Model.Repositories.Count == 0)
+        {
+            <div class="rounded-lg border border-gray-200 bg-white p-4 text-center dark:border-gray-700 dark:bg-gray-800">
+                <p class="text-sm text-gray-500 dark:text-gray-400">None configured.</p>
+            </div>
+        }
+        else
+        {
+            <div class="overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700">
+                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead class="bg-gray-50 dark:bg-gray-800">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Project Name</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">URL</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Branch</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Token</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200 bg-white dark:divide-gray-700 dark:bg-gray-900">
+                        @foreach (var repo in Model.Repositories.OrderBy(r => r.DisplayOrder))
+                        {
+                            <tr>
+                                <td class="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">@repo.ProjectName</td>
+                                <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400 max-w-xs truncate">@repo.Url</td>
+                                <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-500 dark:text-gray-400">@repo.Branch</td>
+                                <td class="whitespace-nowrap px-6 py-4 text-sm font-mono text-gray-500 dark:text-gray-400">@(repo.AccessToken ?? "—")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+
+    @* MCP Servers *@
+    <div class="mb-6">
+        <h2 class="mb-3 text-lg font-semibold text-gray-900 dark:text-white">MCP Servers</h2>
+
+        @if (Model.McpServers.Count == 0)
+        {
+            <div class="rounded-lg border border-gray-200 bg-white p-4 text-center dark:border-gray-700 dark:bg-gray-800">
+                <p class="text-sm text-gray-500 dark:text-gray-400">None configured.</p>
+            </div>
+        }
+        else
+        {
+            <div class="overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700">
+                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead class="bg-gray-50 dark:bg-gray-800">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Name</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Type</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">URL / Command</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200 bg-white dark:divide-gray-700 dark:bg-gray-900">
+                        @foreach (var server in Model.McpServers.OrderBy(s => s.DisplayOrder))
+                        {
+                            <tr>
+                                <td class="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">@server.Name</td>
+                                <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
+                                    <span class="inline-flex rounded-full px-2 text-xs font-semibold leading-5 @(server.Type == "http" ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200" : "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200")">
+                                        @server.Type
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400 max-w-xs truncate">
+                                    @(server.Type == "http" ? server.Url : server.Command)
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+
     @* Recent Activity *@
     <div class="mb-6">
         <h2 class="mb-3 text-lg font-semibold text-gray-900 dark:text-white">Recent Activity</h2>

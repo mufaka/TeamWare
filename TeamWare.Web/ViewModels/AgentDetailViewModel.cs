@@ -12,4 +12,7 @@ public class AgentDetailViewModel
     public List<PersonalAccessToken> Tokens { get; set; } = new();
     public List<AgentProjectMembership> ProjectMemberships { get; set; } = new();
     public List<AdminActivityLogEntryViewModel> RecentActivity { get; set; } = new();
+    public AgentConfigurationDto? Configuration { get; set; }
+    public List<AgentRepositoryDto> Repositories { get; set; } = [];
+    public List<AgentMcpServerDto> McpServers { get; set; } = [];
 }
