@@ -1,5 +1,9 @@
 ﻿namespace TeamWare.Web.ViewModels;
 
+/// <summary>
+/// Read-only representation of an agent's MCP server connection.
+/// Sensitive fields (<see cref="AuthHeader"/>, <see cref="Env"/>) are masked or decrypted depending on context.
+/// </summary>
 public class AgentMcpServerDto
 {
     public int Id { get; set; }

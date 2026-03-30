@@ -2,6 +2,10 @@
 
 namespace TeamWare.Web.Services;
 
+/// <summary>
+/// Encrypts and decrypts agent secrets using ASP.NET Core Data Protection.
+/// Registered as a singleton in DI.
+/// </summary>
 public class AgentSecretEncryptor : IAgentSecretEncryptor
 {
     private readonly IDataProtector _protector;

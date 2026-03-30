@@ -1,5 +1,9 @@
 ﻿namespace TeamWare.Web.ViewModels;
 
+/// <summary>
+/// Input DTO for saving an agent's behavioral configuration fields.
+/// Repositories and MCP servers are managed through separate CRUD operations.
+/// </summary>
 public class SaveAgentConfigurationDto
 {
     public int? PollingIntervalSeconds { get; set; }
