@@ -19,6 +19,7 @@ public class AdminController : Controller
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly IPersonalAccessTokenService _patService;
     private readonly ApplicationDbContext _context;
+    private readonly IAgentConfigurationService _agentConfigService;
 
     public AdminController(
         IAdminService adminService,
@@ -26,7 +27,8 @@ public class AdminController : Controller
         IGlobalConfigurationService configService,
         UserManager<ApplicationUser> userManager,
         IPersonalAccessTokenService patService,
-        ApplicationDbContext context)
+        ApplicationDbContext context,
+        IAgentConfigurationService agentConfigService)
     {
         _adminService = adminService;
         _activityLogService = activityLogService;
@@ -34,6 +36,7 @@ public class AdminController : Controller
         _userManager = userManager;
         _patService = patService;
         _context = context;
+        _agentConfigService = agentConfigService;
     }
 
     private string GetUserId() => User.FindFirstValue(ClaimTypes.NameIdentifier)!;
@@ -468,6 +471,14 @@ public class AdminController : Controller
             RecentActivity = recentLogs
         };
 
+        var configResult = await _agentConfigService.GetConfigurationAsync(user.Id);
+        if (configResult.Succeeded && configResult.Data != null)
+        {
+            viewModel.Configuration = configResult.Data;
+            viewModel.Repositories = configResult.Data.Repositories;
+            viewModel.McpServers = configResult.Data.McpServers;
+        }
+
         return View(viewModel);
     }
 
@@ -489,6 +500,32 @@ public class AdminController : Controller
             IsActive = user.IsAgentActive
         };
 
+        var configResult = await _agentConfigService.GetConfigurationAsync(user.Id);
+        if (configResult.Succeeded && configResult.Data != null)
+        {
+            var config = configResult.Data;
+            viewModel.Configuration = new AgentConfigurationViewModel
+            {
+                PollingIntervalSeconds = config.PollingIntervalSeconds,
+                PollingIntervalUseDefault = config.PollingIntervalSeconds == null,
+                Model = config.Model,
+                ModelUseDefault = config.Model == null,
+                AutoApproveTools = config.AutoApproveTools ?? true,
+                AutoApproveToolsUseDefault = config.AutoApproveTools == null,
+                DryRun = config.DryRun ?? false,
+                DryRunUseDefault = config.DryRun == null,
+                TaskTimeoutSeconds = config.TaskTimeoutSeconds,
+                TaskTimeoutUseDefault = config.TaskTimeoutSeconds == null,
+                SystemPrompt = config.SystemPrompt,
+                SystemPromptUseDefault = config.SystemPrompt == null,
+                RepositoryUrl = config.RepositoryUrl,
+                RepositoryBranch = config.RepositoryBranch,
+                RepositoryAccessTokenMasked = config.RepositoryAccessToken
+            };
+            viewModel.Repositories = config.Repositories;
+            viewModel.McpServers = config.McpServers;
+        }
+
         return View(viewModel);
     }
 
@@ -498,6 +535,13 @@ public class AdminController : Controller
     {
         if (!ModelState.IsValid)
         {
+            // Reload repositories and MCP servers for the form
+            var configResult = await _agentConfigService.GetConfigurationAsync(model.UserId);
+            if (configResult.Succeeded && configResult.Data != null)
+            {
+                model.Repositories = configResult.Data.Repositories;
+                model.McpServers = configResult.Data.McpServers;
+            }
             return View(model);
         }
 
@@ -516,6 +560,21 @@ public class AdminController : Controller
         {
             await _adminService.SetAgentActive(model.UserId, model.IsActive, GetUserId());
         }
+
+        // Save agent configuration
+        var saveConfigDto = new SaveAgentConfigurationDto
+        {
+            PollingIntervalSeconds = model.Configuration.PollingIntervalUseDefault ? null : model.Configuration.PollingIntervalSeconds,
+            Model = model.Configuration.ModelUseDefault ? null : model.Configuration.Model,
+            AutoApproveTools = model.Configuration.AutoApproveToolsUseDefault ? null : model.Configuration.AutoApproveTools,
+            DryRun = model.Configuration.DryRunUseDefault ? null : model.Configuration.DryRun,
+            TaskTimeoutSeconds = model.Configuration.TaskTimeoutUseDefault ? null : model.Configuration.TaskTimeoutSeconds,
+            SystemPrompt = model.Configuration.SystemPromptUseDefault ? null : model.Configuration.SystemPrompt,
+            RepositoryUrl = model.Configuration.RepositoryUrl,
+            RepositoryBranch = model.Configuration.RepositoryBranch,
+            RepositoryAccessToken = model.Configuration.RepositoryAccessToken
+        };
+        await _agentConfigService.SaveConfigurationAsync(model.UserId, saveConfigDto);
 
         TempData["SuccessMessage"] = "Agent has been updated.";
         return RedirectToAction(nameof(AgentDetail), new { id = model.UserId });
@@ -560,6 +619,112 @@ public class AdminController : Controller
         }
 
         return RedirectToAction(nameof(Agents));
+    }
+
+    // --- Agent Configuration: Repository CRUD ---
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AddAgentRepository(string userId, SaveAgentRepositoryDto dto)
+    {
+        var result = await _agentConfigService.AddRepositoryAsync(userId, dto);
+        if (!result.Succeeded)
+        {
+            TempData["ErrorMessage"] = result.Errors.FirstOrDefault();
+        }
+        else
+        {
+            TempData["SuccessMessage"] = "Repository added.";
+        }
+
+        return RedirectToAction(nameof(EditAgent), new { id = userId });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> UpdateAgentRepository(string userId, int repositoryId, SaveAgentRepositoryDto dto)
+    {
+        var result = await _agentConfigService.UpdateRepositoryAsync(repositoryId, dto);
+        if (!result.Succeeded)
+        {
+            TempData["ErrorMessage"] = result.Errors.FirstOrDefault();
+        }
+        else
+        {
+            TempData["SuccessMessage"] = "Repository updated.";
+        }
+
+        return RedirectToAction(nameof(EditAgent), new { id = userId });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> RemoveAgentRepository(string userId, int repositoryId)
+    {
+        var result = await _agentConfigService.RemoveRepositoryAsync(repositoryId);
+        if (!result.Succeeded)
+        {
+            TempData["ErrorMessage"] = result.Errors.FirstOrDefault();
+        }
+        else
+        {
+            TempData["SuccessMessage"] = "Repository removed.";
+        }
+
+        return RedirectToAction(nameof(EditAgent), new { id = userId });
+    }
+
+    // --- Agent Configuration: MCP Server CRUD ---
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AddAgentMcpServer(string userId, SaveAgentMcpServerDto dto)
+    {
+        var result = await _agentConfigService.AddMcpServerAsync(userId, dto);
+        if (!result.Succeeded)
+        {
+            TempData["ErrorMessage"] = result.Errors.FirstOrDefault();
+        }
+        else
+        {
+            TempData["SuccessMessage"] = "MCP server added.";
+        }
+
+        return RedirectToAction(nameof(EditAgent), new { id = userId });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> UpdateAgentMcpServer(string userId, int mcpServerId, SaveAgentMcpServerDto dto)
+    {
+        var result = await _agentConfigService.UpdateMcpServerAsync(mcpServerId, dto);
+        if (!result.Succeeded)
+        {
+            TempData["ErrorMessage"] = result.Errors.FirstOrDefault();
+        }
+        else
+        {
+            TempData["SuccessMessage"] = "MCP server updated.";
+        }
+
+        return RedirectToAction(nameof(EditAgent), new { id = userId });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> RemoveAgentMcpServer(string userId, int mcpServerId)
+    {
+        var result = await _agentConfigService.RemoveMcpServerAsync(mcpServerId);
+        if (!result.Succeeded)
+        {
+            TempData["ErrorMessage"] = result.Errors.FirstOrDefault();
+        }
+        else
+        {
+            TempData["SuccessMessage"] = "MCP server removed.";
+        }
+
+        return RedirectToAction(nameof(EditAgent), new { id = userId });
     }
 
     [HttpPost]

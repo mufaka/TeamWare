@@ -17,4 +17,10 @@ public class EditAgentViewModel
 
     [Display(Name = "Active")]
     public bool IsActive { get; set; }
+
+    public AgentConfigurationViewModel Configuration { get; set; } = new();
+
+    public List<AgentRepositoryDto> Repositories { get; set; } = [];
+
+    public List<AgentMcpServerDto> McpServers { get; set; } = [];
 }

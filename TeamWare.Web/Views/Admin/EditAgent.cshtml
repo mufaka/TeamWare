@@ -3,37 +3,210 @@
     ViewData["Title"] = "Edit Agent";
 }
 
-<div class="mx-auto max-w-2xl">
+<div class="mx-auto max-w-4xl">
     <div class="mb-6">
         <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Edit Agent</h1>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Update agent display name, description, and status.</p>
+        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Update agent display name, description, status, and configuration.</p>
     </div>
 
     <div asp-validation-summary="All" class="mb-4 rounded-lg bg-red-50 p-4 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400"></div>
 
+    @if (TempData["SuccessMessage"] is string successMsg)
+    {
+        <div class="mb-4 rounded-lg bg-green-50 p-4 text-sm text-green-600 dark:bg-green-900/20 dark:text-green-400">
+            @successMsg
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] is string errorMsg)
+    {
+        <div class="mb-4 rounded-lg bg-red-50 p-4 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
+            @errorMsg
+        </div>
+    }
+
     <form asp-action="EditAgent" method="post" class="space-y-6">
         <input type="hidden" asp-for="UserId" />
 
-        <div>
-            <label asp-for="DisplayName" class="block text-sm font-medium text-gray-700 dark:text-gray-300"></label>
-            <input asp-for="DisplayName"
-                   class="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:placeholder-gray-500 dark:focus:border-blue-400" />
-            <span asp-validation-for="DisplayName" class="mt-1 text-sm text-red-600 dark:text-red-400"></span>
+        @* Agent Identity Section *@
+        <div class="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
+            <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-white">Identity</h2>
+
+            <div class="space-y-4">
+                <div>
+                    <label asp-for="DisplayName" class="block text-sm font-medium text-gray-700 dark:text-gray-300"></label>
+                    <input asp-for="DisplayName"
+                           class="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:placeholder-gray-500 dark:focus:border-blue-400" />
+                    <span asp-validation-for="DisplayName" class="mt-1 text-sm text-red-600 dark:text-red-400"></span>
+                </div>
+
+                <div>
+                    <label asp-for="Description" class="block text-sm font-medium text-gray-700 dark:text-gray-300"></label>
+                    <textarea asp-for="Description" rows="4"
+                              class="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:placeholder-gray-500 dark:focus:border-blue-400"></textarea>
+                    <span asp-validation-for="Description" class="mt-1 text-sm text-red-600 dark:text-red-400"></span>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <label class="relative inline-flex cursor-pointer items-center">
+                        <input type="checkbox" asp-for="IsActive" class="peer sr-only" />
+                        <div class="peer h-6 w-11 rounded-full bg-gray-200 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-blue-600 peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 dark:bg-gray-700 dark:peer-checked:bg-blue-500"></div>
+                    </label>
+                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Active</span>
+                </div>
+            </div>
         </div>
 
-        <div>
-            <label asp-for="Description" class="block text-sm font-medium text-gray-700 dark:text-gray-300"></label>
-            <textarea asp-for="Description" rows="4"
-                      class="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:placeholder-gray-500 dark:focus:border-blue-400"></textarea>
-            <span asp-validation-for="Description" class="mt-1 text-sm text-red-600 dark:text-red-400"></span>
-        </div>
+        @* Configuration Section *@
+        <div x-data="{ open: true }" class="rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
+            <button type="button" @@click="open = !open"
+                    class="flex w-full items-center justify-between p-6 text-left">
+                <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Configuration</h2>
+                <svg :class="{ 'rotate-180': open }" class="h-5 w-5 text-gray-500 transition-transform dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+            </button>
 
-        <div class="flex items-center gap-3">
-            <label class="relative inline-flex cursor-pointer items-center">
-                <input type="checkbox" asp-for="IsActive" class="peer sr-only" />
-                <div class="peer h-6 w-11 rounded-full bg-gray-200 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-blue-600 peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 dark:bg-gray-700 dark:peer-checked:bg-blue-500"></div>
-            </label>
-            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Active</span>
+            <div x-show="open" x-transition class="border-t border-gray-200 p-6 dark:border-gray-700">
+                <p class="mb-4 text-sm text-gray-500 dark:text-gray-400">Override agent defaults. Check "Use default" to let the agent use its built-in value.</p>
+
+                <div class="space-y-4">
+                    @* Polling Interval *@
+                    <div x-data="{ useDefault: @Model.Configuration.PollingIntervalUseDefault.ToString().ToLower() }">
+                        <div class="flex items-center gap-2 mb-1">
+                            <input type="checkbox" x-model="useDefault"
+                                   asp-for="Configuration.PollingIntervalUseDefault"
+                                   class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800" />
+                            <label asp-for="Configuration.PollingIntervalUseDefault" class="text-sm text-gray-600 dark:text-gray-400">Use default (60s)</label>
+                        </div>
+                        <div x-show="!useDefault" x-transition>
+                            <label asp-for="Configuration.PollingIntervalSeconds" class="block text-sm font-medium text-gray-700 dark:text-gray-300"></label>
+                            <input asp-for="Configuration.PollingIntervalSeconds" type="number" min="10" max="3600"
+                                   class="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:focus:border-blue-400" />
+                            <span asp-validation-for="Configuration.PollingIntervalSeconds" class="mt-1 text-sm text-red-600 dark:text-red-400"></span>
+                        </div>
+                    </div>
+
+                    @* Model *@
+                    <div x-data="{ useDefault: @Model.Configuration.ModelUseDefault.ToString().ToLower() }">
+                        <div class="flex items-center gap-2 mb-1">
+                            <input type="checkbox" x-model="useDefault"
+                                   asp-for="Configuration.ModelUseDefault"
+                                   class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800" />
+                            <label asp-for="Configuration.ModelUseDefault" class="text-sm text-gray-600 dark:text-gray-400">Use default model</label>
+                        </div>
+                        <div x-show="!useDefault" x-transition>
+                            <label asp-for="Configuration.Model" class="block text-sm font-medium text-gray-700 dark:text-gray-300"></label>
+                            <input asp-for="Configuration.Model"
+                                   class="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:focus:border-blue-400"
+                                   placeholder="e.g., gpt-4o, claude-sonnet-4" />
+                            <span asp-validation-for="Configuration.Model" class="mt-1 text-sm text-red-600 dark:text-red-400"></span>
+                        </div>
+                    </div>
+
+                    @* Auto-Approve Tools *@
+                    <div x-data="{ useDefault: @Model.Configuration.AutoApproveToolsUseDefault.ToString().ToLower() }">
+                        <div class="flex items-center gap-2 mb-1">
+                            <input type="checkbox" x-model="useDefault"
+                                   asp-for="Configuration.AutoApproveToolsUseDefault"
+                                   class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800" />
+                            <label asp-for="Configuration.AutoApproveToolsUseDefault" class="text-sm text-gray-600 dark:text-gray-400">Use default (on)</label>
+                        </div>
+                        <div x-show="!useDefault" x-transition>
+                            <div class="mt-1 flex items-center gap-3">
+                                <label class="relative inline-flex cursor-pointer items-center">
+                                    <input type="checkbox" asp-for="Configuration.AutoApproveTools" class="peer sr-only" />
+                                    <div class="peer h-6 w-11 rounded-full bg-gray-200 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-blue-600 peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 dark:bg-gray-700 dark:peer-checked:bg-blue-500"></div>
+                                </label>
+                                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Auto-approve tool calls</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    @* Dry Run *@
+                    <div x-data="{ useDefault: @Model.Configuration.DryRunUseDefault.ToString().ToLower() }">
+                        <div class="flex items-center gap-2 mb-1">
+                            <input type="checkbox" x-model="useDefault"
+                                   asp-for="Configuration.DryRunUseDefault"
+                                   class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800" />
+                            <label asp-for="Configuration.DryRunUseDefault" class="text-sm text-gray-600 dark:text-gray-400">Use default (off)</label>
+                        </div>
+                        <div x-show="!useDefault" x-transition>
+                            <div class="mt-1 flex items-center gap-3">
+                                <label class="relative inline-flex cursor-pointer items-center">
+                                    <input type="checkbox" asp-for="Configuration.DryRun" class="peer sr-only" />
+                                    <div class="peer h-6 w-11 rounded-full bg-gray-200 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-blue-600 peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 dark:bg-gray-700 dark:peer-checked:bg-blue-500"></div>
+                                </label>
+                                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Dry run mode</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    @* Task Timeout *@
+                    <div x-data="{ useDefault: @Model.Configuration.TaskTimeoutUseDefault.ToString().ToLower() }">
+                        <div class="flex items-center gap-2 mb-1">
+                            <input type="checkbox" x-model="useDefault"
+                                   asp-for="Configuration.TaskTimeoutUseDefault"
+                                   class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800" />
+                            <label asp-for="Configuration.TaskTimeoutUseDefault" class="text-sm text-gray-600 dark:text-gray-400">Use default (600s)</label>
+                        </div>
+                        <div x-show="!useDefault" x-transition>
+                            <label asp-for="Configuration.TaskTimeoutSeconds" class="block text-sm font-medium text-gray-700 dark:text-gray-300"></label>
+                            <input asp-for="Configuration.TaskTimeoutSeconds" type="number" min="60" max="7200"
+                                   class="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:focus:border-blue-400" />
+                            <span asp-validation-for="Configuration.TaskTimeoutSeconds" class="mt-1 text-sm text-red-600 dark:text-red-400"></span>
+                        </div>
+                    </div>
+
+                    @* System Prompt *@
+                    <div x-data="{ useDefault: @Model.Configuration.SystemPromptUseDefault.ToString().ToLower() }">
+                        <div class="flex items-center gap-2 mb-1">
+                            <input type="checkbox" x-model="useDefault"
+                                   asp-for="Configuration.SystemPromptUseDefault"
+                                   class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800" />
+                            <label asp-for="Configuration.SystemPromptUseDefault" class="text-sm text-gray-600 dark:text-gray-400">Use default system prompt</label>
+                        </div>
+                        <div x-show="!useDefault" x-transition>
+                            <label asp-for="Configuration.SystemPrompt" class="block text-sm font-medium text-gray-700 dark:text-gray-300"></label>
+                            <textarea asp-for="Configuration.SystemPrompt" rows="4"
+                                      class="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:focus:border-blue-400"
+                                      placeholder="Custom system prompt for this agent..."></textarea>
+                            <span asp-validation-for="Configuration.SystemPrompt" class="mt-1 text-sm text-red-600 dark:text-red-400"></span>
+                        </div>
+                    </div>
+
+                    @* Flat Repository Fields *@
+                    <div class="border-t border-gray-200 pt-4 dark:border-gray-700">
+                        <h3 class="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-300">Default Repository</h3>
+                        <p class="mb-3 text-xs text-gray-500 dark:text-gray-400">Single repository shortcut. For multiple repositories, use the Repositories section below.</p>
+
+                        <div class="space-y-3">
+                            <div>
+                                <label asp-for="Configuration.RepositoryUrl" class="block text-sm font-medium text-gray-700 dark:text-gray-300"></label>
+                                <input asp-for="Configuration.RepositoryUrl"
+                                       class="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:focus:border-blue-400"
+                                       placeholder="https://github.com/org/repo" />
+                            </div>
+                            <div>
+                                <label asp-for="Configuration.RepositoryBranch" class="block text-sm font-medium text-gray-700 dark:text-gray-300"></label>
+                                <input asp-for="Configuration.RepositoryBranch"
+                                       class="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:focus:border-blue-400"
+                                       placeholder="main" />
+                            </div>
+                            <div>
+                                <label asp-for="Configuration.RepositoryAccessToken" class="block text-sm font-medium text-gray-700 dark:text-gray-300"></label>
+                                @if (!string.IsNullOrEmpty(Model.Configuration.RepositoryAccessTokenMasked))
+                                {
+                                    <p class="mt-1 mb-1 text-xs text-gray-500 dark:text-gray-400">Current: <code class="font-mono">@Model.Configuration.RepositoryAccessTokenMasked</code></p>
+                                }
+                                <input asp-for="Configuration.RepositoryAccessToken" type="password"
+                                       class="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:focus:border-blue-400"
+                                       placeholder="Leave empty to keep current token" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div class="flex gap-3">
@@ -48,6 +221,231 @@
         </div>
     </form>
 
+    @* Repositories Section *@
+    <div class="mt-6 rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
+        <div class="mb-4 flex items-center justify-between">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Repositories</h2>
+        </div>
+
+        @if (Model.Repositories.Count > 0)
+        {
+            <div class="mb-4 overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700">
+                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead class="bg-gray-50 dark:bg-gray-800">
+                        <tr>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Project Name</th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">URL</th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Branch</th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Token</th>
+                            <th scope="col" class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200 bg-white dark:divide-gray-700 dark:bg-gray-900">
+                        @foreach (var repo in Model.Repositories.OrderBy(r => r.DisplayOrder))
+                        {
+                            <tr>
+                                <td class="whitespace-nowrap px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">@repo.ProjectName</td>
+                                <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 max-w-xs truncate">@repo.Url</td>
+                                <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-500 dark:text-gray-400">@repo.Branch</td>
+                                <td class="whitespace-nowrap px-4 py-3 text-sm font-mono text-gray-500 dark:text-gray-400">@(repo.AccessToken ?? "—")</td>
+                                <td class="whitespace-nowrap px-4 py-3 text-right text-sm">
+                                    <form asp-action="RemoveAgentRepository" method="post" class="inline"
+                                          onsubmit="return confirm('Remove this repository?');">
+                                        <input type="hidden" name="userId" value="@Model.UserId" />
+                                        <input type="hidden" name="repositoryId" value="@repo.Id" />
+                                        <button type="submit" class="text-red-600 hover:underline dark:text-red-400">Remove</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <p class="mb-4 text-sm text-gray-500 dark:text-gray-400">No repositories configured.</p>
+        }
+
+        @* Add Repository Form *@
+        <div x-data="{ showForm: false }">
+            <button type="button" @@click="showForm = !showForm"
+                    class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
+                <span x-show="!showForm">Add Repository</span>
+                <span x-show="showForm">Cancel</span>
+            </button>
+
+            <div x-show="showForm" x-transition class="mt-4">
+                <form asp-action="AddAgentRepository" method="post" class="space-y-3 rounded-lg border border-gray-200 p-4 dark:border-gray-700">
+                    <input type="hidden" name="userId" value="@Model.UserId" />
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Project Name</label>
+                            <input name="ProjectName" required
+                                   class="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:focus:border-blue-400"
+                                   placeholder="e.g., MyProject" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">URL</label>
+                            <input name="Url" required
+                                   class="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:focus:border-blue-400"
+                                   placeholder="https://github.com/org/repo" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Branch</label>
+                            <input name="Branch" value="main"
+                                   class="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:focus:border-blue-400" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Access Token</label>
+                            <input name="AccessToken" type="password"
+                                   class="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:focus:border-blue-400"
+                                   placeholder="Optional" />
+                        </div>
+                    </div>
+                    <input type="hidden" name="DisplayOrder" value="@(Model.Repositories.Count)" />
+                    <button type="submit"
+                            class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900">
+                        Add Repository
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    @* MCP Servers Section *@
+    <div class="mt-6 rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
+        <div class="mb-4 flex items-center justify-between">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">MCP Servers</h2>
+        </div>
+
+        @if (Model.McpServers.Count > 0)
+        {
+            <div class="mb-4 overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700">
+                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead class="bg-gray-50 dark:bg-gray-800">
+                        <tr>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Name</th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Type</th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">URL / Command</th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Auth</th>
+                            <th scope="col" class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200 bg-white dark:divide-gray-700 dark:bg-gray-900">
+                        @foreach (var server in Model.McpServers.OrderBy(s => s.DisplayOrder))
+                        {
+                            <tr>
+                                <td class="whitespace-nowrap px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">@server.Name</td>
+                                <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
+                                    <span class="inline-flex rounded-full px-2 text-xs font-semibold leading-5 @(server.Type == "http" ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200" : "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200")">
+                                        @server.Type
+                                    </span>
+                                </td>
+                                <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 max-w-xs truncate">
+                                    @(server.Type == "http" ? server.Url : server.Command)
+                                </td>
+                                <td class="whitespace-nowrap px-4 py-3 text-sm font-mono text-gray-500 dark:text-gray-400">
+                                    @(server.Type == "http" && !string.IsNullOrEmpty(server.AuthHeader) ? server.AuthHeader : "—")
+                                </td>
+                                <td class="whitespace-nowrap px-4 py-3 text-right text-sm">
+                                    <form asp-action="RemoveAgentMcpServer" method="post" class="inline"
+                                          onsubmit="return confirm('Remove this MCP server?');">
+                                        <input type="hidden" name="userId" value="@Model.UserId" />
+                                        <input type="hidden" name="mcpServerId" value="@server.Id" />
+                                        <button type="submit" class="text-red-600 hover:underline dark:text-red-400">Remove</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <p class="mb-4 text-sm text-gray-500 dark:text-gray-400">No MCP servers configured.</p>
+        }
+
+        @* Add MCP Server Form *@
+        <div x-data="{ showForm: false, serverType: 'http' }">
+            <button type="button" @@click="showForm = !showForm"
+                    class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
+                <span x-show="!showForm">Add MCP Server</span>
+                <span x-show="showForm">Cancel</span>
+            </button>
+
+            <div x-show="showForm" x-transition class="mt-4">
+                <form asp-action="AddAgentMcpServer" method="post" class="space-y-3 rounded-lg border border-gray-200 p-4 dark:border-gray-700">
+                    <input type="hidden" name="userId" value="@Model.UserId" />
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Name</label>
+                            <input name="Name" required
+                                   class="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:focus:border-blue-400"
+                                   placeholder="e.g., github-mcp" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Type</label>
+                            <select name="Type" x-model="serverType"
+                                    class="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:focus:border-blue-400">
+                                <option value="http">HTTP</option>
+                                <option value="stdio">Stdio</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    @* HTTP-specific fields *@
+                    <div x-show="serverType === 'http'" x-transition class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">URL</label>
+                            <input name="Url"
+                                   class="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:focus:border-blue-400"
+                                   placeholder="https://mcp-server.example.com" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Auth Header</label>
+                            <input name="AuthHeader" type="password"
+                                   class="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:focus:border-blue-400"
+                                   placeholder="Bearer token..." />
+                        </div>
+                    </div>
+
+                    @* Stdio-specific fields *@
+                    <div x-show="serverType === 'stdio'" x-transition class="space-y-3">
+                        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Command</label>
+                                <input name="Command"
+                                       class="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:focus:border-blue-400"
+                                       placeholder="e.g., npx" />
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Arguments (JSON array)</label>
+                                <input name="Args"
+                                       class="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:focus:border-blue-400"
+                                       placeholder='["-y", "@@modelcontextprotocol/server"]' />
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Environment Variables (JSON object)</label>
+                            <input name="Env" type="password"
+                                   class="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:focus:border-blue-400"
+                                   placeholder='{"API_KEY": "secret"}' />
+                        </div>
+                    </div>
+
+                    <input type="hidden" name="DisplayOrder" value="@(Model.McpServers.Count)" />
+                    <button type="submit"
+                            class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900">
+                        Add MCP Server
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    @* Danger Zone *@
     <div class="mt-8 border-t border-gray-200 pt-6 dark:border-gray-700">
         <h2 class="text-lg font-semibold text-red-600 dark:text-red-400">Danger Zone</h2>
         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Deleting an agent will revoke all its tokens and remove the user. This action cannot be undone.</p>
