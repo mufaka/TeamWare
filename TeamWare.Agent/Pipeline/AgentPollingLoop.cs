@@ -83,6 +83,9 @@ public class AgentPollingLoop
             return;
         }
 
+        // Step 1b: Apply server-side configuration merge
+        _options.ApplyServerConfiguration(profile.Configuration, _logger);
+
         // Step 2: Get assignments and filter to ToDo only
         var assignments = await _mcpClient.GetMyAssignmentsAsync(cancellationToken);
         var todoTasks = assignments
