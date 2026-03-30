@@ -45,6 +45,12 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 
     public DbSet<PersonalAccessToken> PersonalAccessTokens => Set<PersonalAccessToken>();
 
+    public DbSet<AgentConfiguration> AgentConfigurations => Set<AgentConfiguration>();
+
+    public DbSet<AgentRepository> AgentRepositories => Set<AgentRepository>();
+
+    public DbSet<AgentMcpServer> AgentMcpServers => Set<AgentMcpServer>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -420,6 +426,57 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 
             entity.HasIndex(pat => pat.TokenHash).IsUnique();
             entity.HasIndex(pat => pat.UserId);
+        });
+
+        builder.Entity<AgentConfiguration>(entity =>
+        {
+            entity.HasKey(ac => ac.Id);
+            entity.Property(ac => ac.UserId).IsRequired();
+            entity.Property(ac => ac.Model).HasMaxLength(200);
+            entity.Property(ac => ac.SystemPrompt).HasMaxLength(10000);
+            entity.Property(ac => ac.RepositoryUrl).HasMaxLength(500);
+            entity.Property(ac => ac.RepositoryBranch).HasMaxLength(200);
+            entity.Property(ac => ac.EncryptedRepositoryAccessToken).HasMaxLength(2000);
+
+            entity.HasOne(ac => ac.User)
+                .WithOne(u => u.AgentConfiguration)
+                .HasForeignKey<AgentConfiguration>(ac => ac.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(ac => ac.UserId).IsUnique();
+        });
+
+        builder.Entity<AgentRepository>(entity =>
+        {
+            entity.HasKey(ar => ar.Id);
+            entity.Property(ar => ar.ProjectName).IsRequired().HasMaxLength(200);
+            entity.Property(ar => ar.Url).IsRequired().HasMaxLength(500);
+            entity.Property(ar => ar.Branch).HasMaxLength(200);
+            entity.Property(ar => ar.EncryptedAccessToken).HasMaxLength(2000);
+
+            entity.HasOne(ar => ar.AgentConfiguration)
+                .WithMany(ac => ac.Repositories)
+                .HasForeignKey(ar => ar.AgentConfigurationId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(ar => new { ar.AgentConfigurationId, ar.ProjectName }).IsUnique();
+        });
+
+        builder.Entity<AgentMcpServer>(entity =>
+        {
+            entity.HasKey(ms => ms.Id);
+            entity.Property(ms => ms.Name).IsRequired().HasMaxLength(200);
+            entity.Property(ms => ms.Type).IsRequired().HasMaxLength(20);
+            entity.Property(ms => ms.Url).HasMaxLength(500);
+            entity.Property(ms => ms.EncryptedAuthHeader).HasMaxLength(2000);
+            entity.Property(ms => ms.Command).HasMaxLength(500);
+            entity.Property(ms => ms.Args).HasMaxLength(4000);
+            entity.Property(ms => ms.EncryptedEnv).HasMaxLength(8000);
+
+            entity.HasOne(ms => ms.AgentConfiguration)
+                .WithMany(ac => ac.McpServers)
+                .HasForeignKey(ms => ms.AgentConfigurationId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }
