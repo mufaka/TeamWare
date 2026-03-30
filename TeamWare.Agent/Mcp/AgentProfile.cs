@@ -9,4 +9,5 @@ public class AgentProfile
     public string? AgentDescription { get; set; }
     public bool? IsAgentActive { get; set; }
     public string? LastActiveAt { get; set; }
+    public AgentProfileConfiguration? Configuration { get; set; }
 }
