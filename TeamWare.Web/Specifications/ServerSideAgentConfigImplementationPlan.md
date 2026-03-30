@@ -11,7 +11,7 @@ This document defines the phased implementation plan for moving agent configurat
 | 44 | Agent Configuration Data Model | Complete |
 | 45 | Agent Configuration Admin UI | Complete |
 | 46 | MCP Profile Configuration Response | Complete |
-| 47 | Agent-Side Configuration Merge | Not Started |
+| 47 | Agent-Side Configuration Merge | Complete |
 | 48 | Server-Side Config Polish and Hardening | Not Started |
 
 ---
@@ -230,46 +230,46 @@ Implement the merge logic that applies server-side configuration to the agent's 
 
 ### 47.1 Configuration Merge Logic
 
-- [ ] Add `ApplyServerConfiguration(AgentProfileConfiguration? serverConfig)` method to `AgentIdentityOptions` (SACFG-60)
-- [ ] Implement merge rules (SACFG-61):
-  - [ ] `PollingIntervalSeconds`: apply if local is default (60) and server value is not null
-  - [ ] `Model`: apply if local is null and server value is not null
-  - [ ] `AutoApproveTools`: apply if local is default (true) and server value is not null
-  - [ ] `DryRun`: apply if local is default (false) and server value is not null
-  - [ ] `TaskTimeoutSeconds`: apply if local is default (600) and server value is not null
-  - [ ] `SystemPrompt`: apply if local is null and server value is not null
-- [ ] Implement flat repo field merge (SACFG-31):
-  - [ ] Apply `RepositoryUrl`, `RepositoryBranch`, `RepositoryAccessToken` if local values are null
-- [ ] Implement `Repositories` merge (SACFG-62):
-  - [ ] Match by `ProjectName` (case-insensitive)
-  - [ ] Local entries win on collision
-  - [ ] Server-only entries are appended
-- [ ] Implement `McpServers` merge (SACFG-63):
-  - [ ] Match by `Name` (case-insensitive)
-  - [ ] Local entries win on collision
-  - [ ] Server-only entries are appended
-- [ ] Never merge `WorkingDirectory` or `PersonalAccessToken` (SACFG-64, SACFG-65)
-- [ ] Log merged configuration at `Debug` level with secrets redacted (SACFG-66)
-- [ ] When `serverConfig` is null, do nothing (SACFG-67)
-- [ ] Write comprehensive unit tests for all merge rules (SACFG-TEST-04, SACFG-TEST-05, SACFG-TEST-06)
+- [x] Add `ApplyServerConfiguration(AgentProfileConfiguration? serverConfig)` method to `AgentIdentityOptions` (SACFG-60)
+- [x] Implement merge rules (SACFG-61):
+  - [x] `PollingIntervalSeconds`: apply if local is default (60) and server value is not null
+  - [x] `Model`: apply if local is null and server value is not null
+  - [x] `AutoApproveTools`: apply if local is default (true) and server value is not null
+  - [x] `DryRun`: apply if local is default (false) and server value is not null
+  - [x] `TaskTimeoutSeconds`: apply if local is default (600) and server value is not null
+  - [x] `SystemPrompt`: apply if local is null and server value is not null
+- [x] Implement flat repo field merge (SACFG-31):
+  - [x] Apply `RepositoryUrl`, `RepositoryBranch`, `RepositoryAccessToken` if local values are null
+- [x] Implement `Repositories` merge (SACFG-62):
+  - [x] Match by `ProjectName` (case-insensitive)
+  - [x] Local entries win on collision
+  - [x] Server-only entries are appended
+- [x] Implement `McpServers` merge (SACFG-63):
+  - [x] Match by `Name` (case-insensitive)
+  - [x] Local entries win on collision
+  - [x] Server-only entries are appended
+- [x] Never merge `WorkingDirectory` or `PersonalAccessToken` (SACFG-64, SACFG-65)
+- [x] Log merged configuration at `Debug` level with secrets redacted (SACFG-66)
+- [x] When `serverConfig` is null, do nothing (SACFG-67)
+- [x] Write comprehensive unit tests for all merge rules (SACFG-TEST-04, SACFG-TEST-05, SACFG-TEST-06)
 
 ### 47.2 Polling Loop Integration
 
-- [ ] Update `AgentPollingLoop.ExecuteCycleAsync` to call `_options.ApplyServerConfiguration(profile.Configuration)` after the profile check succeeds
-- [ ] This enables runtime config changes to take effect on the next polling cycle without restarting the agent
-- [ ] Write integration tests:
-  - [ ] Agent with no server config uses local config unchanged (SACFG-TEST-07)
-  - [ ] Agent with server config merges correctly (SACFG-TEST-08)
-  - [ ] Config changes propagate on next cycle
+- [x] Update `AgentPollingLoop.ExecuteCycleAsync` to call `_options.ApplyServerConfiguration(profile.Configuration)` after the profile check succeeds
+- [x] This enables runtime config changes to take effect on the next polling cycle without restarting the agent
+- [x] Write integration tests:
+  - [x] Agent with no server config uses local config unchanged (SACFG-TEST-07)
+  - [x] Agent with server config merges correctly (SACFG-TEST-08)
+  - [x] Config changes propagate on next cycle
 
 ### 47.3 Documentation Updates
 
-- [ ] Update `TeamWare.Agent/README.md`:
-  - [ ] Add "Server-Side Configuration" section explaining the feature
-  - [ ] Document the minimal bootstrap config
-  - [ ] Document the merge precedence rules
-  - [ ] Update the configuration reference table with merge behavior notes
-- [ ] Update `TeamWare.Agent/appsettings.example.json` comments to reference server-side config
+- [x] Update `TeamWare.Agent/README.md`:
+  - [x] Add "Server-Side Configuration" section explaining the feature
+  - [x] Document the minimal bootstrap config
+  - [x] Document the merge precedence rules
+  - [x] Update the configuration reference table with merge behavior notes
+- [x] Update `TeamWare.Agent/appsettings.example.json` comments to reference server-side config
 
 ---
 

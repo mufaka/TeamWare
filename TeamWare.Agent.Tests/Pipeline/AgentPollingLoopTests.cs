@@ -290,4 +290,109 @@ public class AgentPollingLoopTests
             e.Message.Contains("Fix login bug") &&
             e.Message.Contains("WebApp"));
     }
+
+    // --- Server Configuration Merge Integration Tests (SACFG-TEST-07, SACFG-TEST-08) ---
+
+    [Fact]
+    public async Task ExecuteCycle_NoServerConfig_UsesLocalConfigUnchanged()
+    {
+        var mcpClient = new FakeMcpClient
+        {
+            ProfileToReturn = new AgentProfile
+            {
+                UserId = "agent-1",
+                IsAgent = true,
+                IsAgentActive = true,
+                Configuration = null
+            }
+        };
+        var options = CreateOptions();
+        options.Model = "local-model";
+        options.PollingIntervalSeconds = 45;
+        var logger = new TestLogger<AgentPollingLoop>();
+        var loop = CreateLoop(options, mcpClient, logger);
+
+        await loop.ExecuteCycleAsync(CancellationToken.None);
+
+        Assert.Equal("local-model", options.Model);
+        Assert.Equal(45, options.PollingIntervalSeconds);
+    }
+
+    [Fact]
+    public async Task ExecuteCycle_WithServerConfig_MergesCorrectly()
+    {
+        var mcpClient = new FakeMcpClient
+        {
+            ProfileToReturn = new AgentProfile
+            {
+                UserId = "agent-1",
+                IsAgent = true,
+                IsAgentActive = true,
+                Configuration = new AgentProfileConfiguration
+                {
+                    Model = "server-model",
+                    PollingIntervalSeconds = 30,
+                    Repositories =
+                    [
+                        new AgentProfileRepository { ProjectName = "ServerProject", Url = "https://server.git" }
+                    ]
+                }
+            }
+        };
+        // Default options: PollingInterval=1 (non-default), Model=null (default)
+        var options = CreateOptions();
+        var logger = new TestLogger<AgentPollingLoop>();
+        var loop = CreateLoop(options, mcpClient, logger);
+
+        await loop.ExecuteCycleAsync(CancellationToken.None);
+
+        // Model was null (default) → server value applied
+        Assert.Equal("server-model", options.Model);
+        // PollingInterval was 1 (non-default) → server value NOT applied
+        Assert.Equal(1, options.PollingIntervalSeconds);
+        // Server-only repo appended
+        Assert.Single(options.Repositories);
+        Assert.Equal("ServerProject", options.Repositories[0].ProjectName);
+    }
+
+    [Fact]
+    public async Task ExecuteCycle_ConfigChangesPropagate_OnNextCycle()
+    {
+        var mcpClient = new FakeMcpClient
+        {
+            ProfileToReturn = new AgentProfile
+            {
+                UserId = "agent-1",
+                IsAgent = true,
+                IsAgentActive = true,
+                Configuration = new AgentProfileConfiguration
+                {
+                    Model = "first-model"
+                }
+            }
+        };
+        var options = CreateOptions();
+        var logger = new TestLogger<AgentPollingLoop>();
+        var loop = CreateLoop(options, mcpClient, logger);
+
+        // First cycle: Model is null → server "first-model" applied
+        await loop.ExecuteCycleAsync(CancellationToken.None);
+        Assert.Equal("first-model", options.Model);
+
+        // Update server config for second cycle
+        mcpClient.ProfileToReturn = new AgentProfile
+        {
+            UserId = "agent-1",
+            IsAgent = true,
+            IsAgentActive = true,
+            Configuration = new AgentProfileConfiguration
+            {
+                Model = "second-model"
+            }
+        };
+
+        // Second cycle: Model is now "first-model" (non-null) → server "second-model" NOT applied (local wins)
+        await loop.ExecuteCycleAsync(CancellationToken.None);
+        Assert.Equal("first-model", options.Model);
+    }
 }
