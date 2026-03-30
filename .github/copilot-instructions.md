@@ -4,7 +4,7 @@
 - TeamWare is an ASP.NET Core MVC application. It should not use Razor Pages. Use Controllers and Views instead.
 - One type per file (MAINT-01).
 - Tests accompany every feature. No phase is complete without its test cases.
-- Follow the implementation plan in `TeamWare.Web/Specifications/ImplementationPlan.md`, `TeamWare.Web/Specifications/SocialFeaturesImplementationPlan.md`, `TeamWare.Web/Specifications/ProjectLoungeImplementationPlan.md`, `TeamWare.Web/Specifications/OllamaIntegrationImplementationPlan.md`, `TeamWare.Web/Specifications/McpServerImplementationPlan.md`, `TeamWare.Web/Specifications/AgentUsersImplementationPlan.md`, and `TeamWare.Web/Specifications/CopilotAgentImplementationPlan.md`.
+- Follow the implementation plan in `TeamWare.Web/Specifications/ImplementationPlan.md`, `TeamWare.Web/Specifications/SocialFeaturesImplementationPlan.md`, `TeamWare.Web/Specifications/ProjectLoungeImplementationPlan.md`, `TeamWare.Web/Specifications/OllamaIntegrationImplementationPlan.md`, `TeamWare.Web/Specifications/McpServerImplementationPlan.md`, `TeamWare.Web/Specifications/AgentUsersImplementationPlan.md`, `TeamWare.Web/Specifications/CopilotAgentImplementationPlan.md`, and `TeamWare.Web/Specifications/ServerSideAgentConfigImplementationPlan.md`.
 - In `_DashboardProjects.cshtml`, ensure the link to project details is correctly implemented using `asp-controller="Project" asp-action="Details" asp-route-id="@project.Id"`.
 
 ---
@@ -61,6 +61,11 @@ Each phase in the implementation plan gets its own branch created from `master`.
 | Phase 41 | `phase-41/agent-guardrails` |
 | Phase 42 | `phase-42/agent-repository` |
 | Phase 43 | `phase-43/agent-polish` |
+| Phase 44 | `phase-44/server-config-data-model` |
+| Phase 45 | `phase-45/server-config-admin-ui` |
+| Phase 46 | `phase-46/server-config-mcp-response` |
+| Phase 47 | `phase-47/server-config-agent-merge` |
+| Phase 48 | `phase-48/server-config-polish` |
 
 When starting a phase:
 1. Create the phase branch from `master` in GitHub.

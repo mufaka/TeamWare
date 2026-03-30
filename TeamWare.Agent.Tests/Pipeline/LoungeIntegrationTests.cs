@@ -249,5 +249,8 @@ public class LoungeIntegrationTests
         {
             return new FakeCopilotClientWrapper { ThrowOnCreateSession = true };
         }
+
+        public ICopilotClientWrapper Create(AgentIdentityOptions options, string workingDirectory, Microsoft.Extensions.Logging.ILogger logger)
+            => Create(options, logger);
     }
 }

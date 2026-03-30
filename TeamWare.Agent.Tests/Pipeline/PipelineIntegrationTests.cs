@@ -210,6 +210,9 @@ public class PipelineIntegrationTests
             return new FakeCopilotClientWrapper();
         }
 
+        public ICopilotClientWrapper Create(AgentIdentityOptions options, string workingDirectory, ILogger logger)
+            => Create(options, logger);
+
         private class FailingSessionClient : ICopilotClientWrapper
         {
             public Task StartAsync() => Task.CompletedTask;

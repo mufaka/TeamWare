@@ -498,6 +498,9 @@ public class StatusTransitionPipelineTests
             _callOrder.Add("copilot:create");
             return new FakeCopilotClientWrapper();
         }
+
+        public ICopilotClientWrapper Create(AgentIdentityOptions options, string workingDirectory, ILogger logger)
+            => Create(options, logger);
     }
 
     /// <summary>
@@ -556,5 +559,8 @@ public class StatusTransitionPipelineTests
             }
             return new FakeCopilotClientWrapper();
         }
+
+        public ICopilotClientWrapper Create(AgentIdentityOptions options, string workingDirectory, ILogger logger)
+            => Create(options, logger);
     }
 }

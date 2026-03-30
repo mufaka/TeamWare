@@ -103,6 +103,7 @@ Each entry in the `Agents` array configures one agent identity:
 | `AutoApproveTools` | bool | No | `true` | Auto-approve all tool calls; set `false` for custom permission handling |
 | `DryRun` | bool | No | `false` | Log write operations instead of executing them |
 | `SystemPrompt` | string | No | `null` | Custom system prompt; uses the built-in default if null |
+| `Repositories` | array | No | `[]` | Per-project repository mappings (see below) |
 | `McpServers` | array | Yes | — | MCP server connections (at least one HTTP server required) |
 
 ### MCP Server Options
@@ -118,6 +119,50 @@ Each entry in the `McpServers` array configures an MCP server connection:
 | `Command` | string | Yes (stdio) | Path to the executable for stdio/local MCP servers |
 | `Args` | string[] | No | Command-line arguments for the stdio server executable |
 | `Env` | object | No | Environment variables to set for the stdio server process |
+
+### Repository Options (Multi-Repo Support)
+
+Each entry in the `Repositories` array maps a TeamWare project to a separate Git repository. When the agent picks up a task, it matches the task's `ProjectName` (case-insensitive) against this list to determine which repository to clone/pull and which working directory to use for the Copilot session.
+
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `ProjectName` | string | Yes | — | TeamWare project name to match against (case-insensitive) |
+| `Url` | string | Yes | — | Git repository URL (HTTPS or SSH) |
+| `Branch` | string | No | `"main"` | Branch to clone/pull from |
+| `AccessToken` | string | No | `null` | Token for private repository authentication |
+
+**Resolution logic:**
+
+1. If a matching project entry exists, a subdirectory named after the project is created under `WorkingDirectory` (e.g., `/tmp/work/Frontend/`)
+2. If no match is found or `Repositories` is empty, falls back to the flat `RepositoryUrl`/`WorkingDirectory` fields
+3. This is fully backward compatible — existing single-repo configurations work unchanged
+
+**Example:**
+
+```json
+{
+  "Name": "multi-repo-agent",
+  "WorkingDirectory": "/tmp/work",
+  "PersonalAccessToken": "your-pat",
+  "Repositories": [
+    {
+      "ProjectName": "Frontend",
+      "Url": "https://github.com/org/frontend.git",
+      "Branch": "dev",
+      "AccessToken": "ghp_frontend_token"
+    },
+    {
+      "ProjectName": "Backend",
+      "Url": "https://github.com/org/backend.git"
+    }
+  ]
+}
+```
+
+In this example:
+- Tasks from the "Frontend" project clone into `/tmp/work/Frontend/` on the `dev` branch
+- Tasks from the "Backend" project clone into `/tmp/work/Backend/` on the `main` branch
+- Tasks from any other project fall back to `RepositoryUrl`/`WorkingDirectory`
 
 ## Dry Run Mode
 
@@ -168,9 +213,10 @@ For each polling cycle:
 2. **Task Discovery** — `my_assignments` returns assigned tasks, filtered to `ToDo`
 3. **Read-Before-Write** — `get_task` verifies the task is still in `ToDo` (idempotency)
 4. **Pickup** — Comment posted + status changed to `InProgress`
-5. **Repository Sync** — Git clone/pull if `RepositoryUrl` is configured
-6. **Processing** — Copilot SDK session with task context
-7. **Completion** — Comment posted + status changed to `InReview`
+5. **Repository Resolution** — Task's `ProjectName` matched against `Repositories` to determine repo and working directory
+6. **Repository Sync** — Git clone/pull for the resolved repository (or `RepositoryUrl` fallback)
+7. **Processing** — Copilot SDK session with task context, CWD set to resolved working directory
+8. **Completion** — Comment posted + status changed to `InReview`
 8. **Error Handling** — On failure: error comment + `Error` status + lounge notification
 
 ## Deployment Options

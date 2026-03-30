@@ -138,10 +138,17 @@ public class AgentPollingLoop
 
         try
         {
-            // Ensure repository is up to date before processing (CA-50 through CA-54)
-            await _repoManager.EnsureRepositoryAsync(_options, cancellationToken);
+            // Resolve the repository for this task's project
+            var resolved = _options.ResolveRepository(task.ProjectName);
 
-            var processor = new TaskProcessor(_options, _copilotFactory, _mcpClient, _logger);
+            _logger.LogDebug(
+                "Agent '{AgentName}': Task #{TaskId} resolved to working directory '{WorkingDirectory}' (repo: {RepoUrl})",
+                _options.Name, task.Id, resolved.WorkingDirectory, resolved.RepositoryUrl ?? "(none)");
+
+            // Ensure repository is up to date before processing (CA-50 through CA-54)
+            await _repoManager.EnsureRepositoryAsync(resolved, _options.Name, cancellationToken);
+
+            var processor = new TaskProcessor(_options, _copilotFactory, _mcpClient, resolved.WorkingDirectory, _logger);
             await processor.ProcessAsync(task, cancellationToken);
 
             // Success: comment + transition to InReview (CA-61, CA-70)
