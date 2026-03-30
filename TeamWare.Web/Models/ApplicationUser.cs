@@ -23,4 +23,6 @@ public class ApplicationUser : IdentityUser
     public ICollection<LoungeMessage> LoungeMessages { get; set; } = new List<LoungeMessage>();
 
     public ICollection<PersonalAccessToken> PersonalAccessTokens { get; set; } = new List<PersonalAccessToken>();
+
+    public AgentConfiguration? AgentConfiguration { get; set; }
 }
