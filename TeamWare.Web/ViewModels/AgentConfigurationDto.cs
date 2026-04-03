@@ -29,6 +29,10 @@ public class AgentConfigurationDto
 
     public string? RepositoryAccessToken { get; set; }
 
+    public string? AgentBackend { get; set; }
+
+    public string? CodexApiKey { get; set; }
+
     public DateTime CreatedAt { get; set; }
 
     public DateTime UpdatedAt { get; set; }

@@ -193,6 +193,30 @@
             <div class="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
                 <dl class="grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2">
                     <div>
+                        <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Agent Backend</dt>
+                        <dd class="mt-1 text-sm text-gray-900 dark:text-white">
+                            @{
+                                var backend = Model.Configuration.AgentBackend;
+                                var backendDisplay = backend switch
+                                {
+                                    "copilot" => "Copilot",
+                                    "codex" => "Codex",
+                                    _ => "Not specified"
+                                };
+                            }
+                            @backendDisplay
+                        </dd>
+                    </div>
+                    @if (Model.Configuration.AgentBackend == "codex")
+                    {
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Codex Auth</dt>
+                            <dd class="mt-1 text-sm text-gray-900 dark:text-white">
+                                @(!string.IsNullOrEmpty(Model.Configuration.CodexApiKey) ? "API Key" : "Local auth")
+                            </dd>
+                        </div>
+                    }
+                    <div>
                         <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Polling Interval</dt>
                         <dd class="mt-1 text-sm text-gray-900 dark:text-white">@(Model.Configuration.PollingIntervalSeconds.HasValue ? $"{Model.Configuration.PollingIntervalSeconds}s" : "Default (60s)")</dd>
                     </div>

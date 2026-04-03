@@ -520,7 +520,9 @@ public class AdminController : Controller
                 SystemPromptUseDefault = config.SystemPrompt == null,
                 RepositoryUrl = config.RepositoryUrl,
                 RepositoryBranch = config.RepositoryBranch,
-                RepositoryAccessTokenMasked = config.RepositoryAccessToken
+                RepositoryAccessTokenMasked = config.RepositoryAccessToken,
+                AgentBackend = config.AgentBackend,
+                CodexApiKeyMasked = config.CodexApiKey
             };
             viewModel.Repositories = config.Repositories;
             viewModel.McpServers = config.McpServers;
@@ -572,7 +574,10 @@ public class AdminController : Controller
             SystemPrompt = model.Configuration.SystemPromptUseDefault ? null : model.Configuration.SystemPrompt,
             RepositoryUrl = model.Configuration.RepositoryUrl,
             RepositoryBranch = model.Configuration.RepositoryBranch,
-            RepositoryAccessToken = model.Configuration.RepositoryAccessToken
+            RepositoryAccessToken = model.Configuration.RepositoryAccessToken,
+            AgentBackend = model.Configuration.AgentBackend,
+            CodexApiKey = model.Configuration.CodexApiKey,
+            ClearCodexApiKey = model.Configuration.ClearCodexApiKey
         };
         await _agentConfigService.SaveConfigurationAsync(model.UserId, saveConfigDto);
 
@@ -766,4 +771,5 @@ public class AdminController : Controller
 
         return RedirectToAction(nameof(AgentDetail), new { id = userId });
     }
+
 }

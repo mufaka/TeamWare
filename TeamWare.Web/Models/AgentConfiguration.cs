@@ -38,6 +38,19 @@ public class AgentConfiguration
     [StringLength(2000)]
     public string? EncryptedRepositoryAccessToken { get; set; }
 
+    /// <summary>
+    /// Which agent backend is used: "copilot", "codex", etc.
+    /// Drives UI behavior and is served to the agent via get_my_profile.
+    /// </summary>
+    [StringLength(50)]
+    public string? AgentBackend { get; set; }
+
+    /// <summary>
+    /// Optional API key for Codex. Incurs per-token OpenAI API costs
+    /// separate from any ChatGPT subscription.
+    /// </summary>
+    public string? EncryptedCodexApiKey { get; set; }
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
