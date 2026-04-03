@@ -10,16 +10,18 @@ internal static class PermissionRequestFactory
 {
     public static PermissionRequestShell Shell(
         string? fullCommandText = null,
-        string? intention = null)
+        string? intention = null,
+        bool hasWriteFileRedirection = false,
+        PermissionRequestShellCommandsItem[]? commands = null)
     {
         return new PermissionRequestShell
         {
             FullCommandText = fullCommandText,
             Intention = intention ?? string.Empty,
-            Commands = [],
+            Commands = commands ?? [],
             PossiblePaths = [],
             PossibleUrls = [],
-            HasWriteFileRedirection = false,
+            HasWriteFileRedirection = hasWriteFileRedirection,
             CanOfferSessionApproval = false,
         };
     }
