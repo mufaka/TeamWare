@@ -9,4 +9,5 @@ public class McpServerOptions
     public string? Command { get; set; }
     public List<string> Args { get; set; } = [];
     public Dictionary<string, string> Env { get; set; } = [];
+    public int? TimeoutMs { get; set; }
 }

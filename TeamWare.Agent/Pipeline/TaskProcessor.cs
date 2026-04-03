@@ -166,7 +166,8 @@ public class TaskProcessor
                 {
                     Type = "http",
                     Url = mcp.Url ?? string.Empty,
-                    Tools = new List<string> { "*" }
+                    Tools = new List<string> { "*" },
+                    Timeout = mcp.TimeoutMs
                 };
 
                 if (!string.IsNullOrEmpty(mcp.AuthHeader))
@@ -194,7 +195,8 @@ public class TaskProcessor
                     Type = "local",
                     Command = mcp.Command ?? string.Empty,
                     Args = mcp.Args,
-                    Tools = new List<string> { "*" }
+                    Tools = new List<string> { "*" },
+                    Timeout = mcp.TimeoutMs
                 };
 
                 if (mcp.Env.Count > 0)
