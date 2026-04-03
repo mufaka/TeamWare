@@ -437,6 +437,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             entity.Property(ac => ac.RepositoryUrl).HasMaxLength(500);
             entity.Property(ac => ac.RepositoryBranch).HasMaxLength(200);
             entity.Property(ac => ac.EncryptedRepositoryAccessToken).HasMaxLength(2000);
+            entity.Property(ac => ac.AgentBackend).HasMaxLength(50);
+            entity.Property(ac => ac.EncryptedCodexApiKey).HasMaxLength(2000);
 
             entity.HasOne(ac => ac.User)
                 .WithOne(u => u.AgentConfiguration)

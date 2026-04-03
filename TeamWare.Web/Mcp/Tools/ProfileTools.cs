@@ -114,7 +114,9 @@ public class ProfileTools
             repositoryBranch = config.RepositoryBranch,
             repositoryAccessToken = config.RepositoryAccessToken,
             repositories,
-            mcpServers
+            mcpServers,
+            agentBackend = config.AgentBackend,
+            codexApiKey = config.CodexApiKey
         };
     }
 }

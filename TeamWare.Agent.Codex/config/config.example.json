@@ -1,0 +1,7 @@
+{
+  "teamware": {
+    "mcpUrl": "https://your-teamware-instance/mcp",
+    "personalAccessToken": "your-pat-token-here"
+  },
+  "workingDirectory": "/path/to/working/directory"
+}

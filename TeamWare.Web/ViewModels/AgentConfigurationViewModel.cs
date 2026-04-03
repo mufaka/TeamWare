@@ -58,4 +58,18 @@ public class AgentConfigurationViewModel
 
     [Display(Name = "Masked Repository Access Token")]
     public string? RepositoryAccessTokenMasked { get; set; }
+
+    [Display(Name = "Agent Backend")]
+    [StringLength(50)]
+    public string? AgentBackend { get; set; }
+
+    [Display(Name = "Codex API Key")]
+    [StringLength(500, ErrorMessage = "API key cannot exceed 500 characters.")]
+    public string? CodexApiKey { get; set; }
+
+    [Display(Name = "Masked Codex API Key")]
+    public string? CodexApiKeyMasked { get; set; }
+
+    [Display(Name = "Clear API Key")]
+    public bool ClearCodexApiKey { get; set; }
 }

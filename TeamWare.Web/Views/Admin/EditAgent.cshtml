@@ -57,6 +57,47 @@
             </div>
         </div>
 
+        @* Agent Backend Section *@
+        <div x-data="{ backend: '@(Model.Configuration.AgentBackend ?? "")' }" class="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
+            <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-white">Agent Backend</h2>
+
+            <div class="space-y-4">
+                <div>
+                    <label asp-for="Configuration.AgentBackend" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Backend</label>
+                    <select asp-for="Configuration.AgentBackend" x-model="backend"
+                            class="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:focus:border-blue-400">
+                        <option value="">Not specified</option>
+                        <option value="copilot">Copilot</option>
+                        <option value="codex">Codex</option>
+                    </select>
+                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Select which agent backend this agent uses. Informational for Copilot; drives auth management for Codex.</p>
+                </div>
+
+                <div x-show="backend === 'codex'" x-transition class="space-y-4 rounded-lg border border-gray-100 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-900/50">
+                    <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300">Codex Settings</h3>
+
+                    @* Codex API Key *@
+                    <div>
+                        <label asp-for="Configuration.CodexApiKey" class="block text-sm font-medium text-gray-700 dark:text-gray-300">API Key (optional)</label>
+                        <input asp-for="Configuration.CodexApiKey"
+                               placeholder="@(Model.Configuration.CodexApiKeyMasked ?? "Leave blank to use local Codex auth")"
+                               class="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:placeholder-gray-500 dark:focus:border-blue-400" />
+                        <p class="mt-1 text-xs text-amber-600 dark:text-amber-400">Using an API key incurs per-token OpenAI API charges separate from your ChatGPT subscription. Leave blank to use local Codex auth (no extra cost).</p>
+                        @if (!string.IsNullOrEmpty(Model.Configuration.CodexApiKeyMasked))
+                        {
+                            <div class="mt-2 flex items-center gap-2">
+                                <input type="checkbox" asp-for="Configuration.ClearCodexApiKey"
+                                       class="h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500 dark:border-gray-600 dark:bg-gray-800" />
+                                <label asp-for="Configuration.ClearCodexApiKey" class="text-sm text-red-600 dark:text-red-400">Clear API key (revert to local auth)</label>
+                            </div>
+                        }
+                    </div>
+
+                    <p class="text-xs text-gray-500 dark:text-gray-400">If no API key is provided, the agent will use its local Codex authentication (e.g. from <code>codex login</code> on the host machine).</p>
+                </div>
+            </div>
+        </div>
+
         @* Configuration Section *@
         <div x-data="{ open: true }" class="rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
             <button type="button" @@click="open = !open"

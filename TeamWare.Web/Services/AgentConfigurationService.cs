@@ -46,11 +46,19 @@ public class AgentConfigurationService : IAgentConfigurationService
         return ServiceResult<AgentConfigurationDto?>.Success(MapToDto(config, masked: false));
     }
 
+    private static readonly HashSet<string> ValidBackends = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "", "copilot", "codex"
+    };
+
     public async Task<ServiceResult> SaveConfigurationAsync(string userId, SaveAgentConfigurationDto dto)
     {
         var validation = await ValidateAgentUserAsync(userId);
         if (!validation.Succeeded)
             return validation;
+
+        if (!string.IsNullOrEmpty(dto.AgentBackend) && !ValidBackends.Contains(dto.AgentBackend))
+            return ServiceResult.Failure($"Unknown agent backend '{dto.AgentBackend}'. Valid values: copilot, codex.");
 
         var config = await _context.AgentConfigurations
             .FirstOrDefaultAsync(ac => ac.UserId == userId);
@@ -74,6 +82,11 @@ public class AgentConfigurationService : IAgentConfigurationService
         config.RepositoryUrl = dto.RepositoryUrl;
         config.RepositoryBranch = dto.RepositoryBranch;
         config.EncryptedRepositoryAccessToken = _encryptor.Encrypt(dto.RepositoryAccessToken);
+        config.AgentBackend = dto.AgentBackend;
+        if (dto.ClearCodexApiKey)
+            config.EncryptedCodexApiKey = null;
+        else if (!string.IsNullOrEmpty(dto.CodexApiKey))
+            config.EncryptedCodexApiKey = _encryptor.Encrypt(dto.CodexApiKey);
         config.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
@@ -278,6 +291,10 @@ public class AgentConfigurationService : IAgentConfigurationService
             RepositoryAccessToken = masked
                 ? _encryptor.MaskForDisplay(_encryptor.Decrypt(config.EncryptedRepositoryAccessToken))
                 : _encryptor.Decrypt(config.EncryptedRepositoryAccessToken),
+            AgentBackend = config.AgentBackend,
+            CodexApiKey = masked
+                ? _encryptor.MaskForDisplay(_encryptor.Decrypt(config.EncryptedCodexApiKey))
+                : _encryptor.Decrypt(config.EncryptedCodexApiKey),
             CreatedAt = config.CreatedAt,
             UpdatedAt = config.UpdatedAt,
             Repositories = config.Repositories.Select(r => new AgentRepositoryDto

@@ -23,4 +23,10 @@ public class SaveAgentConfigurationDto
     public string? RepositoryBranch { get; set; }
 
     public string? RepositoryAccessToken { get; set; }
+
+    public string? AgentBackend { get; set; }
+
+    public string? CodexApiKey { get; set; }
+
+    public bool ClearCodexApiKey { get; set; }
 }
