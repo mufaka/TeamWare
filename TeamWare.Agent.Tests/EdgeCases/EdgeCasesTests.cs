@@ -72,7 +72,7 @@ public class EdgeCasesTests
             [
                 new AgentTask { Id = 1, Title = "Task A", Status = "ToDo", ProjectName = "Proj1", ProjectId = 10 }
             ],
-            TaskDetailToReturn = new AgentTaskDetail { Id = 1, Title = "Task A", Status = "ToDo" }
+            TaskDetailToReturn = new AgentTaskDetail { Id = 1, Title = "Task A", Status = "ToDo", Assignees = [new AgentTaskAssignee { UserId = "test-user" }] }
         };
         var copilotFactory = new FakeCopilotClientWrapperFactory();
         var logger = new TestLogger<AgentPollingLoop>();

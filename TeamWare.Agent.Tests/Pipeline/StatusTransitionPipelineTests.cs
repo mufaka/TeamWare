@@ -27,7 +27,7 @@ public class StatusTransitionPipelineTests
             [
                 new AgentTask { Id = 1, Title = "Task A", Status = "ToDo", ProjectName = "Proj1", ProjectId = 10 }
             ],
-            TaskDetailToReturn = new AgentTaskDetail { Id = 1, Title = "Task A", Status = "ToDo" }
+            TaskDetailToReturn = new AgentTaskDetail { Id = 1, Title = "Task A", Status = "ToDo", Assignees = [new AgentTaskAssignee { UserId = "test-user" }] }
         };
         var copilotFactory = new FakeCopilotClientWrapperFactory();
         var logger = new TestLogger<AgentPollingLoop>();
@@ -59,7 +59,7 @@ public class StatusTransitionPipelineTests
             [
                 new AgentTask { Id = 1, Title = "Task A", Status = "ToDo", ProjectName = "Proj1", ProjectId = 10 }
             ],
-            TaskDetailToReturn = new AgentTaskDetail { Id = 1, Title = "Task A", Status = "ToDo" }
+            TaskDetailToReturn = new AgentTaskDetail { Id = 1, Title = "Task A", Status = "ToDo", Assignees = [new AgentTaskAssignee { UserId = "test-user" }] }
         };
         var copilotFactory = new FakeCopilotClientWrapperFactory();
         var logger = new TestLogger<AgentPollingLoop>();
@@ -89,7 +89,7 @@ public class StatusTransitionPipelineTests
             [
                 new AgentTask { Id = 1, Title = "Task A", Status = "ToDo", ProjectName = "Proj1", ProjectId = 10 }
             ],
-            TaskDetailToReturn = new AgentTaskDetail { Id = 1, Title = "Task A", Status = "ToDo" }
+            TaskDetailToReturn = new AgentTaskDetail { Id = 1, Title = "Task A", Status = "ToDo", Assignees = [new AgentTaskAssignee { UserId = "test-user" }] }
         };
         var copilotFactory = new FakeCopilotClientWrapperFactory();
         var logger = new TestLogger<AgentPollingLoop>();
@@ -124,7 +124,7 @@ public class StatusTransitionPipelineTests
             [
                 new AgentTask { Id = 1, Title = "Task A", Status = "ToDo", ProjectName = "Proj1", ProjectId = 10 }
             ],
-            TaskDetailToReturn = new AgentTaskDetail { Id = 1, Title = "Task A", Status = "ToDo" }
+            TaskDetailToReturn = new AgentTaskDetail { Id = 1, Title = "Task A", Status = "ToDo", Assignees = [new AgentTaskAssignee { UserId = "test-user" }] }
         };
         var copilotFactory = new FakeCopilotClientWrapperFactory();
         var logger = new TestLogger<AgentPollingLoop>();
@@ -144,7 +144,7 @@ public class StatusTransitionPipelineTests
             [
                 new AgentTask { Id = 1, Title = "Task A", Status = "ToDo", ProjectName = "Proj1", ProjectId = 10 }
             ],
-            TaskDetailToReturn = new AgentTaskDetail { Id = 1, Title = "Task A", Status = "ToDo" }
+            TaskDetailToReturn = new AgentTaskDetail { Id = 1, Title = "Task A", Status = "ToDo", Assignees = [new AgentTaskAssignee { UserId = "test-user" }] }
         };
         var copilotFactory = new FailOnFirstTaskFactory();
         var logger = new TestLogger<AgentPollingLoop>();
@@ -174,7 +174,7 @@ public class StatusTransitionPipelineTests
             [
                 new AgentTask { Id = 1, Title = "Task A", Status = "ToDo", ProjectName = "Proj1", ProjectId = 10 }
             ],
-            TaskDetailToReturn = new AgentTaskDetail { Id = 1, Title = "Task A", Status = "ToDo" }
+            TaskDetailToReturn = new AgentTaskDetail { Id = 1, Title = "Task A", Status = "ToDo", Assignees = [new AgentTaskAssignee { UserId = "test-user" }] }
         };
         var copilotFactory = new FailOnFirstTaskFactory();
         var logger = new TestLogger<AgentPollingLoop>();
@@ -203,7 +203,7 @@ public class StatusTransitionPipelineTests
             [
                 new AgentTask { Id = 1, Title = "Task A", Status = "ToDo", ProjectName = "Proj1", ProjectId = 10 }
             ],
-            TaskDetailToReturn = new AgentTaskDetail { Id = 1, Title = "Task A", Status = "ToDo" }
+            TaskDetailToReturn = new AgentTaskDetail { Id = 1, Title = "Task A", Status = "ToDo", Assignees = [new AgentTaskAssignee { UserId = "test-user" }] }
         };
         var copilotFactory = new FailOnFirstTaskFactory();
         var logger = new TestLogger<AgentPollingLoop>();
@@ -339,7 +339,7 @@ public class StatusTransitionPipelineTests
             [
                 new AgentTask { Id = 1, Title = "Task A", Status = "ToDo", ProjectName = "Proj1", ProjectId = 10 }
             ],
-            TaskDetailToReturn = new AgentTaskDetail { Id = 1, Title = "Task A", Status = "ToDo" }
+            TaskDetailToReturn = new AgentTaskDetail { Id = 1, Title = "Task A", Status = "ToDo", Assignees = [new AgentTaskAssignee { UserId = "test-user" }] }
         };
         var copilotFactory = new OrderTrackingCopilotFactory(callOrder);
         var logger = new TestLogger<AgentPollingLoop>();
@@ -374,8 +374,8 @@ public class StatusTransitionPipelineTests
         // Override TaskDetailToReturn per call using a custom client
         var taskDetails = new Dictionary<int, AgentTaskDetail>
         {
-            [1] = new() { Id = 1, Title = "Will Fail", Status = "ToDo" },
-            [2] = new() { Id = 2, Title = "Will Succeed", Status = "ToDo" }
+            [1] = new() { Id = 1, Title = "Will Fail", Status = "ToDo", Assignees = [new AgentTaskAssignee { UserId = "test-user" }] },
+            [2] = new() { Id = 2, Title = "Will Succeed", Status = "ToDo", Assignees = [new AgentTaskAssignee { UserId = "test-user" }] }
         };
         var multiTaskClient = new MultiTaskMcpClient(mcpClient, taskDetails);
         var copilotFactory = new FailOnFirstTaskFactory();
@@ -418,6 +418,150 @@ public class StatusTransitionPipelineTests
 
         // No status transitions when no copilot factory
         Assert.DoesNotContain(mcpClient.Calls, c => c.ToolName == "update_task_status");
+    }
+
+    // --- Ownership Guard Tests ---
+
+    [Fact]
+    public async Task ExecuteCycle_TaskNotAssignedToAgent_Skipped()
+    {
+        var mcpClient = new FakeMcpClient
+        {
+            ProfileToReturn = new AgentProfile
+            {
+                UserId = "agent-1",
+                IsAgent = true,
+                IsAgentActive = true
+            },
+            AssignmentsToReturn =
+            [
+                new AgentTask { Id = 1, Title = "Task A", Status = "ToDo", ProjectName = "Proj1", ProjectId = 10 }
+            ],
+            TaskDetailToReturn = new AgentTaskDetail
+            {
+                Id = 1, Title = "Task A", Status = "ToDo",
+                Assignees = [new AgentTaskAssignee { UserId = "agent-2" }]
+            }
+        };
+        var copilotFactory = new FakeCopilotClientWrapperFactory();
+        var logger = new TestLogger<AgentPollingLoop>();
+        var loop = new AgentPollingLoop(CreateOptions(), mcpClient, copilotFactory, logger);
+
+        await loop.ExecuteCycleAsync(CancellationToken.None);
+
+        // Should not create any Copilot client
+        Assert.Equal(0, copilotFactory.CreateCallCount);
+        // Should not update status
+        Assert.DoesNotContain(mcpClient.Calls, c => c.ToolName == "update_task_status");
+        // Should log the skip with warning
+        Assert.Contains(logger.Entries, e =>
+            e.Level == LogLevel.Warning &&
+            e.Message.Contains("Skipping task #1") &&
+            e.Message.Contains("not in the assignee list"));
+    }
+
+    [Fact]
+    public async Task ExecuteCycle_TaskWithNoAssignees_Skipped()
+    {
+        var mcpClient = new FakeMcpClient
+        {
+            ProfileToReturn = new AgentProfile
+            {
+                UserId = "agent-1",
+                IsAgent = true,
+                IsAgentActive = true
+            },
+            AssignmentsToReturn =
+            [
+                new AgentTask { Id = 1, Title = "Task A", Status = "ToDo", ProjectName = "Proj1", ProjectId = 10 }
+            ],
+            TaskDetailToReturn = new AgentTaskDetail
+            {
+                Id = 1, Title = "Task A", Status = "ToDo",
+                Assignees = []
+            }
+        };
+        var copilotFactory = new FakeCopilotClientWrapperFactory();
+        var logger = new TestLogger<AgentPollingLoop>();
+        var loop = new AgentPollingLoop(CreateOptions(), mcpClient, copilotFactory, logger);
+
+        await loop.ExecuteCycleAsync(CancellationToken.None);
+
+        Assert.Equal(0, copilotFactory.CreateCallCount);
+        Assert.DoesNotContain(mcpClient.Calls, c => c.ToolName == "update_task_status");
+        Assert.Contains(logger.Entries, e =>
+            e.Level == LogLevel.Warning &&
+            e.Message.Contains("not in the assignee list"));
+    }
+
+    [Fact]
+    public async Task ExecuteCycle_TaskAssignedToAgent_Processed()
+    {
+        var mcpClient = new FakeMcpClient
+        {
+            ProfileToReturn = new AgentProfile
+            {
+                UserId = "agent-1",
+                IsAgent = true,
+                IsAgentActive = true
+            },
+            AssignmentsToReturn =
+            [
+                new AgentTask { Id = 1, Title = "Task A", Status = "ToDo", ProjectName = "Proj1", ProjectId = 10 }
+            ],
+            TaskDetailToReturn = new AgentTaskDetail
+            {
+                Id = 1, Title = "Task A", Status = "ToDo",
+                Assignees = [new AgentTaskAssignee { UserId = "agent-1" }]
+            }
+        };
+        var copilotFactory = new FakeCopilotClientWrapperFactory();
+        var logger = new TestLogger<AgentPollingLoop>();
+        var loop = new AgentPollingLoop(CreateOptions(), mcpClient, copilotFactory, logger);
+
+        await loop.ExecuteCycleAsync(CancellationToken.None);
+
+        // Should have processed the task
+        Assert.Equal(1, copilotFactory.CreateCallCount);
+        // Should have transitioned to InProgress then InReview
+        var statusCalls = mcpClient.Calls
+            .Where(c => c.ToolName == "update_task_status")
+            .ToList();
+        Assert.Equal(2, statusCalls.Count);
+    }
+
+    [Fact]
+    public async Task ExecuteCycle_TaskAssignedToMultipleIncludingAgent_Processed()
+    {
+        var mcpClient = new FakeMcpClient
+        {
+            ProfileToReturn = new AgentProfile
+            {
+                UserId = "agent-1",
+                IsAgent = true,
+                IsAgentActive = true
+            },
+            AssignmentsToReturn =
+            [
+                new AgentTask { Id = 1, Title = "Task A", Status = "ToDo", ProjectName = "Proj1", ProjectId = 10 }
+            ],
+            TaskDetailToReturn = new AgentTaskDetail
+            {
+                Id = 1, Title = "Task A", Status = "ToDo",
+                Assignees =
+                [
+                    new AgentTaskAssignee { UserId = "human-user" },
+                    new AgentTaskAssignee { UserId = "agent-1" }
+                ]
+            }
+        };
+        var copilotFactory = new FakeCopilotClientWrapperFactory();
+        var logger = new TestLogger<AgentPollingLoop>();
+        var loop = new AgentPollingLoop(CreateOptions(), mcpClient, copilotFactory, logger);
+
+        await loop.ExecuteCycleAsync(CancellationToken.None);
+
+        Assert.Equal(1, copilotFactory.CreateCallCount);
     }
 
     // --- Helper Classes ---

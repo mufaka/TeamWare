@@ -110,11 +110,11 @@ public class AgentPollingLoop
             if (cancellationToken.IsCancellationRequested)
                 break;
 
-            await ProcessTaskAsync(task, cancellationToken);
+            await ProcessTaskAsync(task, profile.UserId, cancellationToken);
         }
     }
 
-    private async Task ProcessTaskAsync(AgentTask task, CancellationToken cancellationToken)
+    private async Task ProcessTaskAsync(AgentTask task, string agentUserId, CancellationToken cancellationToken)
     {
         if (_copilotFactory is null)
         {
@@ -133,6 +133,15 @@ public class AgentPollingLoop
             _logger.LogInformation(
                 "Agent '{AgentName}': Skipping task #{TaskId} — status is '{Status}', expected 'ToDo'",
                 _options.Name, task.Id, currentTask.Status);
+            return;
+        }
+
+        // Ownership guard: verify this agent is assigned to the task
+        if (!currentTask.Assignees.Any(a => a.UserId.Equals(agentUserId, StringComparison.OrdinalIgnoreCase)))
+        {
+            _logger.LogWarning(
+                "Agent '{AgentName}': Skipping task #{TaskId} — agent user '{AgentUserId}' is not in the assignee list",
+                _options.Name, task.Id, agentUserId);
             return;
         }
 

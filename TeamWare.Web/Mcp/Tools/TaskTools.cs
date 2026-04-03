@@ -150,7 +150,9 @@ public class TaskTools
 
         if (isAgent)
         {
-            taskItems = taskItems.Where(t => t.Status == TaskItemStatus.ToDo || t.Status == TaskItemStatus.InProgress);
+            taskItems = taskItems.Where(t =>
+                (t.Status == TaskItemStatus.ToDo || t.Status == TaskItemStatus.InProgress)
+                && t.Assignments.Any(a => a.UserId == userId));
         }
 
         var tasks = taskItems.Select(t => new
