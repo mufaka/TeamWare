@@ -1,4 +1,4 @@
-import type { AgentConfig, McpServerConfig, RepositoryConfig } from "../config.js";
+﻿import type { AgentConfig, McpServerConfig, RepositoryConfig } from "../config.js";
 import { DEFAULTS, effective } from "../config.js";
 import { TeamWareMcpClient } from "../mcp/client.js";
 import type { AgentProfileConfiguration } from "../mcp/types.js";
@@ -20,6 +20,8 @@ export class PollingLoop {
   private readonly mcp: TeamWareMcpClient;
   private readonly transitions: StatusTransitionHandler;
   private running = false;
+  private consecutiveFailures = 0;
+  private readonly maxFailuresBeforeReconnect = 3;
 
   constructor(config: AgentConfig) {
     this.config = config;
@@ -32,7 +34,20 @@ export class PollingLoop {
 
   async start(signal?: AbortSignal): Promise<void> {
     this.running = true;
-    await this.mcp.connect();
+
+    // Retry initial connection with backoff (issue #282)
+    let connected = false;
+    while (!connected && this.running && !signal?.aborted) {
+      try {
+        await this.mcp.connect();
+        connected = true;
+      } catch (err) {
+        console.error("[agent] Failed to connect to TeamWare MCP, retrying...", err);
+        await this.sleep(DEFAULTS.pollingIntervalSeconds * 1000, signal);
+      }
+    }
+
+    if (!connected) return;
 
     console.log("[agent] Connected to TeamWare MCP. Starting polling loop.");
 
@@ -42,8 +57,28 @@ export class PollingLoop {
 
         try {
           intervalSeconds = await this.executeCycle();
+          this.consecutiveFailures = 0;
         } catch (err) {
           console.error("[agent] Polling cycle error:", err);
+
+          if (this.isTransportError(err)) {
+            this.consecutiveFailures++;
+            if (this.consecutiveFailures >= this.maxFailuresBeforeReconnect) {
+              console.warn(
+                `[agent] ${this.consecutiveFailures} consecutive transport failures — attempting reconnect`,
+              );
+              try {
+                await this.mcp.reconnect();
+                this.consecutiveFailures = 0;
+                console.log("[agent] MCP reconnected successfully.");
+              } catch (reconnectErr) {
+                console.error("[agent] MCP reconnection failed:", reconnectErr);
+                this.consecutiveFailures = 0;
+              }
+            }
+          } else {
+            this.consecutiveFailures = 0;
+          }
         }
 
         await this.sleep(intervalSeconds * 1000, signal);
@@ -222,6 +257,23 @@ export class PollingLoop {
       ),
       anthropicApiKey: this.config.anthropicApiKey ?? s?.claudeApiKey ?? undefined,
     };
+  }
+
+  /** Classify whether an error is a transport-level failure (triggers reconnect). */
+  private isTransportError(err: unknown): boolean {
+    if (err instanceof Error) {
+      const msg = err.message.toLowerCase();
+      // Network-level: fetch failures, timeouts, connection refused
+      if (msg.includes("fetch") || msg.includes("econnrefused") ||
+          msg.includes("econnreset") || msg.includes("timeout") ||
+          msg.includes("network") || msg.includes("socket") ||
+          msg.includes("abort")) {
+        return true;
+      }
+      // MCP tool business errors mean the server IS reachable
+      if (msg.startsWith("mcp tool '")) return false;
+    }
+    return true; // Default to transport error for unknown error types
   }
 
   private sleep(ms: number, signal?: AbortSignal): Promise<void> {
