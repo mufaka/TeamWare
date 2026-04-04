@@ -126,6 +126,26 @@
 
         var authorName = msg.author ? escapeHtml(msg.author.displayName) : "Unknown";
         var timestamp = formatTimestamp(msg.createdAt);
+        var isOwnMessage = msg.author && msg.author.id === currentUserId;
+
+        // Build action buttons HTML
+        var actionsHtml = '<div class="mt-1 hidden gap-1 group-hover:flex">';
+        // Reaction buttons - always available
+        var reactionTypes = ["thumbsup", "heart", "laugh", "rocket", "eyes"];
+        for (var i = 0; i < reactionTypes.length; i++) {
+            var rt = reactionTypes[i];
+            actionsHtml += '<button type="button" class="reaction-add-btn rounded px-1.5 py-0.5 text-xs text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300" ' +
+                'data-message-id="' + msg.id + '" data-reaction-type="' + rt + '" title="' + rt + '">' +
+                getReactionDisplay(rt) + '</button>';
+        }
+        // Edit and Delete buttons - only for own messages
+        if (isOwnMessage) {
+            actionsHtml += '<button type="button" class="btn-edit-message rounded px-1.5 py-0.5 text-xs text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300" ' +
+                'data-message-id="' + msg.id + '" title="Edit message">Edit</button>';
+            actionsHtml += '<button type="button" class="btn-delete-message rounded px-1.5 py-0.5 text-xs text-red-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-300" ' +
+                'data-message-id="' + msg.id + '" title="Delete message">Delete</button>';
+        }
+        actionsHtml += '</div>';
 
         return '<div class="group mb-4 flex gap-3" id="message-' + msg.id + '" data-message-id="' + msg.id + '" data-author-id="' + (msg.author ? msg.author.id : "") + '" role="article" aria-label="Message from ' + authorName + '">' +
             '<div class="flex-shrink-0">' + avatarHtml + '</div>' +
@@ -136,6 +156,7 @@
                 '</div>' +
                 '<div class="message-content markdown-body mt-1 text-sm text-gray-700 dark:text-gray-300" data-content="' + escapeHtml(msg.content) + '">' + renderContent(msg.content) + '</div>' +
                 '<div class="mt-1 flex flex-wrap gap-1" data-reactions></div>' +
+                actionsHtml +
                 '<div id="task-status-' + msg.id + '"></div>' +
             '</div>' +
         '</div>';
