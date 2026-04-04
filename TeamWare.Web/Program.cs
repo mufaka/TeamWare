@@ -136,6 +136,7 @@ app.MapControllerRoute(
 
 app.MapHub<PresenceHub>("/hubs/presence");
 app.MapHub<LoungeHub>("/hubs/lounge");
+app.MapHub<TaskHub>("/hubs/task");
 
 app.MapMcp("/mcp").RequireAuthorization(new Microsoft.AspNetCore.Authorization.AuthorizeAttribute
 {
