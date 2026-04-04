@@ -20,6 +20,7 @@ public class AdminController : Controller
     private readonly IPersonalAccessTokenService _patService;
     private readonly ApplicationDbContext _context;
     private readonly IAgentConfigurationService _agentConfigService;
+    private readonly IProjectService _projectService;
 
     public AdminController(
         IAdminService adminService,
@@ -28,7 +29,8 @@ public class AdminController : Controller
         UserManager<ApplicationUser> userManager,
         IPersonalAccessTokenService patService,
         ApplicationDbContext context,
-        IAgentConfigurationService agentConfigService)
+        IAgentConfigurationService agentConfigService,
+        IProjectService projectService)
     {
         _adminService = adminService;
         _activityLogService = activityLogService;
@@ -37,9 +39,25 @@ public class AdminController : Controller
         _patService = patService;
         _context = context;
         _agentConfigService = agentConfigService;
+        _projectService = projectService;
     }
 
     private string GetUserId() => User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+
+    private async Task PopulateProjectOptionsAsync(EditAgentViewModel model)
+    {
+        var projectsResult = await _projectService.GetProjectsForUser(GetUserId());
+        model.AvailableProjects = projectsResult.Succeeded
+            ? projectsResult.Data!
+                .OrderBy(p => p.Name)
+                .Select(p => new ProjectOptionViewModel
+                {
+                    Id = p.Id,
+                    Name = p.Name
+                })
+                .ToList()
+            : [];
+    }
 
     [HttpGet]
     public async Task<IActionResult> Dashboard()
@@ -499,6 +517,7 @@ public class AdminController : Controller
             Description = user.AgentDescription,
             IsActive = user.IsAgentActive
         };
+        await PopulateProjectOptionsAsync(viewModel);
 
         var configResult = await _agentConfigService.GetConfigurationAsync(user.Id);
         if (configResult.Succeeded && configResult.Data != null)
@@ -538,6 +557,7 @@ public class AdminController : Controller
         if (!ModelState.IsValid)
         {
             // Reload repositories and MCP servers for the form
+            await PopulateProjectOptionsAsync(model);
             var configResult = await _agentConfigService.GetConfigurationAsync(model.UserId);
             if (configResult.Succeeded && configResult.Data != null)
             {
