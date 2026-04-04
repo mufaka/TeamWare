@@ -66,6 +66,8 @@ Each phase in the implementation plan gets its own branch created from `master`.
 | Phase 46 | `phase-46/server-config-mcp-response` |
 | Phase 47 | `phase-47/server-config-agent-merge` |
 | Phase 48 | `phase-48/server-config-polish` |
+| Phase 49 | `phase-49/realtime-task-hub` |
+| Phase 50 | `phase-50/realtime-task-client` |
 
 When starting a phase:
 1. Create the phase branch from `master` in GitHub.
@@ -124,6 +126,8 @@ The following maps implementation plan work items to their canonical GitHub issu
 > - Phases 26-31: `TeamWare.Web/Specifications/McpServerImplementationPlan.md`
 > - Phases 32-35: `TeamWare.Web/Specifications/AgentUsersImplementationPlan.md`
 > - Phases 36-43: `TeamWare.Web/Specifications/CopilotAgentImplementationPlan.md`
+> - Phases 44-48: `TeamWare.Web/Specifications/ServerSideAgentConfigImplementationPlan.md`
+> - Phases 49-50: `TeamWare.Web/Specifications/RealtimeAgentActivityImplementationPlan.md`
 
 ### Phase 44
 
@@ -165,3 +169,21 @@ The following maps implementation plan work items to their canonical GitHub issu
 | 48.2 Edge Cases and Regression Testing | #266 | — |
 | 48.3 UI Consistency Review | #267 | — |
 | 48.4 Documentation | #268 | — |
+
+### Phase 49: Task SignalR Hub and Server Infrastructure (label: `Phase 49: Real-Time Task Hub`)
+
+| Work Item | Canonical Issue | Duplicate Issues |
+|-----------|----------------|------------------|
+| 49.1 TaskHub Creation | #287 | — |
+| 49.2 Partial View Extraction | #288 | — |
+| 49.3 Partial Endpoints | #289 | — |
+| 49.4 Broadcast Integration | #290 | — |
+
+### Phase 50: Client Integration and Polish (label: `Phase 50: Real-Time Task Client`)
+
+| Work Item | Canonical Issue | Duplicate Issues |
+|-----------|----------------|------------------|
+| 50.1 Client-Side SignalR Script | #291 | — |
+| 50.2 Details.cshtml Integration | #292 | — |
+| 50.3 Toast Notifications | #293 | — |
+| 50.4 End-to-End Testing and Polish | #294 | — |
