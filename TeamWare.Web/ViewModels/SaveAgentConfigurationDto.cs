@@ -29,4 +29,8 @@ public class SaveAgentConfigurationDto
     public string? CodexApiKey { get; set; }
 
     public bool ClearCodexApiKey { get; set; }
+
+    public string? ClaudeApiKey { get; set; }
+
+    public bool ClearClaudeApiKey { get; set; }
 }

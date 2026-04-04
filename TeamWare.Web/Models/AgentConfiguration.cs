@@ -51,6 +51,12 @@ public class AgentConfiguration
     /// </summary>
     public string? EncryptedCodexApiKey { get; set; }
 
+    /// <summary>
+    /// Optional API key for Claude. Incurs per-token Anthropic API costs
+    /// separate from any Claude subscription.
+    /// </summary>
+    public string? EncryptedClaudeApiKey { get; set; }
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;

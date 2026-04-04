@@ -33,6 +33,8 @@ public class AgentConfigurationDto
 
     public string? CodexApiKey { get; set; }
 
+    public string? ClaudeApiKey { get; set; }
+
     public DateTime CreatedAt { get; set; }
 
     public DateTime UpdatedAt { get; set; }
