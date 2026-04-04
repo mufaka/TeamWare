@@ -1,10 +1,11 @@
-﻿# Real-Time Agent Activity on Task Details — Ideas
+﻿# Real-Time Agent Activity on Task Details
 
 **GitHub Issue:** [#276](https://github.com/mufaka/TeamWare/issues/276)
 **TeamWare Task:** #50
 **Scope:** Task Details view (`Views/Task/Details.cshtml`)
+**Chosen Approach:** SignalR notification → htmx partial refresh (Idea 2)
 
-This document is for brainstorming and discussion around making agent actions (status changes, comments, activity log entries) appear in real time on the Task Details page, so the user doesn't have to manually refresh while an agent is working.
+This document describes the design for making agent actions (status changes, comments, activity log entries) appear in real time on the Task Details page, so the user doesn't have to manually refresh while an agent is working.
 
 ---
 
@@ -30,249 +31,349 @@ The lounge already solves this exact problem for chat messages using SignalR (`L
 
 ### Key Constraints
 
-- **Task Details only** — This feature targets the Task Details page. Broader real-time updates (dashboards, task lists) are out of scope for this idea.
+- **Task Details only** — This feature targets the Task Details page. Broader real-time updates (dashboards, task lists) are out of scope.
 - **No polling** — The solution should use push (SignalR), not client-side polling. The lounge already establishes this convention.
 - **Minimal UI changes** — The existing layout and Tailwind styling should be preserved. New elements should be appended/updated in place, not require a full page restructure.
 - **Agent and human actions** — The solution should push updates regardless of whether the change was initiated by an agent (via MCP tool) or a human (via the web UI). This avoids special-casing.
-- **Existing hub reuse vs. new hub** — The lounge has its own dedicated `LoungeHub`. Task activity could either piggyback on a general-purpose hub or get its own. Worth discussing.
 
 ---
 
-## Idea 1: Dedicated TaskHub with Per-Task Groups
+## Design: SignalR Notification → htmx Partial Refresh
 
-### Approach
+### Core Idea
 
-Create a new `TaskHub` (similar to `LoungeHub`) that manages SignalR groups per task ID. When a user opens the Task Details page, the client joins group `task-{id}`. When the task is modified (via any path), the server broadcasts the change to that group.
+Use SignalR purely as a **notification channel** — not a data channel. When a task is modified, the server broadcasts a lightweight signal identifying *which sections* changed. The client receives the signal and uses htmx to fetch server-rendered partials for those sections.
 
-### Server-Side Components
+This keeps all HTML rendering in Razor (single source of truth for markup) and avoids duplicating template logic in JavaScript. The extra HTTP round-trip per update is trivial for a self-hosted, small-team application.
 
-**New `TaskHub` class** (`Hubs/TaskHub.cs`):
+### Data Flow
+
 ```
-JoinTask(int taskId)    — adds connection to group "task-{taskId}" (after authorization check)
-LeaveTask(int taskId)   — removes connection from group
+Agent/Human mutates task
+        │
+        ▼
+Service layer persists change
+        │
+        ▼
+Controller / MCP tool broadcasts via IHubContext<TaskHub>
+        │
+        ▼
+SignalR sends to group "task-{taskId}":
+    TaskUpdated { sections: ["status", "activity"] }
+        │
+        ▼
+Client JS receives event, triggers htmx requests:
+    GET /Task/StatusPartial?id={taskId}    → swap into #task-status-section
+    GET /Task/ActivityPartial?id={taskId}  → swap into #task-activity-section
+        │
+        ▼
+Server returns rendered partial HTML
+        │
+        ▼
+htmx replaces DOM content — user sees update
 ```
 
-Authorization: verify the user is a member of the task's project (same pattern as `LoungeHub.CanAccessRoom`).
+### SignalR Event
 
-**Broadcast from services or controllers:**
+A single event type covers all mutations:
 
-The simplest integration point is wherever the service calls return successfully. Two options:
+```
+TaskUpdated { taskId: int, sections: string[], summary: string }
+```
 
-1. **Controller/tool level** — After `taskService.ChangeStatus(...)` succeeds in `TaskController.ChangeStatus` and `TaskTools.update_task_status`, inject `IHubContext<TaskHub>` and broadcast. This is explicit but means every call site must remember to broadcast.
+Where `sections` is one or more of: `"status"`, `"comments"`, `"activity"`.
 
-2. **Service level** — Add broadcast logic inside `TaskService.ChangeStatus`, `CommentService.AddComment`, etc. Centralizes the broadcast but couples the service layer to SignalR.
+A status change typically produces `["status", "activity"]` (the status badge updates and a new activity log entry is created). A new comment produces `["comments", "activity"]`.
 
-3. **Decorator / event pattern** — Services raise domain events; a handler broadcasts via `IHubContext<TaskHub>`. Cleanest separation but more infrastructure.
+Sending sections as an array lets the client batch its htmx fetches and avoids redundant requests when a single action affects multiple sections.
 
-Option 1 (controller/tool level) is consistent with how the lounge works today — `LoungeHub.SendMessage` broadcasts directly, and `LoungeController.CreateTask` uses `IHubContext<LoungeHub>` for non-hub-initiated broadcasts.
+The `summary` field is a human-readable description of the change, displayed as a toast notification. Examples:
+- `"Agent updated status to In Review"`
+- `"Agent added a comment"`
+- `"Bill changed status to Done"`
 
-### Client-Side Events
+---
 
-| Server Event | Payload | UI Update |
+## Server-Side Components
+
+### 1. TaskHub (`Hubs/TaskHub.cs`) — New
+
+A lightweight hub with group management. No client-to-server data methods — all broadcasting is done via `IHubContext<TaskHub>` from controllers and MCP tools.
+
+```
+Methods:
+    JoinTask(int taskId)   — verify project membership, add to group "task-{taskId}"
+    LeaveTask(int taskId)  — remove from group
+
+Authorization:
+    [Authorize] attribute on the hub class (same as LoungeHub).
+    JoinTask verifies the user is a member of the task's project (consistency with LoungeHub.CanAccessRoom).
+
+Group naming:
+    static string GetGroupName(int taskId) => $"task-{taskId}"
+```
+
+`JoinTask` must query `ProjectMembers` (via `DbContext` or a service) to verify the calling user has access to the project that owns the task. This mirrors `LoungeHub.CanAccessRoom` and prevents unauthorized users from subscribing to task updates by guessing task IDs.
+
+### 2. Partial Endpoints on TaskController — New
+
+Three new `[HttpGet]` actions that return partial views for each refreshable section:
+
+| Endpoint | Partial View | Target Element |
 |---|---|---|
-| `TaskStatusChanged` | `{ taskId, newStatus, updatedAt, changedByName, isAgent }` | Update status badge text + Tailwind classes; prepend activity entry |
-| `TaskCommentAdded` | `{ taskId, commentId, content, authorName, isAgent, createdAt }` | Append new comment to `#comments-section` |
-| `TaskActivityAdded` | `{ taskId, activityId, changeType, description, userName, isAgent, createdAt }` | Prepend entry to Activity History list |
-| `TaskAssignmentChanged` | `{ taskId, assignees[], changedByName }` | Re-render assignee list in sidebar |
+| `GET /Task/StatusPartial?id={taskId}` | `_StatusSection` | `#task-status-section` |
+| `GET /Task/CommentsPartial?id={taskId}` | `_CommentList` (existing) | `#comments-section` |
+| `GET /Task/ActivityPartial?id={taskId}` | `_ActivityHistory` | `#task-activity-section` |
 
-### Client-Side Script
+Each endpoint loads the relevant data from the service layer and returns `PartialView(...)`. Authorization is handled by the existing `[Authorize]` attribute on `TaskController`.
 
-New `wwwroot/js/task-realtime.js`:
+The `_CommentList` partial already exists and is used by the htmx comment-add form. The other two partials need to be extracted from the current inline markup in `Details.cshtml`.
 
-```
-1. Check for a data attribute (e.g., data-task-id) on the page to know which task is open
-2. Build SignalR connection to /hubs/task
-3. On connect: call hub.JoinTask(taskId)
-4. Register handlers for each event:
-   - TaskStatusChanged → update the badge DOM
-   - TaskCommentAdded → build comment HTML and append
-   - TaskActivityAdded → build activity entry HTML and prepend
-   - TaskAssignmentChanged → rebuild assignee sidebar section
-5. On page unload: call hub.LeaveTask(taskId)
-```
+> **Note:** Assignees are not included because agents cannot change task assignments — only humans do that through the web UI, which already triggers a page refresh.
 
-### Pros
-- Clean separation — task real-time logic is fully isolated from lounge
-- Group granularity is per-task, so only users viewing that specific task receive updates
-- Follows the proven `LoungeHub` pattern already in the codebase
+### 3. Partial Views — New (2) + Existing (1)
 
-### Cons
-- Another hub to register in `Program.cs` and another JS file to maintain
-- The comment and activity HTML must be constructed in JavaScript, duplicating the Razor partial logic
+**`_StatusSection.cshtml`** — Extracted from `Details.cshtml` lines 43–57. Contains the status badge `<span>`, priority badge, Next Action/Someday-Maybe badges. Receives a view model with `Status`, `Priority`, `IsNextAction`, `IsSomedayMaybe`.
 
----
+**`_ActivityHistory.cshtml`** — Extracted from `Details.cshtml` lines 172–219. The activity log `<ul>` with colored dots and timestamps. Receives `List<ActivityLogEntryViewModel>`.
 
-## Idea 2: Reuse Existing htmx Pattern with SignalR-Triggered Refresh
+**`_CommentList.cshtml`** — Already exists. No changes needed.
 
-### Approach
+### 4. Broadcast Calls — Additions to Existing Files
 
-Instead of building individual DOM elements in JavaScript, use SignalR purely as a notification channel. When a change occurs, the server broadcasts a lightweight "refresh" signal. The client receives it and uses htmx to fetch updated partials from the server.
+Inject `IHubContext<TaskHub>` into `TaskController` and the MCP `TaskTools` class. After each successful mutation, broadcast `TaskUpdated` to the task's group.
 
-### How It Would Work
+**Broadcast locations:**
 
-1. **SignalR broadcasts a simple event**: `TaskUpdated { taskId, section: "comments" | "status" | "activity" | "assignees" }`
-2. **Client receives the event** and triggers an htmx request to fetch the updated section:
-   - `GET /Task/CommentsPartial?id={taskId}` → returns `_CommentList` partial
-   - `GET /Task/StatusPartial?id={taskId}` → returns just the status badge HTML
-   - `GET /Task/ActivityPartial?id={taskId}` → returns the activity history HTML
-3. **htmx swaps** the returned HTML into the correct `#target` element
-
-### New Controller Endpoints
-
-```
-[HttpGet] Task/CommentsPartial?id={taskId}     → PartialView("_CommentList", ...)
-[HttpGet] Task/StatusPartial?id={taskId}       → PartialView("_StatusBadge", ...)
-[HttpGet] Task/ActivityPartial?id={taskId}     → PartialView("_ActivityHistory", ...)
-[HttpGet] Task/AssigneesPartial?id={taskId}    → PartialView("_AssigneeList", ...)
-```
-
-### Pros
-- **No HTML construction in JavaScript** — all rendering stays in Razor partials
-- **Existing partial reuse** — `_CommentList` is already used with htmx for human-initiated comment adds; this extends the same pattern
-- **Simpler JS** — the client script is just "on signal, fetch partial" — no template logic
-- **Consistent** — Razor remains the single source of truth for markup
-
-### Cons
-- Extra HTTP round-trip per update (SignalR event → htmx GET → response)
-- If multiple sections update simultaneously (e.g., status change creates an activity entry too), the client makes multiple fetches
-- Slightly higher server load compared to pushing pre-rendered data through the socket
-
-### Mitigation for multiple fetches
-Use a short debounce (e.g., 200ms) to coalesce rapid-fire events, or send a single `TaskUpdated { sections: ["status", "activity"] }` and batch the fetches.
-
----
-
-## Idea 3: Hybrid — Push Data for Simple Updates, Fetch Partials for Complex Ones
-
-### Approach
-
-Combine Ideas 1 and 2 based on update complexity:
-
-| Update Type | Strategy | Rationale |
+| Call Site | Sections to Broadcast | Notes |
 |---|---|---|
-| Status change | **Push** — send new status string + CSS class in the SignalR event | Status badge is a single `<span>` — trivial to update via JS |
-| New comment | **Fetch partial** — trigger htmx to reload `_CommentList` | Comments have markdown rendering, timestamps, bot badges, edit/delete buttons — too complex for JS |
-| Activity entry | **Push** — send activity description + metadata | Activity entries are simple text lines — easy to construct in JS |
-| Assignee change | **Fetch partial** — trigger htmx to reload assignee section | Assignee section has forms for remove/add — complex markup |
+| `TaskController.ChangeStatus` | `["status", "activity"]` | Human-initiated; harmless duplicate on page refresh |
+| `CommentController.Add` / `Edit` / `Delete` | `["comments", "activity"]` | Human-initiated; comment add already uses htmx |
+| `TaskTools.update_task_status` | `["status", "activity"]` | Agent-initiated — primary use case |
+| `TaskTools.add_comment` | `["comments", "activity"]` | Agent-initiated — primary use case |
 
-### Pros
-- Best of both worlds: instant UI update for simple elements, server-rendered correctness for complex ones
-- Minimizes both JavaScript complexity and unnecessary HTTP round-trips
+> **Excluded:** `TaskController.Assign/Unassign`, `TaskController.ToggleNextAction/ToggleSomedayMaybe`, and `TaskTools.assign_task` are not broadcast. Agents cannot change assignments, and GTD flag toggles are human-only actions that already cause a page refresh. These can be added later if needed.
 
-### Cons
-- Two different update patterns on one page — slightly more cognitive load for maintenance
-- Must decide per-section which approach to use
+This is the explicit approach (Option A from the original brainstorm) — consistent with how `LoungeController` uses `IHubContext<LoungeHub>`.
+
+### 5. Hub Registration — `Program.cs`
+
+Add the hub endpoint alongside the existing lounge and presence hubs:
+
+```csharp
+app.MapHub<TaskHub>("/hubs/task");
+```
+
+---
+
+## Client-Side Components
+
+### `wwwroot/js/task-realtime.js` — New
+
+The script is structured similarly to `lounge.js` but much simpler — it only receives events and triggers htmx fetches.
+
+```
+Pseudocode:
+
+1. Find element with data-task-id attribute; if absent, exit (not on task details page)
+2. Read taskId from the attribute
+3. Read partial URLs from data attributes on each section container:
+   - #task-status-section[data-partial-url]
+   - #comments-section[data-partial-url]
+   - #task-activity-section[data-partial-url]
+4. Build SignalR connection to /hubs/task with automatic reconnect
+5. On connection start: invoke hub.JoinTask(taskId)
+6. Register handler for "TaskUpdated":
+   - Receive { taskId, sections[], summary }
+   - For each section in sections[]:
+     - Find the target element and its data-partial-url
+     - Trigger htmx.ajax("GET", url, { target: element, swap: "innerHTML" })
+   - If summary is present, call showToast(summary)
+7. Handle reconnection: re-invoke JoinTask on reconnect
+```
+
+### Debounce Strategy
+
+If a single agent action triggers multiple `TaskUpdated` events in rapid succession (unlikely but possible with concurrent operations), use a 200ms debounce. Collect all section names received within the window, then fetch each unique section once.
+
+### Details.cshtml Changes
+
+1. Add `data-task-id="@Model.Id"` to the page container element.
+2. Wrap each refreshable section in a container with an `id` and `data-partial-url`:
+   ```html
+   <div id="task-status-section" data-partial-url="@Url.Action("StatusPartial", "Task", new { id = Model.Id })">
+       @await Html.PartialAsync("_StatusSection", ...)
+   </div>
+   ```
+3. Same pattern for activity. Comments section already has `#comments-section`.
+4. Include the script reference:
+   ```html
+   @section Scripts {
+       <script src="~/js/signalr/dist/browser/signalr.min.js"></script>
+       <script src="~/js/task-realtime.js"></script>
+   }
+   ```
 
 ---
 
 ## Broadcast Integration Points
 
-Regardless of which client approach is chosen, the server must broadcast events when task data changes. The key question is: **where does the broadcast call go?**
-
-### Option A: In Each Controller / MCP Tool (Explicit)
+The broadcast calls go in each controller and MCP tool (Option A — explicit, consistent with the lounge pattern):
 
 ```csharp
-// TaskController.ChangeStatus (human)
+// Example: TaskController.ChangeStatus
 var result = await _taskService.ChangeStatus(id, status, userId);
 if (result.Succeeded)
-    await _taskHub.Clients.Group($"task-{id}").SendAsync("TaskStatusChanged", ...);
+{
+    await _taskHubContext.Clients.Group(TaskHub.GetGroupName(id))
+        .SendAsync("TaskUpdated", new
+        {
+            taskId = id,
+            sections = new[] { "status", "activity" },
+            summary = $"{displayName} changed status to {status}"
+        });
+}
 
-// TaskTools.update_task_status (agent via MCP)
+// Example: TaskTools.update_task_status (MCP)
 var result = await taskService.ChangeStatus(taskId, parsedStatus, userId);
 if (result.Succeeded)
-    await taskHub.Clients.Group($"task-{taskId}").SendAsync("TaskStatusChanged", ...);
-```
-
-**Pro:** Explicit, easy to understand, consistent with how `LoungeController` already uses `IHubContext<LoungeHub>`.
-**Con:** Every call site must remember to broadcast. Adding a new controller or tool that modifies tasks requires adding the broadcast call.
-
-### Option B: In the Service Layer
-
-```csharp
-// TaskService.ChangeStatus (centralized)
-public async Task<ServiceResult<TaskItem>> ChangeStatus(int taskId, TaskItemStatus status, string userId)
 {
-    // ... existing logic ...
-    await _taskHubContext.Clients.Group($"task-{taskId}").SendAsync("TaskStatusChanged", ...);
-    return ServiceResult<TaskItem>.Success(task);
+    await taskHubContext.Clients.Group(TaskHub.GetGroupName(taskId))
+        .SendAsync("TaskUpdated", new
+        {
+            taskId,
+            sections = new[] { "status", "activity" },
+            summary = $"{displayName} changed status to {parsedStatus}"
+        });
 }
 ```
 
-**Pro:** Single broadcast point — any caller (controller, MCP tool, future API) automatically triggers it.
-**Con:** Couples the service layer to SignalR's `IHubContext`, which may be unwanted if services are meant to be infrastructure-agnostic.
-
-### Option C: Domain Events (Decoupled)
-
-Services publish a domain event (e.g., `TaskStatusChangedEvent`). A separate handler subscribes and broadcasts via `IHubContext<TaskHub>`.
-
-**Pro:** Cleanest separation; services don't know about SignalR.
-**Con:** More infrastructure (event bus, handlers). May be overkill for the current scope.
-
-### Recommendation
-
-**Option A** for now — it's consistent with the lounge pattern and avoids introducing new architectural layers. If the number of broadcast call sites grows significantly, refactoring to Option B or C can happen then.
+**Why Option A (explicit) over centralizing in the service layer:**
+- Consistent with how the lounge works today
+- Avoids coupling the service layer to SignalR infrastructure
+- The number of call sites is bounded and manageable (4 locations)
+- If it grows unwieldy, refactoring to a service-layer or domain-event approach is straightforward
 
 ---
 
-## Visual Indicator: "Agent is working..."
+## Toast Notifications
 
-When a user is viewing a task that an agent is actively processing, a subtle indicator could show that changes may appear at any time.
+When a `TaskUpdated` event arrives, the client displays a brief toast notification using the `summary` field from the event payload. This gives the user immediate awareness that something changed, even if the updated section is scrolled out of view.
 
-### How to detect "active" state
+### Design
 
-The agent transitions the task to `InProgress` via `update_task_status` when it starts working. The SignalR status change event already carries this information. The client could show a persistent indicator when:
+The toast should match the existing notification style from `_Notification.cshtml`, which uses Alpine.js for show/hide transitions:
 
-- `status == "InProgress"` AND
-- The status was changed by an agent user (`isAgent == true`)
+- **Position:** Fixed to the bottom-right of the viewport (avoids overlapping the page header and content).
+- **Style:** Uses the `info` notification variant — blue background, matching the existing `_Notification.cshtml` blue pattern (`bg-blue-50 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300`).
+- **Auto-dismiss:** Fades out after 5 seconds (consistent with existing `_Notification.cshtml` auto-dismiss behavior).
+- **Manual dismiss:** Includes a close button (`×`).
+- **Stacking:** If multiple updates arrive in quick succession, toasts stack vertically (newest at bottom). Each dismisses independently.
 
-### Possible UI
+### Implementation
 
-A small animated element near the status badge:
+The toast container is a fixed-position `<div>` added to `Details.cshtml` (or the layout, if preferred). `task-realtime.js` creates toast elements dynamically when `TaskUpdated` events arrive:
 
 ```
-[In Progress] 🤖 Agent is working on this task...
+Pseudocode:
+
+function showToast(summary) {
+    1. Create a <div> element styled to match _Notification.cshtml info variant
+    2. Set inner text to summary
+    3. Add close button that removes the element on click
+    4. Append to #task-toast-container
+    5. After 5 seconds, fade out and remove the element
+}
+
+// In the TaskUpdated handler:
+connection.on("TaskUpdated", function (event) {
+    // ... existing htmx refresh logic ...
+    if (event.summary) {
+        showToast(event.summary);
+    }
+});
 ```
 
-Or a pulsing dot / spinner in the header area that disappears when the status changes away from `InProgress`.
+### Toast Container Markup
 
-This is a nice-to-have that could be deferred.
+Added to `Details.cshtml`:
+
+```html
+<div id="task-toast-container"
+     class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm">
+    <!-- Toasts appended here dynamically by task-realtime.js -->
+</div>
+```
+
+Each toast element follows this structure (created in JS):
+
+```html
+<div class="flex items-center justify-between rounded-md bg-blue-50 px-4 py-3 text-sm text-blue-800
+            shadow-lg dark:bg-blue-900/30 dark:text-blue-300
+            transition ease-in duration-300"
+     role="alert">
+    <span>Agent changed status to In Review</span>
+    <button class="ml-4 text-blue-600 hover:text-blue-800
+                   dark:text-blue-400 dark:hover:text-blue-200"
+            aria-label="Dismiss">&times;</button>
+</div>
+```
+
+### Summary Strings by Action
+
+| Call Site | Summary Template |
+|---|---|
+| `TaskController.ChangeStatus` | `"{displayName} changed status to {status}"` |
+| `CommentController.Add` | `"{displayName} added a comment"` |
+| `CommentController.Edit` | `"{displayName} edited a comment"` |
+| `CommentController.Delete` | `"{displayName} deleted a comment"` |
+| `TaskTools.update_task_status` | `"{displayName} changed status to {status}"` |
+| `TaskTools.add_comment` | `"{displayName} added a comment"` |
+
+The `displayName` is resolved from the authenticated user's claims or the `ApplicationUser` record. For agents, this will be the agent's configured display name (e.g., "Copilot Agent").
 
 ---
 
-## Notification Sound / Toast (Optional)
+## Decisions
 
-For awareness, the page could show a subtle toast notification (e.g., "Agent updated status to In Review") when changes arrive. This is similar to how the lounge shows new message indicators when the user scrolls up.
+The following questions were raised during design and have been resolved:
 
-Low priority — the DOM updates themselves provide visual feedback.
+1. **Authorization granularity** — `TaskHub.JoinTask` will verify project membership (not just `[Authorize]`). This is consistent with `LoungeHub.CanAccessRoom` and prevents unauthorized users from subscribing to task updates by guessing task IDs.
 
----
+2. **Human-initiated double-update** — Ignored. When a human changes status via the form buttons, the page refreshes from the POST redirect. The SignalR event also arrives, triggering a redundant htmx fetch on the reloaded page. This is harmless and invisible to the user. Suppressing it would add complexity for no visible benefit.
 
-## Open Questions
+3. **Scope of events** — Limited to actions agents can perform: **status changes** and **comments**. Agents cannot change assignments, so assignees are excluded. GTD flag toggles, priority edits, and other property changes are human-only actions that already cause page refreshes. The activity section is refreshed as a side-effect whenever status or comments change. Additional sections can be added later if needed.
 
-1. **Hub choice** — Should we create a dedicated `TaskHub`, or extend `PresenceHub` / create a general-purpose `ActivityHub` that could also serve future dashboard real-time needs?
-
-2. **Authorization granularity** — Should the hub verify project membership on `JoinTask`, or is the `[Authorize]` attribute (authenticated user) sufficient? The lounge hub checks project membership for project rooms.
-
-3. **Partial extraction** — The current `Details.cshtml` renders comments, activity, and assignees inline. To support Idea 2 (htmx refresh), these sections need to be extractable as standalone partials. `_CommentList` already exists. We'd need `_ActivityHistory` and `_AssigneeList` partials. Is this refactoring welcome?
-
-4. **Human-initiated changes** — When a human changes the status on the same page via the form buttons, the page already redirects/refreshes. Should SignalR updates be suppressed for the initiating user (to avoid a flicker), or is the double-update harmless?
-
-5. **Scope of "task" events** — Should we also broadcast when the task title, description, priority, due date, or GTD flags change? Or limit to the four main categories (status, comments, activity, assignees) initially?
-
-6. **Connection lifecycle** — Should the SignalR connection be established globally on every page (and join/leave task groups as needed), or should it only connect on the Task Details page? Global is more flexible for future dashboard use; per-page is simpler.
+4. **Connection lifecycle** — The SignalR connection is established only on the Task Details page (`task-realtime.js` checks for `data-task-id`). A global connection could serve future dashboard real-time needs but is unnecessary complexity now. Starting per-page keeps the implementation focused and can be evolved later.
 
 ---
 
-## Files Likely to Be Modified or Created
+## Files to Create or Modify
 
 | File | Change |
 |---|---|
-| `Hubs/TaskHub.cs` | **New** — Hub with `JoinTask` / `LeaveTask`, authorization |
-| `Program.cs` | Register `TaskHub` endpoint |
-| `wwwroot/js/task-realtime.js` | **New** — SignalR client, event handlers |
-| `Views/Task/Details.cshtml` | Add `data-task-id` attribute, include script reference |
-| `Controllers/TaskController.cs` | Inject `IHubContext<TaskHub>`, broadcast after mutations; possibly add partial endpoints |
-| `Mcp/Tools/TaskTools.cs` | Inject `IHubContext<TaskHub>`, broadcast after `update_task_status`, `add_comment`, `assign_task` |
-| `Views/Task/_ActivityHistory.cshtml` | **New** (if Idea 2) — extracted from `Details.cshtml` |
-| `Views/Task/_AssigneeList.cshtml` | **New** (if Idea 2) — extracted from `Details.cshtml` |
-| `Views/Task/_StatusBadge.cshtml` | **New** (if Idea 2) — extracted from `Details.cshtml` |
+| `Hubs/TaskHub.cs` | **New** — Hub with `JoinTask` / `LeaveTask`, project membership authorization, `GetGroupName` static helper |
+| `Program.cs` | Register `app.MapHub<TaskHub>("/hubs/task")` |
+| `wwwroot/js/task-realtime.js` | **New** — SignalR connection, `TaskUpdated` handler, htmx-triggered partial fetches |
+| `Views/Task/Details.cshtml` | Add `data-task-id`, wrap sections with `id` + `data-partial-url`, extract inline markup into partials, add `#task-toast-container`, add script reference |
+| `Views/Task/_StatusSection.cshtml` | **New** — extracted status/priority/GTD badges from `Details.cshtml` |
+| `Views/Task/_ActivityHistory.cshtml` | **New** — extracted activity log list from `Details.cshtml` |
+| `Controllers/TaskController.cs` | Inject `IHubContext<TaskHub>`, add `StatusPartial` / `ActivityPartial` / `CommentsPartial` endpoints, broadcast `TaskUpdated` after `ChangeStatus` |
+| `Controllers/CommentController.cs` | Inject `IHubContext<TaskHub>`, broadcast `TaskUpdated` after `Add` / `Edit` / `Delete` |
+| `Mcp/Tools/TaskTools.cs` | Inject `IHubContext<TaskHub>`, broadcast `TaskUpdated` after `update_task_status` / `add_comment` |
+
+---
+
+## Considered Alternatives
+
+### Idea 1: Pure SignalR Push with Client-Side DOM Construction
+
+Push full data payloads through SignalR and build HTML elements in JavaScript (similar to how `lounge.js` constructs chat message DOM elements).
+
+**Rejected because:** Comments have markdown rendering, timestamps with `Html.LocalTime`, bot badges, edit/delete buttons, and attachment links. Activity entries have color-coded icons and formatted descriptions. Reconstructing this markup in JavaScript would duplicate the Razor partial logic and diverge over time as the UI evolves. The lounge gets away with JS-based rendering because message markup is simpler and more uniform.
+
+### Idea 3: Hybrid Push + Fetch
+
+Push data for simple elements (status badge text), fetch partials for complex ones (comments, assignees).
+
+**Rejected because:** Maintaining two different update patterns on one page adds cognitive load for a marginal performance benefit. The htmx round-trip is negligible for a self-hosted app, and consistency (always fetch partials) is easier to reason about and maintain.
