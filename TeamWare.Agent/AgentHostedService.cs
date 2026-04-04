@@ -80,23 +80,51 @@ public class AgentHostedService : IHostedService
     {
         ITeamWareMcpClient? mcpClient = null;
 
-        try
+        // Retry initial MCP connection with backoff (issue #282)
+        const int maxStartupRetries = 5;
+        for (var attempt = 1; attempt <= maxStartupRetries; attempt++)
         {
-            mcpClient = await _mcpClientFactory.CreateAsync(agent, cancellationToken);
-        }
-        catch (Exception ex) when (ex is not OperationCanceledException)
-        {
-            _logger.LogError(ex,
-                "Failed to create MCP client for agent identity '{AgentName}'. Polling loop will not start",
-                agent.Name);
-            return;
+            try
+            {
+                mcpClient = await _mcpClientFactory.CreateAsync(agent, cancellationToken);
+                break;
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                return;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex,
+                    "Failed to create MCP client for agent identity '{AgentName}' (attempt {Attempt}/{MaxRetries})",
+                    agent.Name, attempt, maxStartupRetries);
+
+                if (attempt == maxStartupRetries)
+                {
+                    _logger.LogError(
+                        "Exhausted {MaxRetries} startup attempts for agent identity '{AgentName}'. Polling loop will not start",
+                        maxStartupRetries, agent.Name);
+                    return;
+                }
+
+                try
+                {
+                    var backoff = TimeSpan.FromSeconds(Math.Pow(2, attempt));
+                    await Task.Delay(backoff, cancellationToken);
+                }
+                catch (OperationCanceledException)
+                {
+                    return;
+                }
+            }
         }
 
         try
         {
             var pollingLoop = new AgentPollingLoop(
                 agent,
-                mcpClient,
+                mcpClient!,
+                _mcpClientFactory,
                 _copilotFactory,
                 _loggerFactory.CreateLogger<AgentPollingLoop>());
 

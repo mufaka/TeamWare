@@ -1,4 +1,4 @@
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+﻿import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import type {
   AgentProfile,
@@ -44,6 +44,17 @@ export class TeamWareMcpClient {
       await this.client.close();
       this.client = null;
     }
+  }
+
+  async reconnect(): Promise<void> {
+    console.log("[mcp] Reconnecting to TeamWare MCP...");
+    try {
+      await this.disconnect();
+    } catch {
+      // Swallow errors from stale client teardown
+    }
+    await this.connect();
+    console.log("[mcp] Reconnected to TeamWare MCP.");
   }
 
   private ensureConnected(): Client {

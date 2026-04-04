@@ -7,18 +7,23 @@ namespace TeamWare.Agent.Pipeline;
 
 public class AgentPollingLoop
 {
+    private const int MaxConsecutiveFailuresBeforeReconnect = 3;
+
     private readonly AgentIdentityOptions _options;
-    private readonly ITeamWareMcpClient _mcpClient;
+    private readonly ITeamWareMcpClientFactory? _mcpClientFactory;
     private readonly ICopilotClientWrapperFactory? _copilotFactory;
-    private readonly StatusTransitionHandler _statusHandler;
     private readonly RepositoryManager _repoManager;
     private readonly ILogger _logger;
+
+    private ITeamWareMcpClient _mcpClient;
+    private StatusTransitionHandler _statusHandler;
+    private int _consecutiveFailures;
 
     public AgentPollingLoop(
         AgentIdentityOptions options,
         ITeamWareMcpClient mcpClient,
         ILogger logger)
-        : this(options, mcpClient, copilotFactory: null, logger)
+        : this(options, mcpClient, mcpClientFactory: null, copilotFactory: null, logger)
     {
     }
 
@@ -27,9 +32,20 @@ public class AgentPollingLoop
         ITeamWareMcpClient mcpClient,
         ICopilotClientWrapperFactory? copilotFactory,
         ILogger logger)
+        : this(options, mcpClient, mcpClientFactory: null, copilotFactory, logger)
+    {
+    }
+
+    public AgentPollingLoop(
+        AgentIdentityOptions options,
+        ITeamWareMcpClient mcpClient,
+        ITeamWareMcpClientFactory? mcpClientFactory,
+        ICopilotClientWrapperFactory? copilotFactory,
+        ILogger logger)
     {
         _options = options;
         _mcpClient = mcpClient;
+        _mcpClientFactory = mcpClientFactory;
         _copilotFactory = copilotFactory;
         _statusHandler = new StatusTransitionHandler(mcpClient, logger);
         _repoManager = new RepositoryManager(logger);
@@ -45,6 +61,7 @@ public class AgentPollingLoop
             try
             {
                 await ExecuteCycleAsync(cancellationToken);
+                _consecutiveFailures = 0;
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
@@ -53,6 +70,20 @@ public class AgentPollingLoop
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error in polling cycle for agent identity '{AgentName}'", _options.Name);
+
+                if (IsTransportError(ex))
+                {
+                    _consecutiveFailures++;
+
+                    if (_consecutiveFailures >= MaxConsecutiveFailuresBeforeReconnect)
+                    {
+                        await ReconnectAsync(cancellationToken);
+                    }
+                }
+                else
+                {
+                    _consecutiveFailures = 0;
+                }
             }
 
             try
@@ -196,5 +227,60 @@ public class AgentPollingLoop
                     _options.Name, task.Id);
             }
         }
+    }
+
+    private async Task ReconnectAsync(CancellationToken cancellationToken)
+    {
+        if (_mcpClientFactory is null)
+        {
+            _logger.LogWarning(
+                "Agent '{AgentName}': {Failures} consecutive transport failures but no MCP client factory available for reconnection",
+                _options.Name, _consecutiveFailures);
+            _consecutiveFailures = 0;
+            return;
+        }
+
+        _logger.LogWarning(
+            "Agent '{AgentName}': {Failures} consecutive transport failures — attempting MCP reconnection",
+            _options.Name, _consecutiveFailures);
+
+        try
+        {
+            await _mcpClient.DisposeAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Agent '{AgentName}': Error disposing old MCP client during reconnection", _options.Name);
+        }
+
+        try
+        {
+            _mcpClient = await _mcpClientFactory.CreateAsync(_options, cancellationToken);
+            _statusHandler = new StatusTransitionHandler(_mcpClient, _logger);
+            _consecutiveFailures = 0;
+
+            _logger.LogInformation(
+                "Agent '{AgentName}': MCP client reconnected successfully",
+                _options.Name);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex,
+                "Agent '{AgentName}': MCP reconnection failed — will retry on next threshold",
+                _options.Name);
+            _consecutiveFailures = 0;
+        }
+    }
+
+    internal static bool IsTransportError(Exception ex)
+    {
+        return ex is HttpRequestException
+            or TaskCanceledException
+            or System.IO.IOException
+            || (ex.InnerException is not null && IsTransportError(ex.InnerException));
     }
 }

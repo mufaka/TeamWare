@@ -104,8 +104,31 @@ public class RepositoryManager
                 cancellationToken);
         }
 
+        // Discard any uncommitted changes left by previous task processing (issue #284)
         await RunGitCommandAsync(
-            $"pull origin {repo.Branch}",
+            "reset --hard HEAD",
+            repo.WorkingDirectory,
+            agentName,
+            cancellationToken);
+
+        await RunGitCommandAsync(
+            "clean -fd",
+            repo.WorkingDirectory,
+            agentName,
+            cancellationToken);
+
+        // Fetch latest remote refs before checkout so origin/{branch} is up to date
+        await RunGitCommandAsync(
+            "fetch origin",
+            repo.WorkingDirectory,
+            agentName,
+            cancellationToken);
+
+        // Switch to the configured branch before pulling (issue #284).
+        // Use -B to force-create/reset, handling edge cases where the local branch
+        // has diverged or doesn't exist yet.
+        await RunGitCommandAsync(
+            $"checkout -B {repo.Branch} origin/{repo.Branch}",
             repo.WorkingDirectory,
             agentName,
             cancellationToken);
@@ -115,7 +138,7 @@ public class RepositoryManager
             agentName);
     }
 
-    internal async Task<(int ExitCode, string Output, string Error)> RunGitCommandAsync(
+    internal virtual async Task<(int ExitCode, string Output, string Error)> RunGitCommandAsync(
         string arguments,
         string? workingDirectory,
         string agentName,
