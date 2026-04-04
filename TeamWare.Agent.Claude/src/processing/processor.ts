@@ -99,7 +99,7 @@ export async function processTask(
   const timeout = setTimeout(() => abortController.abort(), config.taskTimeoutSeconds * 1000);
 
   const options: Options = {
-    model: config.model ?? "claude-sonnet-4-6",
+    model: config.model,
     systemPrompt,
     maxTurns: 200,
     permissionMode,
