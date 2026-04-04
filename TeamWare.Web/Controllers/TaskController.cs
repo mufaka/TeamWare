@@ -317,6 +317,62 @@ public class TaskController : Controller
         return View(viewModel);
     }
 
+    [HttpGet]
+    public async Task<IActionResult> StatusPartial(int id)
+    {
+        var userId = GetUserId();
+        var result = await _taskService.GetTask(id, userId);
+        if (!result.Succeeded) return NotFound();
+
+        var task = result.Data!;
+        var viewModel = new TaskDetailViewModel
+        {
+            Status = task.Status,
+            Priority = task.Priority,
+            IsNextAction = task.IsNextAction,
+            IsSomedayMaybe = task.IsSomedayMaybe
+        };
+
+        return PartialView("_StatusSection", viewModel);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> ActivityPartial(int id)
+    {
+        var userId = GetUserId();
+        var result = await _taskService.GetTask(id, userId);
+        if (!result.Succeeded) return NotFound();
+
+        var activityHistory = await _activityLogService.GetActivityForTask(id);
+        var viewModel = activityHistory.Select(a => new ActivityLogEntryViewModel
+        {
+            Id = a.Id,
+            TaskItemId = a.TaskItemId,
+            TaskTitle = result.Data!.Title,
+            UserDisplayName = a.User.DisplayName,
+            IsUserAgent = a.User.IsAgent,
+            ChangeType = a.ChangeType,
+            OldValue = a.OldValue,
+            NewValue = a.NewValue,
+            CreatedAt = a.CreatedAt
+        }).ToList();
+
+        return PartialView("_ActivityHistory", viewModel);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> CommentsPartial(int id)
+    {
+        var userId = GetUserId();
+        var result = await _taskService.GetTask(id, userId);
+        if (!result.Succeeded) return NotFound();
+
+        var commentsResult = await _commentService.GetCommentsForTask(id, userId);
+        var viewModel = await BuildCommentViewModels(commentsResult, userId);
+
+        return PartialView("_CommentList", viewModel);
+    }
+
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Delete(int id)
