@@ -20,6 +20,8 @@ public class EditAgentViewModel
 
     public AgentConfigurationViewModel Configuration { get; set; } = new();
 
+    public List<ProjectOptionViewModel> AvailableProjects { get; set; } = [];
+
     public List<AgentRepositoryDto> Repositories { get; set; } = [];
 
     public List<AgentMcpServerDto> McpServers { get; set; } = [];

@@ -87,6 +87,18 @@ public class AdminControllerAgentConfigTests : IClassFixture<TeamWareWebApplicat
         return result.Data!.User.Id;
     }
 
+    private async Task<string> CreateProjectForAdmin(string name)
+    {
+        using var scope = _factory.Services.CreateScope();
+        var projectService = scope.ServiceProvider.GetRequiredService<IProjectService>();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+
+        var admin = await userManager.FindByEmailAsync(SeedData.AdminEmail);
+        var result = await projectService.CreateProject(name, null, admin!.Id);
+        Assert.True(result.Succeeded);
+        return result.Data!.Name;
+    }
+
     // --- 45.1 Configuration Section ---
 
     [Fact]
@@ -236,6 +248,7 @@ public class AdminControllerAgentConfigTests : IClassFixture<TeamWareWebApplicat
     public async Task EditAgent_Get_ShowsRepositoriesSection()
     {
         var agentId = await CreateAgentViaService("Repo Section Agent");
+        await CreateProjectForAdmin("Repository Dropdown Project");
 
         var cookie = await LoginAsAdmin();
 
@@ -249,12 +262,16 @@ public class AdminControllerAgentConfigTests : IClassFixture<TeamWareWebApplicat
         Assert.Contains("Repositories", content);
         Assert.Contains("No repositories configured", content);
         Assert.Contains("Add Repository", content);
+        Assert.Contains("Select a project", content);
+        Assert.Contains("Repository Dropdown Project", content);
+        Assert.Contains("<select name=\"ProjectName\"", content);
     }
 
     [Fact]
     public async Task AddAgentRepository_Success_RedirectsToEditAgent()
     {
         var agentId = await CreateAgentViaService("Add Repo Agent");
+        var projectName = await CreateProjectForAdmin("TestProject");
 
         var adminCookie = await LoginAsAdmin();
         var (antiForgeryToken, cookies) = await GetFormTokenAndCookies($"/Admin/EditAgent?id={agentId}", adminCookie);
@@ -263,7 +280,7 @@ public class AdminControllerAgentConfigTests : IClassFixture<TeamWareWebApplicat
         request.Headers.Add("Cookie", cookies);
         request.Content = new FormUrlEncodedContent(new Dictionary<string, string>
         {
-            ["ProjectName"] = "TestProject",
+            ["ProjectName"] = projectName,
             ["Url"] = "https://github.com/test/repo",
             ["Branch"] = "main",
             ["DisplayOrder"] = "0",
