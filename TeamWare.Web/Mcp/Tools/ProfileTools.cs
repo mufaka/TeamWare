@@ -116,7 +116,8 @@ public class ProfileTools
             repositories,
             mcpServers,
             agentBackend = config.AgentBackend,
-            codexApiKey = config.CodexApiKey
+            codexApiKey = config.CodexApiKey,
+            claudeApiKey = config.ClaudeApiKey
         };
     }
 }

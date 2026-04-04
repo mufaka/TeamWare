@@ -522,7 +522,8 @@ public class AdminController : Controller
                 RepositoryBranch = config.RepositoryBranch,
                 RepositoryAccessTokenMasked = config.RepositoryAccessToken,
                 AgentBackend = config.AgentBackend,
-                CodexApiKeyMasked = config.CodexApiKey
+                CodexApiKeyMasked = config.CodexApiKey,
+                ClaudeApiKeyMasked = config.ClaudeApiKey
             };
             viewModel.Repositories = config.Repositories;
             viewModel.McpServers = config.McpServers;
@@ -577,7 +578,9 @@ public class AdminController : Controller
             RepositoryAccessToken = model.Configuration.RepositoryAccessToken,
             AgentBackend = model.Configuration.AgentBackend,
             CodexApiKey = model.Configuration.CodexApiKey,
-            ClearCodexApiKey = model.Configuration.ClearCodexApiKey
+            ClearCodexApiKey = model.Configuration.ClearCodexApiKey,
+            ClaudeApiKey = model.Configuration.ClaudeApiKey,
+            ClearClaudeApiKey = model.Configuration.ClearClaudeApiKey
         };
         await _agentConfigService.SaveConfigurationAsync(model.UserId, saveConfigDto);
 

@@ -72,4 +72,14 @@ public class AgentConfigurationViewModel
 
     [Display(Name = "Clear API Key")]
     public bool ClearCodexApiKey { get; set; }
+
+    [Display(Name = "Claude API Key")]
+    [StringLength(500, ErrorMessage = "API key cannot exceed 500 characters.")]
+    public string? ClaudeApiKey { get; set; }
+
+    [Display(Name = "Masked Claude API Key")]
+    public string? ClaudeApiKeyMasked { get; set; }
+
+    [Display(Name = "Clear API Key")]
+    public bool ClearClaudeApiKey { get; set; }
 }
