@@ -3,34 +3,6 @@
 @{
     ViewData["Title"] = Model.Title;
     var aiAvailable = await AiAssistantService.IsAvailable();
-    var priorityClass = Model.Priority switch
-    {
-        TeamWare.Web.Models.TaskItemPriority.Critical => "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300",
-        TeamWare.Web.Models.TaskItemPriority.High => "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300",
-        TeamWare.Web.Models.TaskItemPriority.Medium => "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
-        TeamWare.Web.Models.TaskItemPriority.Low => "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300",
-        _ => ""
-    };
-    var statusClass = Model.Status switch
-    {
-        TeamWare.Web.Models.TaskItemStatus.ToDo => "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300",
-        TeamWare.Web.Models.TaskItemStatus.InProgress => "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
-        TeamWare.Web.Models.TaskItemStatus.InReview => "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300",
-        TeamWare.Web.Models.TaskItemStatus.Done => "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300",
-        TeamWare.Web.Models.TaskItemStatus.Blocked => "bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300",
-        TeamWare.Web.Models.TaskItemStatus.Error => "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300",
-        _ => ""
-    };
-    var statusText = Model.Status switch
-    {
-        TeamWare.Web.Models.TaskItemStatus.ToDo => "To Do",
-        TeamWare.Web.Models.TaskItemStatus.InProgress => "In Progress",
-        TeamWare.Web.Models.TaskItemStatus.InReview => "In Review",
-        TeamWare.Web.Models.TaskItemStatus.Done => "Done",
-        TeamWare.Web.Models.TaskItemStatus.Blocked => "Blocked",
-        TeamWare.Web.Models.TaskItemStatus.Error => "Error",
-        _ => ""
-    };
 }
 
 <div class="mb-2 text-sm text-gray-500 dark:text-gray-400">
@@ -44,16 +16,7 @@
     <div>
         <h1 class="text-2xl font-bold text-gray-900 dark:text-white @(Model.IsOverdue ? "text-red-600 dark:text-red-400" : "")">@Model.Title</h1>
         <div class="mt-2 flex flex-wrap items-center gap-2">
-            <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium @statusClass">@statusText</span>
-            <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium @priorityClass">@Model.Priority</span>
-            @if (Model.IsNextAction)
-            {
-                <span class="inline-flex items-center rounded-full bg-indigo-100 px-2.5 py-0.5 text-xs font-medium text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300">Next Action</span>
-            }
-            @if (Model.IsSomedayMaybe)
-            {
-                <span class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-600 dark:bg-gray-700 dark:text-gray-400">Someday/Maybe</span>
-            }
+            @await Html.PartialAsync("_StatusSection", Model)
         </div>
     </div>
     <div class="flex flex-wrap gap-2">
@@ -172,50 +135,7 @@
         <!-- Activity History -->
         <div class="rounded-lg border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-800">
             <h2 class="mb-3 text-sm font-semibold text-gray-900 dark:text-white">Activity History</h2>
-            @if (Model.ActivityHistory.Any())
-            {
-                <div class="flow-root">
-                    <ul class="-mb-4">
-                        @foreach (var entry in Model.ActivityHistory)
-                        {
-                            var iconClass = entry.ChangeType switch
-                            {
-                                TeamWare.Web.Models.ActivityChangeType.Created => "bg-green-500",
-                                TeamWare.Web.Models.ActivityChangeType.StatusChanged => "bg-blue-500",
-                                TeamWare.Web.Models.ActivityChangeType.PriorityChanged => "bg-orange-500",
-                                TeamWare.Web.Models.ActivityChangeType.Assigned => "bg-indigo-500",
-                                TeamWare.Web.Models.ActivityChangeType.Unassigned => "bg-gray-500",
-                                TeamWare.Web.Models.ActivityChangeType.Deleted => "bg-red-500",
-                                _ => "bg-gray-400"
-                            };
-                            <li class="pb-4">
-                                <div class="relative flex gap-3">
-                                    <div class="flex-shrink-0">
-                                        <span class="flex h-6 w-6 items-center justify-center rounded-full @iconClass">
-                                            <svg class="h-3 w-3 text-white" fill="currentColor" viewBox="0 0 8 8">
-                                                <circle cx="4" cy="4" r="3" />
-                                            </svg>
-                                        </span>
-                                    </div>
-                                    <div class="min-w-0 flex-1">
-                                        <p class="text-sm text-gray-700 dark:text-gray-300">
-                                            @entry.Description
-                                            @await Html.PartialAsync("_BotBadge", entry.IsUserAgent)
-                                        </p>
-                                        <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-                                            @Html.LocalTime(entry.CreatedAt)
-                                        </p>
-                                    </div>
-                                </div>
-                            </li>
-                        }
-                    </ul>
-                </div>
-            }
-            else
-            {
-                <p class="text-sm text-gray-500 dark:text-gray-400">No activity recorded yet.</p>
-            }
+            @await Html.PartialAsync("_ActivityHistory", Model.ActivityHistory)
         </div>
     </div>
 
