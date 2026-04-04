@@ -1,4 +1,4 @@
-import { execFile } from "child_process";
+﻿import { execFile } from "child_process";
 import { existsSync, mkdirSync } from "fs";
 import { basename, join, resolve } from "path";
 import { promisify } from "util";
@@ -84,7 +84,17 @@ export async function ensureRepository(repo: ResolvedRepository): Promise<void> 
   if (existsSync(gitDir)) {
     // Update remote URL in case token changed
     await git(repo.workingDirectory, ["remote", "set-url", "origin", authenticatedUrl]);
-    await git(repo.workingDirectory, ["pull", "origin", repo.branch]);
+
+    // Discard uncommitted changes from previous task processing (issue #284)
+    await git(repo.workingDirectory, ["reset", "--hard", "HEAD"]);
+    await git(repo.workingDirectory, ["clean", "-fd"]);
+
+    // Fetch latest remote refs before checkout
+    await git(repo.workingDirectory, ["fetch", "origin"]);
+
+    // Switch to configured branch before pulling (issue #284).
+    // -B force-creates/resets, handling diverged or missing local branches.
+    await git(repo.workingDirectory, ["checkout", "-B", repo.branch, `origin/${repo.branch}`]);
   } else {
     await git(".", [
       "clone",
