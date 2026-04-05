@@ -4,8 +4,17 @@
 **TeamWare Task:** #50
 **Scope:** Task Details view (`Views/Task/Details.cshtml`)
 **Chosen Approach:** SignalR notification → htmx partial refresh (Idea 2)
+**Status:** ✅ Implemented (Phase 49–50)
 
 This document describes the design for making agent actions (status changes, comments, activity log entries) appear in real time on the Task Details page, so the user doesn't have to manually refresh while an agent is working.
+
+### Implementation Notes
+
+The design was implemented as specified with the following deviations:
+
+- **SignalR client library path**: The plan referenced `~/js/signalr/dist/browser/signalr.min.js` but the actual location in the codebase is `~/lib/signalr/signalr.min.js`. The implementation uses the correct path.
+- **Fetch fallback**: `task-realtime.js` includes a `fetch` fallback when `htmx` is not available, though in practice htmx is always loaded on the Task Details page.
+- **Toast implementation**: Toasts use CSS opacity transitions rather than Alpine.js `x-transition`, since the script creates elements dynamically outside of Alpine's scope. The visual behavior matches `_Notification.cshtml`.
 
 ---
 
