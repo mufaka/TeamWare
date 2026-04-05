@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using TeamWare.Web.Data;
 using TeamWare.Web.Models;
+using TeamWare.Web.Services;
 
 namespace TeamWare.Tests.Views;
 
@@ -67,6 +68,63 @@ public class UiConsistencyTests : IClassFixture<TeamWareWebApplicationFactory>, 
         var valueStart = html.IndexOf("value=\"", tokenStart, StringComparison.Ordinal) + 7;
         var valueEnd = html.IndexOf("\"", valueStart, StringComparison.Ordinal);
         return html[valueStart..valueEnd];
+    }
+
+    private async Task<(string UserId, int ProjectId)> CreateProjectWithMember(string email, string projectName)
+    {
+        using var scope = _factory.Services.CreateScope();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+        var user = await userManager.FindByEmailAsync(email);
+        Assert.NotNull(user);
+
+        var project = new Project
+        {
+            Name = projectName,
+            Status = ProjectStatus.Active,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+        context.Projects.Add(project);
+        await context.SaveChangesAsync();
+
+        context.ProjectMembers.Add(new ProjectMember
+        {
+            ProjectId = project.Id,
+            UserId = user!.Id,
+            Role = ProjectRole.Owner,
+            JoinedAt = DateTime.UtcNow
+        });
+        await context.SaveChangesAsync();
+
+        return (user.Id, project.Id);
+    }
+
+    private async Task CreateLoungeMessage(int? projectId, string userId, string content)
+    {
+        using var scope = _factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+        context.LoungeMessages.Add(new LoungeMessage
+        {
+            ProjectId = projectId,
+            UserId = userId,
+            Content = content,
+            CreatedAt = DateTime.UtcNow
+        });
+
+        await context.SaveChangesAsync();
+    }
+
+    private async Task<int> GetTotalUnreadCount(string userId)
+    {
+        using var scope = _factory.Services.CreateScope();
+        var loungeService = scope.ServiceProvider.GetRequiredService<ILoungeService>();
+        var result = await loungeService.GetUnreadCounts(userId);
+
+        Assert.True(result.Succeeded);
+        return result.Data!.Sum(item => item.Count);
     }
 
     // ---------------------------------------------------------------
@@ -400,6 +458,47 @@ public class UiConsistencyTests : IClassFixture<TeamWareWebApplicationFactory>, 
         Assert.True(inboxIndex < whatsNextIndex, "Inbox should appear before What's Next");
         Assert.True(whatsNextIndex < somedayIndex, "What's Next should appear before Someday/Maybe");
         Assert.True(somedayIndex < reviewIndex, "Someday/Maybe should appear before Weekly Review");
+    }
+
+    [Fact]
+    public async Task Sidebar_LoungeSection_IsCollapsibleAndCollapsedByDefault()
+    {
+        var cookie = await GetLoginCookie("ui-lounge-collapse@test.com");
+
+        var request = new HttpRequestMessage(HttpMethod.Get, "/");
+        request.Headers.Add("Cookie", cookie);
+
+        var response = await _client.SendAsync(request);
+        var html = await response.Content.ReadAsStringAsync();
+
+        Assert.Contains("teamware:lounge-collapsed", html, StringComparison.Ordinal);
+        Assert.Contains("stored === null ? true : stored === 'true'", html, StringComparison.Ordinal);
+        Assert.Contains("aria-controls=\"sidebar-lounge-links\"", html, StringComparison.Ordinal);
+        Assert.Contains("x-show=\"!loungeCollapsed\"", html, StringComparison.Ordinal);
+        Assert.Contains(">LOUNGE</span>", html, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Sidebar_LoungeHeader_ShowsAggregatedUnreadCount_WhenCollapsed()
+    {
+        const string email = "ui-lounge-unread@test.com";
+        var cookie = await GetLoginCookie(email);
+        var (userId, projectId) = await CreateProjectWithMember(email, "Unread Lounge Project");
+
+        await CreateLoungeMessage(null, userId, "General unread");
+        await CreateLoungeMessage(projectId, userId, "Project unread 1");
+        await CreateLoungeMessage(projectId, userId, "Project unread 2");
+        var expectedUnreadCount = await GetTotalUnreadCount(userId);
+
+        var request = new HttpRequestMessage(HttpMethod.Get, "/");
+        request.Headers.Add("Cookie", cookie);
+
+        var response = await _client.SendAsync(request);
+        var html = await response.Content.ReadAsStringAsync();
+
+        Assert.Contains("x-show=\"loungeCollapsed\"", html, StringComparison.Ordinal);
+        Assert.Matches($@">\s*{expectedUnreadCount}\s*</span>", html);
+        Assert.Contains("Unread Lounge Project", html, StringComparison.Ordinal);
     }
 
     // ---------------------------------------------------------------

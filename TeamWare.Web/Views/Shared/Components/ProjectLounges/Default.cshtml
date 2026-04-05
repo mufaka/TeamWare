@@ -1,15 +1,58 @@
-﻿@model List<TeamWare.Web.ViewComponents.ProjectLoungeItem>
+﻿@model TeamWare.Web.ViewComponents.ProjectLoungesViewModel
 
-@foreach (var item in Model)
-{
-    <a asp-controller="Lounge" asp-action="Room" asp-route-projectId="@item.ProjectId"
-       class="flex items-center justify-between rounded-lg pl-7 pr-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700">
-        <span class="truncate">@item.ProjectName</span>
-        @if (item.UnreadCount > 0)
+<div class="mt-2 border-t border-gray-200 pt-2 dark:border-gray-700"
+     x-data="{ loungeCollapsed: (() => { const stored = localStorage.getItem('teamware:lounge-collapsed'); return stored === null ? true : stored === 'true'; })() }"
+     x-init="$watch('loungeCollapsed', value => localStorage.setItem('teamware:lounge-collapsed', value ? 'true' : 'false'))">
+    <button type="button"
+            class="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-gray-400 hover:bg-gray-100 dark:text-gray-500 dark:hover:bg-gray-700"
+            x-bind:aria-expanded="(!loungeCollapsed).toString()"
+            aria-controls="sidebar-lounge-links"
+            @@click="loungeCollapsed = !loungeCollapsed">
+        <span>LOUNGE</span>
+        <span class="flex items-center gap-2">
+            @if (Model.TotalUnreadCount > 0)
+            {
+                <span x-show="loungeCollapsed"
+                      x-cloak
+                      class="inline-flex items-center justify-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+                    @Model.TotalUnreadCount
+                </span>
+            }
+            <svg class="h-4 w-4 transition-transform duration-200"
+                 x-bind:class="loungeCollapsed ? '' : 'rotate-180'"
+                 fill="none"
+                 viewBox="0 0 24 24"
+                 stroke="currentColor"
+                 aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+        </span>
+    </button>
+
+    <div id="sidebar-lounge-links" x-show="!loungeCollapsed" x-cloak>
+        <a asp-controller="Lounge" asp-action="Room"
+           class="flex items-center justify-between rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700">
+            <span>#general</span>
+            @if (Model.GeneralUnreadCount > 0)
+            {
+                <span class="ml-auto inline-flex items-center justify-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+                    @Model.GeneralUnreadCount
+                </span>
+            }
+        </a>
+
+        @foreach (var item in Model.ProjectLounges)
         {
-            <span class="ml-auto inline-flex items-center justify-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
-                @item.UnreadCount
-            </span>
+            <a asp-controller="Lounge" asp-action="Room" asp-route-projectId="@item.ProjectId"
+               class="flex items-center justify-between rounded-lg pl-7 pr-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700">
+                <span class="truncate">@item.ProjectName</span>
+                @if (item.UnreadCount > 0)
+                {
+                    <span class="ml-auto inline-flex items-center justify-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+                        @item.UnreadCount
+                    </span>
+                }
+            </a>
         }
-    </a>
-}
+    </div>
+</div>
