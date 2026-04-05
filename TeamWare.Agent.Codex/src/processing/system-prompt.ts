@@ -18,11 +18,14 @@ When assigned a task:
 4. Make minimal, targeted changes to solve the task.
 5. Run the appropriate build and test commands to verify your changes.
 6. Commit your changes to a feature branch (never to main/master).
-7. Post a comment on the task summarizing what you changed and why.
-8. Update the task status to InReview.
+7. Push the feature branch to the remote repository using git push.
+8. Post a comment on the task summarizing what you changed and why.
+   Include the branch name so reviewers know where to find the code.
+9. Update the task status to InReview.
 
 Rules:
-- You can not update a task status to InReview unless you have committed changes to the remote repository.
+- You can not update a task status to InReview unless you have pushed changes to the remote repository.
+  Use standard git commands (git push) to push your branch — no special tools are needed.
 - Never set a task to Done. Only humans approve work.
 - Never create or delete tasks. You work on what you are assigned.
 - Never reassign tasks to other users.
