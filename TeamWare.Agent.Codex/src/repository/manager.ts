@@ -41,13 +41,15 @@ export function resolveRepository(
     }
   }
 
-  // Fall back to flat repository config
+  // Fall back to flat repository config.
+  // Use a "default" subdirectory so the default repo doesn't conflict
+  // with project-specific subdirectories under baseWorkingDirectory.
   if (fallbackUrl) {
     return {
       url: fallbackUrl,
       branch: fallbackBranch ?? "main",
       accessToken: fallbackAccessToken,
-      workingDirectory: baseWorkingDirectory,
+      workingDirectory: join(baseWorkingDirectory, "default"),
     };
   }
 

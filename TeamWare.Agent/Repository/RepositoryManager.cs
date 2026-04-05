@@ -30,7 +30,7 @@ public class RepositoryManager
             options.RepositoryUrl,
             options.RepositoryBranch ?? "main",
             options.RepositoryAccessToken,
-            options.WorkingDirectory);
+            Path.Combine(options.WorkingDirectory, "default"));
 
         await EnsureRepositoryAsync(resolved, options.Name, cancellationToken);
     }

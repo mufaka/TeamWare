@@ -163,12 +163,14 @@ public class AgentIdentityOptions
             }
         }
 
-        // Fallback to the flat (legacy) configuration
+        // Fallback to the flat (legacy) configuration.
+        // Use a "default" subdirectory so the default repo doesn't conflict
+        // with project-specific subdirectories under WorkingDirectory.
         return new ResolvedRepository(
             RepositoryUrl,
             RepositoryBranch ?? "main",
             RepositoryAccessToken,
-            WorkingDirectory);
+            Path.Combine(WorkingDirectory, "default"));
     }
 
     internal static string SanitizeDirectoryName(string name)

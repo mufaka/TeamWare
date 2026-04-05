@@ -131,7 +131,7 @@ public class AgentIdentityOptionsTests
         Assert.Equal("https://github.com/org/repo.git", resolved.RepositoryUrl);
         Assert.Equal("develop", resolved.Branch);
         Assert.Equal("ghp_token", resolved.AccessToken);
-        Assert.Equal("/tmp/work", resolved.WorkingDirectory);
+        Assert.Equal(Path.Combine("/tmp/work", "default"), resolved.WorkingDirectory);
     }
 
     [Fact]
@@ -150,7 +150,7 @@ public class AgentIdentityOptionsTests
         var resolved = options.ResolveRepository(null);
 
         Assert.Equal("https://github.com/org/repo.git", resolved.RepositoryUrl);
-        Assert.Equal("/tmp/work", resolved.WorkingDirectory);
+        Assert.Equal(Path.Combine("/tmp/work", "default"), resolved.WorkingDirectory);
     }
 
     [Fact]
@@ -216,7 +216,7 @@ public class AgentIdentityOptionsTests
 
         Assert.Equal("https://github.com/org/fallback.git", resolved.RepositoryUrl);
         Assert.Equal("main", resolved.Branch);
-        Assert.Equal("/tmp/work", resolved.WorkingDirectory);
+        Assert.Equal(Path.Combine("/tmp/work", "default"), resolved.WorkingDirectory);
     }
 
     [Fact]
