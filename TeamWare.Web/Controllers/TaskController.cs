@@ -1,6 +1,10 @@
 ﻿using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
+using TeamWare.Web.Data;
+using TeamWare.Web.Hubs;
 using TeamWare.Web.Models;
 using TeamWare.Web.Services;
 using TeamWare.Web.ViewModels;
@@ -16,6 +20,8 @@ public class TaskController : Controller
     private readonly IActivityLogService _activityLogService;
     private readonly ICommentService _commentService;
     private readonly IAttachmentService _attachmentService;
+    private readonly IHubContext<TaskHub> _taskHub;
+    private readonly ApplicationDbContext _dbContext;
 
     public TaskController(
         ITaskService taskService,
@@ -23,7 +29,9 @@ public class TaskController : Controller
         IProjectMemberService memberService,
         IActivityLogService activityLogService,
         ICommentService commentService,
-        IAttachmentService attachmentService)
+        IAttachmentService attachmentService,
+        IHubContext<TaskHub> taskHub,
+        ApplicationDbContext dbContext)
     {
         _taskService = taskService;
         _projectService = projectService;
@@ -31,9 +39,23 @@ public class TaskController : Controller
         _activityLogService = activityLogService;
         _commentService = commentService;
         _attachmentService = attachmentService;
+        _taskHub = taskHub;
+        _dbContext = dbContext;
     }
 
     private string GetUserId() => User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+
+    private async Task<string> GetDisplayNameAsync(string userId)
+    {
+        var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        return user?.DisplayName ?? "Unknown";
+    }
+
+    private async Task BroadcastTaskUpdatedAsync(int taskId, string[] sections, string summary)
+    {
+        await _taskHub.Clients.Group(TaskHub.GetGroupName(taskId))
+            .SendAsync("TaskUpdated", new { taskId, sections, summary });
+    }
 
     private async Task<List<CommentViewModel>> BuildCommentViewModels(ServiceResult<List<Comment>> commentsResult, string userId)
     {
@@ -317,6 +339,62 @@ public class TaskController : Controller
         return View(viewModel);
     }
 
+    [HttpGet]
+    public async Task<IActionResult> StatusPartial(int id)
+    {
+        var userId = GetUserId();
+        var result = await _taskService.GetTask(id, userId);
+        if (!result.Succeeded) return NotFound();
+
+        var task = result.Data!;
+        var viewModel = new TaskDetailViewModel
+        {
+            Status = task.Status,
+            Priority = task.Priority,
+            IsNextAction = task.IsNextAction,
+            IsSomedayMaybe = task.IsSomedayMaybe
+        };
+
+        return PartialView("_StatusSection", viewModel);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> ActivityPartial(int id)
+    {
+        var userId = GetUserId();
+        var result = await _taskService.GetTask(id, userId);
+        if (!result.Succeeded) return NotFound();
+
+        var activityHistory = await _activityLogService.GetActivityForTask(id);
+        var viewModel = activityHistory.Select(a => new ActivityLogEntryViewModel
+        {
+            Id = a.Id,
+            TaskItemId = a.TaskItemId,
+            TaskTitle = result.Data!.Title,
+            UserDisplayName = a.User.DisplayName,
+            IsUserAgent = a.User.IsAgent,
+            ChangeType = a.ChangeType,
+            OldValue = a.OldValue,
+            NewValue = a.NewValue,
+            CreatedAt = a.CreatedAt
+        }).ToList();
+
+        return PartialView("_ActivityHistory", viewModel);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> CommentsPartial(int id)
+    {
+        var userId = GetUserId();
+        var result = await _taskService.GetTask(id, userId);
+        if (!result.Succeeded) return NotFound();
+
+        var commentsResult = await _commentService.GetCommentsForTask(id, userId);
+        var viewModel = await BuildCommentViewModels(commentsResult, userId);
+
+        return PartialView("_CommentList", viewModel);
+    }
+
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Delete(int id)
@@ -343,6 +421,13 @@ public class TaskController : Controller
     public async Task<IActionResult> ChangeStatus(int id, TaskItemStatus status)
     {
         var result = await _taskService.ChangeStatus(id, status, GetUserId());
+
+        if (result.Succeeded)
+        {
+            var displayName = await GetDisplayNameAsync(GetUserId());
+            await BroadcastTaskUpdatedAsync(id, ["status", "activity"],
+                $"{displayName} changed status to {status}");
+        }
 
         if (Request.Headers["HX-Request"] == "true")
         {

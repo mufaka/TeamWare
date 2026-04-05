@@ -2,10 +2,13 @@
 using System.Text.Json;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using TeamWare.Tests.Helpers;
 using TeamWare.Web.Data;
+using TeamWare.Web.Hubs;
 using TeamWare.Web.Mcp.Tools;
 using TeamWare.Web.Models;
 using TeamWare.Web.Services;
@@ -27,6 +30,7 @@ public class AgentEdgeCaseTests : IDisposable
     private readonly NotificationService _notificationService;
     private readonly AdminService _adminService;
     private readonly IAgentConfigurationService _agentConfigService;
+    private readonly IHubContext<TaskHub> _taskHub;
 
     public AgentEdgeCaseTests()
     {
@@ -80,6 +84,7 @@ public class AgentEdgeCaseTests : IDisposable
         var tokenService = new PersonalAccessTokenService(_context);
         _adminService = new AdminService(_context, _userManager, activityLogSvc, tokenService);
         _agentConfigService = _serviceProvider.GetRequiredService<IAgentConfigurationService>();
+        _taskHub = new StubHubContext<TaskHub>();
     }
 
     public void Dispose()
@@ -212,7 +217,7 @@ public class AgentEdgeCaseTests : IDisposable
         var taskResult = await _taskService.CreateTask(project.Id, "Move Task", null, TaskItemPriority.Medium, null, owner.Id);
         var principal = CreateClaimsPrincipal(agent.Id);
 
-        var result = await TaskTools.update_task_status(principal, _taskService, taskResult.Data!.Id, "InProgress");
+        var result = await TaskTools.update_task_status(principal, _taskService, _taskHub, _userManager, taskResult.Data!.Id, "InProgress");
 
         using var doc = JsonDocument.Parse(result);
         Assert.Equal("InProgress", doc.RootElement.GetProperty("status").GetString());
@@ -236,7 +241,7 @@ public class AgentEdgeCaseTests : IDisposable
         var taskResult = await _taskService.CreateTask(project.Id, "Comment Task", null, TaskItemPriority.Medium, null, owner.Id);
         var principal = CreateClaimsPrincipal(agent.Id);
 
-        var result = await TaskTools.add_comment(principal, _commentService, taskResult.Data!.Id, "Agent comment");
+        var result = await TaskTools.add_comment(principal, _commentService, _taskHub, _userManager, taskResult.Data!.Id, "Agent comment");
 
         using var doc = JsonDocument.Parse(result);
         Assert.Equal("Agent comment", doc.RootElement.GetProperty("content").GetString());

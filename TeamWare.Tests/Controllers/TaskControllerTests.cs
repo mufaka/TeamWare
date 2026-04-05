@@ -126,6 +126,165 @@ public class TaskControllerTests : IClassFixture<TeamWareWebApplicationFactory>,
         Assert.Contains("/Account/Login", response.Headers.Location?.ToString());
     }
 
+    // --- Partial endpoint tests ---
+
+    [Fact]
+    public async Task StatusPartial_Unauthenticated_RedirectsToLogin()
+    {
+        var response = await _client.GetAsync("/Task/StatusPartial/1");
+
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+        Assert.Contains("/Account/Login", response.Headers.Location?.ToString());
+    }
+
+    [Fact]
+    public async Task ActivityPartial_Unauthenticated_RedirectsToLogin()
+    {
+        var response = await _client.GetAsync("/Task/ActivityPartial/1");
+
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+        Assert.Contains("/Account/Login", response.Headers.Location?.ToString());
+    }
+
+    [Fact]
+    public async Task CommentsPartial_Unauthenticated_RedirectsToLogin()
+    {
+        var response = await _client.GetAsync("/Task/CommentsPartial/1");
+
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+        Assert.Contains("/Account/Login", response.Headers.Location?.ToString());
+    }
+
+    [Fact]
+    public async Task StatusPartial_NonexistentTask_ReturnsNotFound()
+    {
+        var cookie = await CreateAndLoginUser("status-partial-test@test.com");
+
+        var request = new HttpRequestMessage(HttpMethod.Get, "/Task/StatusPartial/99999");
+        request.Headers.Add("Cookie", cookie);
+
+        var response = await _client.SendAsync(request);
+
+        // Nonexistent task returns NotFound or redirect depending on service behavior
+        Assert.True(response.StatusCode == HttpStatusCode.NotFound
+            || response.StatusCode == HttpStatusCode.Redirect);
+    }
+
+    [Fact]
+    public async Task ActivityPartial_NonexistentTask_ReturnsNotFound()
+    {
+        var cookie = await CreateAndLoginUser("activity-partial-test@test.com");
+
+        var request = new HttpRequestMessage(HttpMethod.Get, "/Task/ActivityPartial/99999");
+        request.Headers.Add("Cookie", cookie);
+
+        var response = await _client.SendAsync(request);
+
+        Assert.True(response.StatusCode == HttpStatusCode.NotFound
+            || response.StatusCode == HttpStatusCode.Redirect);
+    }
+
+    [Fact]
+    public async Task CommentsPartial_NonexistentTask_ReturnsNotFound()
+    {
+        var cookie = await CreateAndLoginUser("comments-partial-test@test.com");
+
+        var request = new HttpRequestMessage(HttpMethod.Get, "/Task/CommentsPartial/99999");
+        request.Headers.Add("Cookie", cookie);
+
+        var response = await _client.SendAsync(request);
+
+        Assert.True(response.StatusCode == HttpStatusCode.NotFound
+            || response.StatusCode == HttpStatusCode.Redirect);
+    }
+
+    [Fact]
+    public async Task StatusPartial_ValidTask_ReturnsPartialHtml()
+    {
+        var (cookie, taskId) = await CreateProjectAndTask("status-valid@test.com");
+
+        var request = new HttpRequestMessage(HttpMethod.Get, $"/Task/StatusPartial/{taskId}");
+        request.Headers.Add("Cookie", cookie);
+
+        var response = await _client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var content = await response.Content.ReadAsStringAsync();
+        Assert.Contains("rounded-full", content); // badge CSS class
+    }
+
+    [Fact]
+    public async Task ActivityPartial_ValidTask_ReturnsPartialHtml()
+    {
+        var (cookie, taskId) = await CreateProjectAndTask("activity-valid@test.com");
+
+        var request = new HttpRequestMessage(HttpMethod.Get, $"/Task/ActivityPartial/{taskId}");
+        request.Headers.Add("Cookie", cookie);
+
+        var response = await _client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var content = await response.Content.ReadAsStringAsync();
+        // Activity history will have at least a Created entry or the empty state message
+        Assert.True(content.Contains("flow-root") || content.Contains("No activity recorded yet."));
+    }
+
+    [Fact]
+    public async Task CommentsPartial_ValidTask_ReturnsPartialHtml()
+    {
+        var (cookie, taskId) = await CreateProjectAndTask("comments-valid@test.com");
+
+        var request = new HttpRequestMessage(HttpMethod.Get, $"/Task/CommentsPartial/{taskId}");
+        request.Headers.Add("Cookie", cookie);
+
+        var response = await _client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    private async Task<(string Cookie, int TaskId)> CreateProjectAndTask(string email)
+    {
+        var cookie = await CreateAndLoginUser(email);
+
+        using var scope = _factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+
+        var user = await userManager.FindByEmailAsync(email);
+
+        var project = new Project
+        {
+            Name = $"Test Project for {email}",
+            Description = "Test project",
+            CreatedAt = DateTime.UtcNow,
+            Members = new List<ProjectMember>
+            {
+                new ProjectMember
+                {
+                    UserId = user!.Id,
+                    Role = ProjectRole.Owner,
+                    JoinedAt = DateTime.UtcNow
+                }
+            }
+        };
+        context.Projects.Add(project);
+        await context.SaveChangesAsync();
+
+        var task = new TaskItem
+        {
+            Title = $"Test Task for {email}",
+            ProjectId = project.Id,
+            Status = TaskItemStatus.ToDo,
+            Priority = TaskItemPriority.Medium,
+            CreatedByUserId = user.Id,
+            CreatedAt = DateTime.UtcNow
+        };
+        context.TaskItems.Add(task);
+        await context.SaveChangesAsync();
+
+        return (cookie, task.Id);
+    }
+
     public void Dispose()
     {
         _client.Dispose();
