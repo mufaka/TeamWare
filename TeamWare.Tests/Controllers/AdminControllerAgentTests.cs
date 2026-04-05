@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using TeamWare.Web.Data;
 using TeamWare.Web.Models;
@@ -306,6 +307,17 @@ public class AdminControllerAgentTests : IClassFixture<TeamWareWebApplicationFac
     public async Task EditAgent_Get_Admin_ReturnsForm()
     {
         var agentId = await CreateAgentViaService("Edit Form Agent");
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+            var user = new ApplicationUser
+            {
+                UserName = "allowed-edit@test.com",
+                Email = "allowed-edit@test.com",
+                DisplayName = "Allowed Editor"
+            };
+            await userManager.CreateAsync(user, "TestPass1!");
+        }
 
         var cookie = await LoginAsAdmin();
 
@@ -318,12 +330,27 @@ public class AdminControllerAgentTests : IClassFixture<TeamWareWebApplicationFac
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Contains("Edit Agent", content);
         Assert.Contains("Edit Form Agent", content);
+        Assert.Contains("Task Assignment Permissions", content);
+        Assert.Contains("Allowed Editor", content);
     }
 
     [Fact]
     public async Task EditAgent_Post_Admin_Success_RedirectsToDetail()
     {
         var agentId = await CreateAgentViaService("Edit Submit Agent");
+        string allowedUserId;
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+            var user = new ApplicationUser
+            {
+                UserName = "allowed-post@test.com",
+                Email = "allowed-post@test.com",
+                DisplayName = "Allowed Poster"
+            };
+            await userManager.CreateAsync(user, "TestPass1!");
+            allowedUserId = user.Id;
+        }
 
         var adminCookie = await LoginAsAdmin();
         var (antiForgeryToken, cookies) = await GetFormTokenAndCookies($"/Admin/EditAgent?id={agentId}", adminCookie);
@@ -336,6 +363,7 @@ public class AdminControllerAgentTests : IClassFixture<TeamWareWebApplicationFac
             ["DisplayName"] = "Updated Agent Name",
             ["Description"] = "Updated description",
             ["IsActive"] = "true",
+            ["AllowedAssignerUserIds"] = allowedUserId,
             ["__RequestVerificationToken"] = antiForgeryToken
         });
 
@@ -343,6 +371,12 @@ public class AdminControllerAgentTests : IClassFixture<TeamWareWebApplicationFac
 
         Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
         Assert.Contains("/Admin/AgentDetail", response.Headers.Location?.ToString());
+
+        using var verifyScope = _factory.Services.CreateScope();
+        var context = verifyScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var permission = await context.AgentTaskAssignmentPermissions
+            .FirstOrDefaultAsync(p => p.AgentUserId == agentId && p.AllowedAssignerUserId == allowedUserId);
+        Assert.NotNull(permission);
     }
 
     [Fact]

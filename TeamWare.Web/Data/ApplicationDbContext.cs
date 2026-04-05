@@ -51,6 +51,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 
     public DbSet<AgentMcpServer> AgentMcpServers => Set<AgentMcpServer>();
 
+    public DbSet<AgentTaskAssignmentPermission> AgentTaskAssignmentPermissions => Set<AgentTaskAssignmentPermission>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -479,6 +481,24 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
                 .WithMany(ac => ac.McpServers)
                 .HasForeignKey(ms => ms.AgentConfigurationId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<AgentTaskAssignmentPermission>(entity =>
+        {
+            entity.HasKey(p => p.Id);
+
+            entity.HasOne(p => p.AgentUser)
+                .WithMany(u => u.AgentTaskAssignmentPermissions)
+                .HasForeignKey(p => p.AgentUserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(p => p.AllowedAssignerUser)
+                .WithMany(u => u.AgentAssignmentAuthorizations)
+                .HasForeignKey(p => p.AllowedAssignerUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(p => new { p.AgentUserId, p.AllowedAssignerUserId }).IsUnique();
+            entity.HasIndex(p => p.AllowedAssignerUserId);
         });
     }
 }

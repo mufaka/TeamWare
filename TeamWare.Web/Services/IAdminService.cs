@@ -23,6 +23,8 @@ public interface IAdminService
 
     Task<ServiceResult> UpdateAgentUser(string userId, string displayName, string? agentDescription, string adminUserId);
 
+    Task<ServiceResult> SetAgentTaskAssignmentPermissions(string agentUserId, IEnumerable<string> allowedAssignerUserIds, string adminUserId);
+
     Task<ServiceResult> SetAgentActive(string userId, bool isActive, string adminUserId);
 
     Task<ServiceResult<List<AgentUserSummary>>> GetAgentUsers();

@@ -287,6 +287,11 @@ public class TaskController : Controller
         var isOwnerOrAdmin = await IsOwnerOrAdmin(task.ProjectId, userId);
         var activityHistory = await _activityLogService.GetActivityForTask(id);
         var commentsResult = await _commentService.GetCommentsForTask(id, userId);
+        var assignableAgentIds = await _dbContext.AgentTaskAssignmentPermissions
+            .Where(p => p.AllowedAssignerUserId == userId)
+            .Select(p => p.AgentUserId)
+            .ToListAsync();
+        var assignableAgentIdSet = assignableAgentIds.ToHashSet(StringComparer.Ordinal);
 
         var viewModel = new TaskDetailViewModel
         {
@@ -331,7 +336,8 @@ public class TaskController : Controller
                     DisplayName = m.User.DisplayName,
                     Email = m.User.Email ?? string.Empty,
                     Role = m.Role,
-                    IsAgent = m.User.IsAgent
+                    IsAgent = m.User.IsAgent,
+                    CanReceiveTaskAssignment = !m.User.IsAgent || assignableAgentIdSet.Contains(m.UserId)
                 }).ToList()
                 : new()
         };

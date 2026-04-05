@@ -196,7 +196,7 @@
 
             @{
                 var unassigned = Model.ProjectMembers
-                    .Where(m => !Model.Assignees.Any(a => a.UserId == m.UserId))
+                    .Where(m => !Model.Assignees.Any(a => a.UserId == m.UserId) && m.CanReceiveTaskAssignment)
                     .ToList();
             }
             @if (unassigned.Any())
@@ -224,6 +224,10 @@
                         }
                     </div>
                 </div>
+            }
+            else if (Model.ProjectMembers.Any(m => !Model.Assignees.Any(a => a.UserId == m.UserId)))
+            {
+                <p class="mt-3 text-xs text-gray-500 dark:text-gray-400">No additional members are assignable by your account.</p>
             }
         </div>
     </div>

@@ -59,6 +59,20 @@ public class AdminController : Controller
             : [];
     }
 
+    private async Task PopulateAllowedAssignerOptionsAsync(EditAgentViewModel model)
+    {
+        model.AllowedAssignerOptions = await _context.Users
+            .Where(u => !u.IsAgent)
+            .OrderBy(u => u.DisplayName)
+            .Select(u => new AgentAssignmentPermissionOptionViewModel
+            {
+                UserId = u.Id,
+                DisplayName = u.DisplayName,
+                Email = u.Email ?? string.Empty
+            })
+            .ToListAsync();
+    }
+
     [HttpGet]
     public async Task<IActionResult> Dashboard()
     {
@@ -515,9 +529,15 @@ public class AdminController : Controller
             UserId = user.Id,
             DisplayName = user.DisplayName,
             Description = user.AgentDescription,
-            IsActive = user.IsAgentActive
+            IsActive = user.IsAgentActive,
+            AllowedAssignerUserIds = await _context.AgentTaskAssignmentPermissions
+                .Where(p => p.AgentUserId == user.Id)
+                .OrderBy(p => p.AllowedAssignerUserId)
+                .Select(p => p.AllowedAssignerUserId)
+                .ToListAsync()
         };
         await PopulateProjectOptionsAsync(viewModel);
+        await PopulateAllowedAssignerOptionsAsync(viewModel);
 
         var configResult = await _agentConfigService.GetConfigurationAsync(user.Id);
         if (configResult.Succeeded && configResult.Data != null)
@@ -559,6 +579,7 @@ public class AdminController : Controller
         {
             // Reload repositories and MCP servers for the form
             await PopulateProjectOptionsAsync(model);
+            await PopulateAllowedAssignerOptionsAsync(model);
             var configResult = await _agentConfigService.GetConfigurationAsync(model.UserId);
             if (configResult.Succeeded && configResult.Data != null)
             {
@@ -575,6 +596,29 @@ public class AdminController : Controller
             {
                 ModelState.AddModelError(string.Empty, error);
             }
+            return View(model);
+        }
+
+        var permissionResult = await _adminService.SetAgentTaskAssignmentPermissions(
+            model.UserId,
+            model.AllowedAssignerUserIds,
+            GetUserId());
+        if (!permissionResult.Succeeded)
+        {
+            foreach (var error in permissionResult.Errors)
+            {
+                ModelState.AddModelError(string.Empty, error);
+            }
+
+            await PopulateProjectOptionsAsync(model);
+            await PopulateAllowedAssignerOptionsAsync(model);
+            var configResult = await _agentConfigService.GetConfigurationAsync(model.UserId);
+            if (configResult.Succeeded && configResult.Data != null)
+            {
+                model.Repositories = configResult.Data.Repositories;
+                model.McpServers = configResult.Data.McpServers;
+            }
+
             return View(model);
         }
 

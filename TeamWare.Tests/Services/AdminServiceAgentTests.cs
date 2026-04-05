@@ -229,6 +229,61 @@ public class AdminServiceAgentTests : IDisposable
         Assert.NotNull(log);
     }
 
+    [Fact]
+    public async Task SetAgentTaskAssignmentPermissions_Success_ReplacesAllowList()
+    {
+        var admin = await CreateAdminUser();
+        var allowed1 = await CreateHumanUser("allowed1@test.com", "Allowed One");
+        var allowed2 = await CreateHumanUser("allowed2@test.com", "Allowed Two");
+        var createResult = await _service.CreateAgentUser("CodeBot", null, admin.Id);
+        var userId = createResult.Data!.User.Id;
+
+        _context.AgentTaskAssignmentPermissions.Add(new AgentTaskAssignmentPermission
+        {
+            AgentUserId = userId,
+            AllowedAssignerUserId = allowed1.Id
+        });
+        await _context.SaveChangesAsync();
+
+        var result = await _service.SetAgentTaskAssignmentPermissions(userId, [allowed2.Id], admin.Id);
+
+        Assert.True(result.Succeeded);
+        var permissions = await _context.AgentTaskAssignmentPermissions
+            .Where(p => p.AgentUserId == userId)
+            .OrderBy(p => p.AllowedAssignerUserId)
+            .ToListAsync();
+        Assert.Single(permissions);
+        Assert.Equal(allowed2.Id, permissions[0].AllowedAssignerUserId);
+    }
+
+    [Fact]
+    public async Task SetAgentTaskAssignmentPermissions_RejectsAgentAssigner()
+    {
+        var admin = await CreateAdminUser();
+        var createResult = await _service.CreateAgentUser("CodeBot", null, admin.Id);
+        var agentUserId = createResult.Data!.User.Id;
+        var otherAgent = (await _service.CreateAgentUser("OtherBot", null, admin.Id)).Data!.User;
+
+        var result = await _service.SetAgentTaskAssignmentPermissions(agentUserId, [otherAgent.Id], admin.Id);
+
+        Assert.False(result.Succeeded);
+        Assert.Contains("human users", result.Errors[0], StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task SetAgentTaskAssignmentPermissions_LogsAction()
+    {
+        var admin = await CreateAdminUser();
+        var allowed = await CreateHumanUser("allowed@test.com", "Allowed");
+        var createResult = await _service.CreateAgentUser("CodeBot", null, admin.Id);
+
+        await _service.SetAgentTaskAssignmentPermissions(createResult.Data!.User.Id, [allowed.Id], admin.Id);
+
+        var log = await _context.AdminActivityLogs
+            .FirstOrDefaultAsync(l => l.Action == "UpdateAgentTaskAssignmentPermissions");
+        Assert.NotNull(log);
+    }
+
     // --- SetAgentActive ---
 
     [Fact]
