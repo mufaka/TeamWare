@@ -8,7 +8,7 @@ This document defines the phased implementation plan for real-time agent activit
 
 | Phase | Description | Status |
 |-------|------------|--------|
-| 49 | Task SignalR Hub and Server Infrastructure | Not Started |
+| 49 | Task SignalR Hub and Server Infrastructure | Complete |
 | 50 | Client Integration and Polish | Not Started |
 
 ---
@@ -51,85 +51,85 @@ Create the `TaskHub`, extract partial views from `Details.cshtml`, add partial e
 
 ### 49.1 TaskHub Creation
 
-- [ ] Create `TaskHub` class in `TeamWare.Web/Hubs/TaskHub.cs`
-  - [ ] Inherit from `Hub`
-  - [ ] Add `[Authorize]` attribute (consistent with `LoungeHub`)
-  - [ ] Implement `static string GetGroupName(int taskId)` returning `$"task-{taskId}"`
-  - [ ] Implement `JoinTask(int taskId)`:
-    - [ ] Resolve the authenticated user's ID from `Context.User`
-    - [ ] Query `ProjectMembers` to verify the user is a member of the project that owns the task (mirrors `LoungeHub.CanAccessRoom`)
-    - [ ] If authorized, add connection to group via `Groups.AddToGroupAsync(Context.ConnectionId, GetGroupName(taskId))`
-    - [ ] If not authorized, throw `HubException` with access denied message
-  - [ ] Implement `LeaveTask(int taskId)`:
-    - [ ] Remove connection from group via `Groups.RemoveFromGroupAsync(Context.ConnectionId, GetGroupName(taskId))`
-- [ ] Register hub endpoint in `Program.cs`: `app.MapHub<TaskHub>("/hubs/task")`
-- [ ] Write unit tests for `TaskHub`:
-  - [ ] `JoinTask` succeeds for project member
-  - [ ] `JoinTask` fails for non-member
-  - [ ] `LeaveTask` succeeds without error
-  - [ ] `GetGroupName` returns expected format
+- [x] Create `TaskHub` class in `TeamWare.Web/Hubs/TaskHub.cs`
+  - [x] Inherit from `Hub`
+  - [x] Add `[Authorize]` attribute (consistent with `LoungeHub`)
+  - [x] Implement `static string GetGroupName(int taskId)` returning `$"task-{taskId}"`
+  - [x] Implement `JoinTask(int taskId)`:
+    - [x] Resolve the authenticated user's ID from `Context.User`
+    - [x] Query `ProjectMembers` to verify the user is a member of the project that owns the task (mirrors `LoungeHub.CanAccessRoom`)
+    - [x] If authorized, add connection to group via `Groups.AddToGroupAsync(Context.ConnectionId, GetGroupName(taskId))`
+    - [x] If not authorized, throw `HubException` with access denied message
+  - [x] Implement `LeaveTask(int taskId)`:
+    - [x] Remove connection from group via `Groups.RemoveFromGroupAsync(Context.ConnectionId, GetGroupName(taskId))`
+- [x] Register hub endpoint in `Program.cs`: `app.MapHub<TaskHub>("/hubs/task")`
+- [x] Write unit tests for `TaskHub`:
+  - [x] `JoinTask` succeeds for project member
+  - [x] `JoinTask` fails for non-member
+  - [x] `LeaveTask` succeeds without error
+  - [x] `GetGroupName` returns expected format
 
 ### 49.2 Partial View Extraction
 
-- [ ] Create `_StatusSection.cshtml` in `TeamWare.Web/Views/Task/`
-  - [ ] Extract the status badge, priority badge, Next Action badge, and Someday/Maybe badge markup from `Details.cshtml` (lines 46–57)
-  - [ ] Accept a view model or `TaskDetailViewModel` with `Status`, `Priority`, `IsNextAction`, `IsSomedayMaybe`
-  - [ ] Include the Tailwind CSS class computation for status and priority (currently in the `@{ }` block at the top of `Details.cshtml`)
-- [ ] Create `_ActivityHistory.cshtml` in `TeamWare.Web/Views/Task/`
-  - [ ] Extract the activity history `<div>` from `Details.cshtml` (lines 172–219)
-  - [ ] Accept `List<ActivityLogEntryViewModel>` (or equivalent from `TaskDetailViewModel.ActivityHistory`)
-  - [ ] Include the `ActivityChangeType` → icon class mapping
-  - [ ] Include the `_BotBadge` partial reference and `LocalTime` helper
-- [ ] Update `Details.cshtml` to render these sections via `@await Html.PartialAsync(...)` instead of inline markup
-  - [ ] Verify the existing `_CommentList.cshtml` partial is already used for the comments section (no extraction needed)
-- [ ] Write rendering tests:
-  - [ ] `_StatusSection` renders correct badges for each status/priority combination
-  - [ ] `_StatusSection` renders Next Action and Someday/Maybe badges when applicable
-  - [ ] `_ActivityHistory` renders activity entries with correct icon classes
-  - [ ] `_ActivityHistory` renders empty state message when no activity
-  - [ ] `Details.cshtml` continues to render identically after partial extraction
+- [x] Create `_StatusSection.cshtml` in `TeamWare.Web/Views/Task/`
+  - [x] Extract the status badge, priority badge, Next Action badge, and Someday/Maybe badge markup from `Details.cshtml` (lines 46–57)
+  - [x] Accept a view model or `TaskDetailViewModel` with `Status`, `Priority`, `IsNextAction`, `IsSomedayMaybe`
+  - [x] Include the Tailwind CSS class computation for status and priority (currently in the `@{ }` block at the top of `Details.cshtml`)
+- [x] Create `_ActivityHistory.cshtml` in `TeamWare.Web/Views/Task/`
+  - [x] Extract the activity history `<div>` from `Details.cshtml` (lines 172–219)
+  - [x] Accept `List<ActivityLogEntryViewModel>` (or equivalent from `TaskDetailViewModel.ActivityHistory`)
+  - [x] Include the `ActivityChangeType` → icon class mapping
+  - [x] Include the `_BotBadge` partial reference and `LocalTime` helper
+- [x] Update `Details.cshtml` to render these sections via `@await Html.PartialAsync(...)` instead of inline markup
+  - [x] Verify the existing `_CommentList.cshtml` partial is already used for the comments section (no extraction needed)
+- [x] Write rendering tests:
+  - [x] `_StatusSection` renders correct badges for each status/priority combination
+  - [x] `_StatusSection` renders Next Action and Someday/Maybe badges when applicable
+  - [x] `_ActivityHistory` renders activity entries with correct icon classes
+  - [x] `_ActivityHistory` renders empty state message when no activity
+  - [x] `Details.cshtml` continues to render identically after partial extraction
 
 ### 49.3 Partial Endpoints
 
-- [ ] Add `StatusPartial` action to `TaskController`:
-  - [ ] `[HttpGet]` at route `Task/StatusPartial`
-  - [ ] Accept `int id` parameter
-  - [ ] Load task via `ITaskService`, verify user access
-  - [ ] Return `PartialView("_StatusSection", ...)` with the relevant view model data
-- [ ] Add `ActivityPartial` action to `TaskController`:
-  - [ ] `[HttpGet]` at route `Task/ActivityPartial`
-  - [ ] Accept `int id` parameter
-  - [ ] Load task with activity history, verify user access
-  - [ ] Return `PartialView("_ActivityHistory", ...)` with activity log entries
-- [ ] Add `CommentsPartial` action to `TaskController`:
-  - [ ] `[HttpGet]` at route `Task/CommentsPartial`
-  - [ ] Accept `int id` parameter
-  - [ ] Load task with comments, verify user access
-  - [ ] Return `PartialView("_CommentList", ...)` with comment data
-- [ ] Write tests for each partial endpoint:
-  - [ ] Returns partial HTML for valid task and authorized user
-  - [ ] Returns 404 or error for nonexistent task
-  - [ ] Returns 403 or redirect for unauthorized user
+- [x] Add `StatusPartial` action to `TaskController`:
+  - [x] `[HttpGet]` at route `Task/StatusPartial`
+  - [x] Accept `int id` parameter
+  - [x] Load task via `ITaskService`, verify user access
+  - [x] Return `PartialView("_StatusSection", ...)` with the relevant view model data
+- [x] Add `ActivityPartial` action to `TaskController`:
+  - [x] `[HttpGet]` at route `Task/ActivityPartial`
+  - [x] Accept `int id` parameter
+  - [x] Load task with activity history, verify user access
+  - [x] Return `PartialView("_ActivityHistory", ...)` with activity log entries
+- [x] Add `CommentsPartial` action to `TaskController`:
+  - [x] `[HttpGet]` at route `Task/CommentsPartial`
+  - [x] Accept `int id` parameter
+  - [x] Load task with comments, verify user access
+  - [x] Return `PartialView("_CommentList", ...)` with comment data
+- [x] Write tests for each partial endpoint:
+  - [x] Returns partial HTML for valid task and authorized user
+  - [x] Returns 404 or error for nonexistent task
+  - [x] Returns 403 or redirect for unauthorized user
 
 ### 49.4 Broadcast Integration
 
-- [ ] Inject `IHubContext<TaskHub>` into `TaskController`
-  - [ ] After `ChangeStatus` succeeds, broadcast `TaskUpdated` to `TaskHub.GetGroupName(id)` with `sections: ["status", "activity"]` and summary `"{displayName} changed status to {status}"`
-- [ ] Inject `IHubContext<TaskHub>` into `CommentController`
-  - [ ] After `Add` succeeds, broadcast `TaskUpdated` with `sections: ["comments", "activity"]` and summary `"{displayName} added a comment"`
-  - [ ] After `Edit` succeeds, broadcast `TaskUpdated` with `sections: ["comments", "activity"]` and summary `"{displayName} edited a comment"`
-  - [ ] After `Delete` succeeds, broadcast `TaskUpdated` with `sections: ["comments", "activity"]` and summary `"{displayName} deleted a comment"`
-- [ ] Inject `IHubContext<TaskHub>` into `TaskTools` (MCP tools)
-  - [ ] After `update_task_status` succeeds, broadcast `TaskUpdated` with `sections: ["status", "activity"]` and summary `"{displayName} changed status to {status}"`
-  - [ ] After `add_comment` succeeds, broadcast `TaskUpdated` with `sections: ["comments", "activity"]` and summary `"{displayName} added a comment"`
-- [ ] Resolve `displayName` from the authenticated user's claims or `ApplicationUser` record at each call site
-- [ ] The `TaskUpdated` event payload shape: `{ taskId: int, sections: string[], summary: string }`
-- [ ] Write tests for broadcast integration:
-  - [ ] `ChangeStatus` sends `TaskUpdated` with correct sections and summary
-  - [ ] `Add` comment sends `TaskUpdated` with correct sections and summary
-  - [ ] `update_task_status` MCP tool sends `TaskUpdated` with correct sections and summary
-  - [ ] `add_comment` MCP tool sends `TaskUpdated` with correct sections and summary
-  - [ ] Failed mutations do not broadcast
+- [x] Inject `IHubContext<TaskHub>` into `TaskController`
+  - [x] After `ChangeStatus` succeeds, broadcast `TaskUpdated` to `TaskHub.GetGroupName(id)` with `sections: ["status", "activity"]` and summary `"{displayName} changed status to {status}"`
+- [x] Inject `IHubContext<TaskHub>` into `CommentController`
+  - [x] After `Add` succeeds, broadcast `TaskUpdated` with `sections: ["comments", "activity"]` and summary `"{displayName} added a comment"`
+  - [x] After `Edit` succeeds, broadcast `TaskUpdated` with `sections: ["comments", "activity"]` and summary `"{displayName} edited a comment"`
+  - [x] After `Delete` succeeds, broadcast `TaskUpdated` with `sections: ["comments", "activity"]` and summary `"{displayName} deleted a comment"`
+- [x] Inject `IHubContext<TaskHub>` into `TaskTools` (MCP tools)
+  - [x] After `update_task_status` succeeds, broadcast `TaskUpdated` with `sections: ["status", "activity"]` and summary `"{displayName} changed status to {status}"`
+  - [x] After `add_comment` succeeds, broadcast `TaskUpdated` with `sections: ["comments", "activity"]` and summary `"{displayName} added a comment"`
+- [x] Resolve `displayName` from the authenticated user's claims or `ApplicationUser` record at each call site
+- [x] The `TaskUpdated` event payload shape: `{ taskId: int, sections: string[], summary: string }`
+- [x] Write tests for broadcast integration:
+  - [x] `ChangeStatus` sends `TaskUpdated` with correct sections and summary
+  - [x] `Add` comment sends `TaskUpdated` with correct sections and summary
+  - [x] `update_task_status` MCP tool sends `TaskUpdated` with correct sections and summary
+  - [x] `add_comment` MCP tool sends `TaskUpdated` with correct sections and summary
+  - [x] Failed mutations do not broadcast
 
 ---
 
