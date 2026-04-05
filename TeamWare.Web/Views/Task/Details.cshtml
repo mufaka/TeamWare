@@ -5,6 +5,8 @@
     var aiAvailable = await AiAssistantService.IsAvailable();
 }
 
+<div data-task-id="@Model.Id">
+
 <div class="mb-2 text-sm text-gray-500 dark:text-gray-400">
     <a asp-controller="Project" asp-action="Details" asp-route-id="@Model.ProjectId"
        class="hover:text-indigo-600 dark:hover:text-indigo-400">@Model.ProjectName</a>
@@ -16,7 +18,9 @@
     <div>
         <h1 class="text-2xl font-bold text-gray-900 dark:text-white @(Model.IsOverdue ? "text-red-600 dark:text-red-400" : "")">@Model.Title</h1>
         <div class="mt-2 flex flex-wrap items-center gap-2">
-            @await Html.PartialAsync("_StatusSection", Model)
+            <div id="task-status-section" data-partial-url="@Url.Action("StatusPartial", "Task", new { id = Model.Id })">
+                @await Html.PartialAsync("_StatusSection", Model)
+            </div>
         </div>
     </div>
     <div class="flex flex-wrap gap-2">
@@ -94,7 +98,7 @@
         <div class="rounded-lg border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-800">
             <h2 class="mb-3 text-sm font-semibold text-gray-900 dark:text-white">Comments</h2>
 
-            <div id="comments-section">
+            <div id="comments-section" data-partial-url="@Url.Action("CommentsPartial", "Task", new { id = Model.Id })">
                 @await Html.PartialAsync("_CommentList", Model.Comments)
             </div>
 
@@ -135,7 +139,9 @@
         <!-- Activity History -->
         <div class="rounded-lg border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-800">
             <h2 class="mb-3 text-sm font-semibold text-gray-900 dark:text-white">Activity History</h2>
-            @await Html.PartialAsync("_ActivityHistory", Model.ActivityHistory)
+            <div id="task-activity-section" data-partial-url="@Url.Action("ActivityPartial", "Task", new { id = Model.Id })">
+                @await Html.PartialAsync("_ActivityHistory", Model.ActivityHistory)
+            </div>
         </div>
     </div>
 
@@ -235,9 +241,17 @@
     </div>
 </div>
 
-@if (aiAvailable)
-{
-    @section Scripts {
+<div id="task-toast-container"
+     class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm">
+</div>
+
+</div>
+
+@section Scripts {
+    <script src="~/lib/signalr/signalr.min.js"></script>
+    <script src="~/js/task-realtime.js" asp-append-version="true"></script>
+    @if (aiAvailable)
+    {
         <script src="~/js/ai-rewrite.js" asp-append-version="true"></script>
     }
 }
