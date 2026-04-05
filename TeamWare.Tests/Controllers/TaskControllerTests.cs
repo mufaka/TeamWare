@@ -242,6 +242,109 @@ public class TaskControllerTests : IClassFixture<TeamWareWebApplicationFactory>,
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
+    // --- Phase 50: Details.cshtml Integration Tests ---
+
+    [Fact]
+    public async Task Details_HasDataTaskIdAttribute()
+    {
+        var (cookie, taskId) = await CreateProjectAndTask("details-taskid@test.com");
+
+        var request = new HttpRequestMessage(HttpMethod.Get, $"/Task/Details/{taskId}");
+        request.Headers.Add("Cookie", cookie);
+
+        var response = await _client.SendAsync(request);
+        var html = await response.Content.ReadAsStringAsync();
+
+        Assert.Contains($"data-task-id=\"{taskId}\"", html);
+    }
+
+    [Fact]
+    public async Task Details_HasStatusSectionWithPartialUrl()
+    {
+        var (cookie, taskId) = await CreateProjectAndTask("details-status@test.com");
+
+        var request = new HttpRequestMessage(HttpMethod.Get, $"/Task/Details/{taskId}");
+        request.Headers.Add("Cookie", cookie);
+
+        var response = await _client.SendAsync(request);
+        var html = await response.Content.ReadAsStringAsync();
+
+        Assert.Contains("id=\"task-status-section\"", html);
+        Assert.Contains($"data-partial-url=\"/Task/StatusPartial/{taskId}\"", html);
+    }
+
+    [Fact]
+    public async Task Details_HasCommentsSectionWithPartialUrl()
+    {
+        var (cookie, taskId) = await CreateProjectAndTask("details-comments@test.com");
+
+        var request = new HttpRequestMessage(HttpMethod.Get, $"/Task/Details/{taskId}");
+        request.Headers.Add("Cookie", cookie);
+
+        var response = await _client.SendAsync(request);
+        var html = await response.Content.ReadAsStringAsync();
+
+        Assert.Contains("id=\"comments-section\"", html);
+        Assert.Contains($"data-partial-url=\"/Task/CommentsPartial/{taskId}\"", html);
+    }
+
+    [Fact]
+    public async Task Details_HasActivitySectionWithPartialUrl()
+    {
+        var (cookie, taskId) = await CreateProjectAndTask("details-activity@test.com");
+
+        var request = new HttpRequestMessage(HttpMethod.Get, $"/Task/Details/{taskId}");
+        request.Headers.Add("Cookie", cookie);
+
+        var response = await _client.SendAsync(request);
+        var html = await response.Content.ReadAsStringAsync();
+
+        Assert.Contains("id=\"task-activity-section\"", html);
+        Assert.Contains($"data-partial-url=\"/Task/ActivityPartial/{taskId}\"", html);
+    }
+
+    [Fact]
+    public async Task Details_HasToastContainer()
+    {
+        var (cookie, taskId) = await CreateProjectAndTask("details-toast@test.com");
+
+        var request = new HttpRequestMessage(HttpMethod.Get, $"/Task/Details/{taskId}");
+        request.Headers.Add("Cookie", cookie);
+
+        var response = await _client.SendAsync(request);
+        var html = await response.Content.ReadAsStringAsync();
+
+        Assert.Contains("id=\"task-toast-container\"", html);
+    }
+
+    [Fact]
+    public async Task Details_HasSignalRScriptReference()
+    {
+        var (cookie, taskId) = await CreateProjectAndTask("details-signalr@test.com");
+
+        var request = new HttpRequestMessage(HttpMethod.Get, $"/Task/Details/{taskId}");
+        request.Headers.Add("Cookie", cookie);
+
+        var response = await _client.SendAsync(request);
+        var html = await response.Content.ReadAsStringAsync();
+
+        Assert.Contains("signalr.min.js", html);
+    }
+
+    [Fact]
+    public async Task Details_HasTaskRealtimeScriptReference()
+    {
+        var (cookie, taskId) = await CreateProjectAndTask("details-realtime@test.com");
+
+        var request = new HttpRequestMessage(HttpMethod.Get, $"/Task/Details/{taskId}");
+        request.Headers.Add("Cookie", cookie);
+
+        var response = await _client.SendAsync(request);
+        var html = await response.Content.ReadAsStringAsync();
+
+        Assert.Contains("task-realtime.js", html);
+    }
+
     private async Task<(string Cookie, int TaskId)> CreateProjectAndTask(string email)
     {
         var cookie = await CreateAndLoginUser(email);

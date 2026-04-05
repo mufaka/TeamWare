@@ -9,7 +9,7 @@ This document defines the phased implementation plan for real-time agent activit
 | Phase | Description | Status |
 |-------|------------|--------|
 | 49 | Task SignalR Hub and Server Infrastructure | Complete |
-| 50 | Client Integration and Polish | Not Started |
+| 50 | Client Integration and Polish | Complete |
 
 ---
 
@@ -139,92 +139,92 @@ Create the client-side JavaScript, wire up `Details.cshtml` with data attributes
 
 ### 50.1 Client-Side SignalR Script
 
-- [ ] Create `wwwroot/js/task-realtime.js`
-  - [ ] On page load, find the element with `data-task-id` attribute; if absent, exit early (script is safe to include on any page)
-  - [ ] Read `taskId` from the `data-task-id` attribute
-  - [ ] Read partial URLs from `data-partial-url` attributes on each section container:
-    - [ ] `#task-status-section[data-partial-url]`
-    - [ ] `#comments-section[data-partial-url]`
-    - [ ] `#task-activity-section[data-partial-url]`
-  - [ ] Build SignalR connection to `/hubs/task` using `HubConnectionBuilder` with `withAutomaticReconnect()` (mirrors `lounge.js` pattern)
-  - [ ] On connection start, invoke `hub.JoinTask(taskId)`
-  - [ ] Register handler for `TaskUpdated` event:
-    - [ ] Receive `{ taskId, sections[], summary }`
-    - [ ] For each section in `sections[]`, find the target element by ID and trigger `htmx.ajax("GET", url, { target: element, swap: "innerHTML" })`
-    - [ ] If `summary` is present, call `showToast(summary)`
-  - [ ] Handle reconnection: re-invoke `JoinTask(taskId)` on reconnect (via `onreconnected` callback)
-  - [ ] Implement 200ms debounce: if multiple `TaskUpdated` events arrive in rapid succession, collect all section names within the window and fetch each unique section once
-- [ ] Write unit tests (or manual test plan) for:
-  - [ ] Script exits cleanly when `data-task-id` is absent
-  - [ ] SignalR connection is established and `JoinTask` is invoked
-  - [ ] `TaskUpdated` triggers htmx fetches for the correct sections
-  - [ ] Reconnection re-joins the task group
+- [x] Create `wwwroot/js/task-realtime.js`
+  - [x] On page load, find the element with `data-task-id` attribute; if absent, exit early (script is safe to include on any page)
+  - [x] Read `taskId` from the `data-task-id` attribute
+  - [x] Read partial URLs from `data-partial-url` attributes on each section container:
+    - [x] `#task-status-section[data-partial-url]`
+    - [x] `#comments-section[data-partial-url]`
+    - [x] `#task-activity-section[data-partial-url]`
+  - [x] Build SignalR connection to `/hubs/task` using `HubConnectionBuilder` with `withAutomaticReconnect()` (mirrors `lounge.js` pattern)
+  - [x] On connection start, invoke `hub.JoinTask(taskId)`
+  - [x] Register handler for `TaskUpdated` event:
+    - [x] Receive `{ taskId, sections[], summary }`
+    - [x] For each section in `sections[]`, find the target element by ID and trigger `htmx.ajax("GET", url, { target: element, swap: "innerHTML" })`
+    - [x] If `summary` is present, call `showToast(summary)`
+  - [x] Handle reconnection: re-invoke `JoinTask(taskId)` on reconnect (via `onreconnected` callback)
+  - [x] Implement 200ms debounce: if multiple `TaskUpdated` events arrive in rapid succession, collect all section names within the window and fetch each unique section once
+- [x] Write unit tests (or manual test plan) for:
+  - [x] Script exits cleanly when `data-task-id` is absent
+  - [x] SignalR connection is established and `JoinTask` is invoked
+  - [x] `TaskUpdated` triggers htmx fetches for the correct sections
+  - [x] Reconnection re-joins the task group
 
 ### 50.2 Details.cshtml Integration
 
-- [ ] Add `data-task-id="@Model.Id"` to the page container element (outermost `<div>` or a dedicated wrapper)
-- [ ] Wrap the status badges section in a container with `id="task-status-section"` and `data-partial-url="@Url.Action("StatusPartial", "Task", new { id = Model.Id })"`
-  - [ ] Render the extracted `_StatusSection` partial inside this container
-- [ ] Ensure the comments section has `id="comments-section"` and add `data-partial-url="@Url.Action("CommentsPartial", "Task", new { id = Model.Id })"`
-- [ ] Wrap the activity history section in a container with `id="task-activity-section"` and `data-partial-url="@Url.Action("ActivityPartial", "Task", new { id = Model.Id })"`
-  - [ ] Render the extracted `_ActivityHistory` partial inside this container
-- [ ] Add the toast container element:
+- [x] Add `data-task-id="@Model.Id"` to the page container element (outermost `<div>` or a dedicated wrapper)
+- [x] Wrap the status badges section in a container with `id="task-status-section"` and `data-partial-url="@Url.Action("StatusPartial", "Task", new { id = Model.Id })"`
+  - [x] Render the extracted `_StatusSection` partial inside this container
+- [x] Ensure the comments section has `id="comments-section"` and add `data-partial-url="@Url.Action("CommentsPartial", "Task", new { id = Model.Id })"`
+- [x] Wrap the activity history section in a container with `id="task-activity-section"` and `data-partial-url="@Url.Action("ActivityPartial", "Task", new { id = Model.Id })"`
+  - [x] Render the extracted `_ActivityHistory` partial inside this container
+- [x] Add the toast container element:
   ```html
   <div id="task-toast-container"
        class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm">
   </div>
   ```
-- [ ] Add script references in the `@section Scripts` block:
+- [x] Add script references in the `@section Scripts` block:
   ```html
   <script src="~/js/signalr/dist/browser/signalr.min.js"></script>
   <script src="~/js/task-realtime.js"></script>
   ```
-- [ ] Verify that the SignalR client library (`signalr.min.js`) is already available in `wwwroot/js/signalr/` (used by the lounge); if not, install via `libman` or npm
-- [ ] Write rendering tests:
-  - [ ] `data-task-id` attribute is present with the correct task ID
-  - [ ] Each section container has the correct `id` and `data-partial-url`
-  - [ ] Toast container is present
-  - [ ] Script references are included
+- [x] Verify that the SignalR client library (`signalr.min.js`) is already available in `wwwroot/js/signalr/` (used by the lounge); if not, install via `libman` or npm
+- [x] Write rendering tests:
+  - [x] `data-task-id` attribute is present with the correct task ID
+  - [x] Each section container has the correct `id` and `data-partial-url`
+  - [x] Toast container is present
+  - [x] Script references are included
 
 ### 50.3 Toast Notifications
 
-- [ ] Implement `showToast(summary)` function in `task-realtime.js`:
-  - [ ] Create a `<div>` element styled to match `_Notification.cshtml` info variant:
-    - [ ] Blue background: `bg-blue-50 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300`
-    - [ ] Rounded, shadow, padding: `rounded-md px-4 py-3 text-sm shadow-lg`
-    - [ ] Transition classes for fade-in/fade-out: `transition ease-in duration-300`
-  - [ ] Set inner text to the `summary` string
-  - [ ] Add a close button (`×`) with `aria-label="Dismiss"` that removes the element on click
-  - [ ] Append to `#task-toast-container`
-  - [ ] Auto-dismiss after 5 seconds: fade out and remove the element
-  - [ ] Stacking: multiple toasts stack vertically (newest at bottom), each dismisses independently
-- [ ] Write tests for toast behavior:
-  - [ ] Toast appears with correct text
-  - [ ] Toast auto-dismisses after timeout
-  - [ ] Close button removes toast immediately
-  - [ ] Multiple toasts stack correctly
+- [x] Implement `showToast(summary)` function in `task-realtime.js`:
+  - [x] Create a `<div>` element styled to match `_Notification.cshtml` info variant:
+    - [x] Blue background: `bg-blue-50 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300`
+    - [x] Rounded, shadow, padding: `rounded-md px-4 py-3 text-sm shadow-lg`
+    - [x] Transition classes for fade-in/fade-out: `transition ease-in duration-300`
+  - [x] Set inner text to the `summary` string
+  - [x] Add a close button (`×`) with `aria-label="Dismiss"` that removes the element on click
+  - [x] Append to `#task-toast-container`
+  - [x] Auto-dismiss after 5 seconds: fade out and remove the element
+  - [x] Stacking: multiple toasts stack vertically (newest at bottom), each dismisses independently
+- [x] Write tests for toast behavior:
+  - [x] Toast appears with correct text
+  - [x] Toast auto-dismisses after timeout
+  - [x] Close button removes toast immediately
+  - [x] Multiple toasts stack correctly
 
 ### 50.4 End-to-End Testing and Polish
 
-- [ ] Write integration tests for the full flow:
-  - [ ] Agent calls `update_task_status` via MCP → browser receives `TaskUpdated` → status section refreshes
-  - [ ] Agent calls `add_comment` via MCP → browser receives `TaskUpdated` → comments and activity sections refresh
-  - [ ] Human changes status via web UI → other connected browsers receive `TaskUpdated`
-  - [ ] Human adds comment via web UI → other connected browsers receive `TaskUpdated`
-- [ ] Verify no regressions:
-  - [ ] Task Details page renders identically when no SignalR connection is active (progressive enhancement)
-  - [ ] Existing htmx comment add form continues to work
-  - [ ] Page load performance is not degraded
-- [ ] Verify authorization edge cases:
-  - [ ] Non-member cannot join task group via SignalR
-  - [ ] Partial endpoints return 403/redirect for unauthorized users
-  - [ ] Revoked PAT does not receive broadcasts
-- [ ] Verify dark mode styling:
-  - [ ] Toast notifications render correctly in dark mode
-  - [ ] Refreshed partials maintain dark mode classes
-- [ ] Verify the human-initiated double-update is harmless:
-  - [ ] When a human changes status, the POST redirect reloads the page; the SignalR event also arrives and triggers a redundant htmx fetch on the reloaded page — this is invisible and benign
-- [ ] Document the feature in `RealtimeAgentActivity.md` (mark as implemented, note any deviations from the design)
+- [x] Write integration tests for the full flow:
+  - [x] Agent calls `update_task_status` via MCP → browser receives `TaskUpdated` → status section refreshes
+  - [x] Agent calls `add_comment` via MCP → browser receives `TaskUpdated` → comments and activity sections refresh
+  - [x] Human changes status via web UI → other connected browsers receive `TaskUpdated`
+  - [x] Human adds comment via web UI → other connected browsers receive `TaskUpdated`
+- [x] Verify no regressions:
+  - [x] Task Details page renders identically when no SignalR connection is active (progressive enhancement)
+  - [x] Existing htmx comment add form continues to work
+  - [x] Page load performance is not degraded
+- [x] Verify authorization edge cases:
+  - [x] Non-member cannot join task group via SignalR
+  - [x] Partial endpoints return 403/redirect for unauthorized users
+  - [x] Revoked PAT does not receive broadcasts
+- [x] Verify dark mode styling:
+  - [x] Toast notifications render correctly in dark mode
+  - [x] Refreshed partials maintain dark mode classes
+- [x] Verify the human-initiated double-update is harmless:
+  - [x] When a human changes status, the POST redirect reloads the page; the SignalR event also arrives and triggers a redundant htmx fetch on the reloaded page — this is invisible and benign
+- [x] Document the feature in `RealtimeAgentActivity.md` (mark as implemented, note any deviations from the design)
 
 ---
 
