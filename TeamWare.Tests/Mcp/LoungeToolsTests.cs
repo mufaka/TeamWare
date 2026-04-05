@@ -1,8 +1,11 @@
 ﻿using System.Security.Claims;
 using System.Text.Json;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using TeamWare.Tests.Helpers;
 using TeamWare.Web.Data;
+using TeamWare.Web.Hubs;
 using TeamWare.Web.Mcp.Tools;
 using TeamWare.Web.Models;
 using TeamWare.Web.Services;
@@ -17,6 +20,7 @@ public class LoungeToolsTests : IDisposable
     private readonly ProjectMemberService _projectMemberService;
     private readonly LoungeService _loungeService;
     private readonly NotificationService _notificationService;
+    private readonly IHubContext<LoungeHub> _loungeHub;
 
     public LoungeToolsTests()
     {
@@ -34,6 +38,7 @@ public class LoungeToolsTests : IDisposable
         _loungeService = new LoungeService(_context, _notificationService);
         _projectService = new ProjectService(_context);
         _projectMemberService = new ProjectMemberService(_context);
+        _loungeHub = new StubHubContext<LoungeHub>();
     }
 
     public void Dispose()
@@ -185,7 +190,7 @@ public class LoungeToolsTests : IDisposable
         var principal = CreateClaimsPrincipal(user.Id);
 
         var result = await LoungeTools.post_lounge_message(
-            principal, _loungeService, _projectMemberService, "Hello world!");
+            principal, _loungeService, _projectMemberService, _loungeHub, "Hello world!");
 
         using var doc = JsonDocument.Parse(result);
         var root = doc.RootElement;
@@ -202,7 +207,7 @@ public class LoungeToolsTests : IDisposable
         var principal = CreateClaimsPrincipal(owner.Id);
 
         var result = await LoungeTools.post_lounge_message(
-            principal, _loungeService, _projectMemberService, "Project chat", projectId: project.Id);
+            principal, _loungeService, _projectMemberService, _loungeHub, "Project chat", projectId: project.Id);
 
         using var doc = JsonDocument.Parse(result);
         Assert.Equal("Project chat", doc.RootElement.GetProperty("content").GetString());
@@ -215,7 +220,7 @@ public class LoungeToolsTests : IDisposable
         var principal = CreateClaimsPrincipal(user.Id);
 
         var result = await LoungeTools.post_lounge_message(
-            principal, _loungeService, _projectMemberService, "");
+            principal, _loungeService, _projectMemberService, _loungeHub, "");
 
         using var doc = JsonDocument.Parse(result);
         Assert.True(doc.RootElement.TryGetProperty("error", out var error));
@@ -230,7 +235,7 @@ public class LoungeToolsTests : IDisposable
         var longContent = new string('x', 4001);
 
         var result = await LoungeTools.post_lounge_message(
-            principal, _loungeService, _projectMemberService, longContent);
+            principal, _loungeService, _projectMemberService, _loungeHub, longContent);
 
         using var doc = JsonDocument.Parse(result);
         Assert.True(doc.RootElement.TryGetProperty("error", out var error));
@@ -245,7 +250,7 @@ public class LoungeToolsTests : IDisposable
         var principal = CreateClaimsPrincipal(stranger.Id);
 
         var result = await LoungeTools.post_lounge_message(
-            principal, _loungeService, _projectMemberService, "Unauthorized", projectId: project.Id);
+            principal, _loungeService, _projectMemberService, _loungeHub, "Unauthorized", projectId: project.Id);
 
         using var doc = JsonDocument.Parse(result);
         Assert.True(doc.RootElement.TryGetProperty("error", out var error));
@@ -261,7 +266,7 @@ public class LoungeToolsTests : IDisposable
 
         // Post a message that includes a @mention via the MCP tool
         var result = await LoungeTools.post_lounge_message(
-            principal, _loungeService, _projectMemberService, $"Hey @{mentioned.UserName} check this!");
+            principal, _loungeService, _projectMemberService, _loungeHub, $"Hey @{mentioned.UserName} check this!");
 
         using var doc = JsonDocument.Parse(result);
         var root = doc.RootElement;
