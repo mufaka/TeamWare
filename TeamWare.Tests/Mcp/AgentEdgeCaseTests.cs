@@ -31,6 +31,7 @@ public class AgentEdgeCaseTests : IDisposable
     private readonly AdminService _adminService;
     private readonly IAgentConfigurationService _agentConfigService;
     private readonly IHubContext<TaskHub> _taskHub;
+    private readonly IHubContext<LoungeHub> _loungeHub;
 
     public AgentEdgeCaseTests()
     {
@@ -85,6 +86,7 @@ public class AgentEdgeCaseTests : IDisposable
         _adminService = new AdminService(_context, _userManager, activityLogSvc, tokenService);
         _agentConfigService = _serviceProvider.GetRequiredService<IAgentConfigurationService>();
         _taskHub = new StubHubContext<TaskHub>();
+        _loungeHub = new StubHubContext<LoungeHub>();
     }
 
     public void Dispose()
@@ -304,7 +306,7 @@ public class AgentEdgeCaseTests : IDisposable
         var principal = CreateClaimsPrincipal(agent.Id);
         var projectMemberService = new ProjectMemberService(_context);
 
-        var result = await LoungeTools.post_lounge_message(principal, _loungeService, projectMemberService, "Hello from agent!", project.Id);
+        var result = await LoungeTools.post_lounge_message(principal, _loungeService, projectMemberService, _loungeHub, "Hello from agent!", project.Id);
 
         using var doc = JsonDocument.Parse(result);
         Assert.Equal("Hello from agent!", doc.RootElement.GetProperty("content").GetString());
@@ -361,7 +363,7 @@ public class AgentEdgeCaseTests : IDisposable
         var principal = CreateClaimsPrincipal(agent.Id);
         var projectMemberService = new ProjectMemberService(_context);
 
-        var result = await LoungeTools.post_lounge_message(principal, _loungeService, projectMemberService, "Denied!", projResult.Data!.Id);
+        var result = await LoungeTools.post_lounge_message(principal, _loungeService, projectMemberService, _loungeHub, "Denied!", projResult.Data!.Id);
 
         using var doc = JsonDocument.Parse(result);
         Assert.True(doc.RootElement.TryGetProperty("error", out _));

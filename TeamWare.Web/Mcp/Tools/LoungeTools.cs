@@ -2,7 +2,9 @@
 using System.Security.Claims;
 using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.SignalR;
 using ModelContextProtocol.Server;
+using TeamWare.Web.Hubs;
 using TeamWare.Web.Services;
 
 namespace TeamWare.Web.Mcp.Tools;
@@ -62,6 +64,7 @@ public class LoungeTools
         ClaimsPrincipal user,
         ILoungeService loungeService,
         IProjectMemberService projectMemberService,
+        IHubContext<LoungeHub> loungeHub,
         [Description("The message content (max 4000 characters).")] string content,
         [Description("Optional project ID. If omitted, posts to the global lounge.")] int? projectId = null)
     {
@@ -95,6 +98,23 @@ public class LoungeTools
         }
 
         var message = result.Data!;
+
+        // Broadcast the message via SignalR so connected clients see it in real-time
+        var groupName = LoungeHub.GetRoomGroupName(projectId);
+        await loungeHub.Clients.Group(groupName).SendAsync("ReceiveMessage", new
+        {
+            message.Id,
+            message.ProjectId,
+            message.Content,
+            message.CreatedAt,
+            Author = new
+            {
+                message.User?.Id,
+                message.User?.DisplayName,
+                message.User?.AvatarUrl
+            }
+        });
+
         var response = new
         {
             message.Id,
