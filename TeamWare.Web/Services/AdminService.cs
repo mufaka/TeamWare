@@ -266,6 +266,69 @@ public class AdminService : IAdminService
         return ServiceResult.Success();
     }
 
+    public async Task<ServiceResult> SetAgentTaskAssignmentPermissions(string agentUserId, IEnumerable<string> allowedAssignerUserIds, string adminUserId)
+    {
+        var user = await _userManager.FindByIdAsync(agentUserId);
+        if (user == null)
+        {
+            return ServiceResult.Failure("User not found.");
+        }
+
+        if (!user.IsAgent)
+        {
+            return ServiceResult.Failure("User is not an agent.");
+        }
+
+        var distinctIds = allowedAssignerUserIds
+            .Where(id => !string.IsNullOrWhiteSpace(id))
+            .Select(id => id.Trim())
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
+
+        var validHumanIds = await _context.Users
+            .Where(u => distinctIds.Contains(u.Id) && !u.IsAgent)
+            .Select(u => u.Id)
+            .ToListAsync();
+
+        if (validHumanIds.Count != distinctIds.Count)
+        {
+            return ServiceResult.Failure("Assignment permissions can only be granted to existing human users.");
+        }
+
+        var existing = await _context.AgentTaskAssignmentPermissions
+            .Where(p => p.AgentUserId == agentUserId)
+            .ToListAsync();
+
+        _context.AgentTaskAssignmentPermissions.RemoveRange(
+            existing.Where(p => !distinctIds.Contains(p.AllowedAssignerUserId)));
+
+        var existingIds = existing
+            .Select(p => p.AllowedAssignerUserId)
+            .ToHashSet(StringComparer.Ordinal);
+
+        foreach (var allowedAssignerUserId in distinctIds)
+        {
+            if (existingIds.Contains(allowedAssignerUserId))
+            {
+                continue;
+            }
+
+            _context.AgentTaskAssignmentPermissions.Add(new AgentTaskAssignmentPermission
+            {
+                AgentUserId = agentUserId,
+                AllowedAssignerUserId = allowedAssignerUserId,
+                CreatedAt = DateTime.UtcNow
+            });
+        }
+
+        await _context.SaveChangesAsync();
+
+        await _activityLog.LogAction(adminUserId, "UpdateAgentTaskAssignmentPermissions", agentUserId,
+            details: $"Updated assignment permissions for agent '{user.DisplayName}'");
+
+        return ServiceResult.Success();
+    }
+
     public async Task<ServiceResult> SetAgentActive(string userId, bool isActive, string adminUserId)
     {
         var user = await _userManager.FindByIdAsync(userId);
@@ -323,6 +386,11 @@ public class AdminService : IAdminService
         }
 
         var displayName = user.DisplayName;
+
+        var assignmentPermissions = await _context.AgentTaskAssignmentPermissions
+            .Where(p => p.AgentUserId == userId)
+            .ToListAsync();
+        _context.AgentTaskAssignmentPermissions.RemoveRange(assignmentPermissions);
 
         await _activityLog.LogAction(adminUserId, "DeleteAgentUser", userId,
             details: $"Deleted agent user '{displayName}'");

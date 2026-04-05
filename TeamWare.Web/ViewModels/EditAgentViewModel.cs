@@ -18,6 +18,10 @@ public class EditAgentViewModel
     [Display(Name = "Active")]
     public bool IsActive { get; set; }
 
+    public List<string> AllowedAssignerUserIds { get; set; } = [];
+
+    public List<AgentAssignmentPermissionOptionViewModel> AllowedAssignerOptions { get; set; } = [];
+
     public AgentConfigurationViewModel Configuration { get; set; } = new();
 
     public List<ProjectOptionViewModel> AvailableProjects { get; set; } = [];
@@ -25,4 +29,13 @@ public class EditAgentViewModel
     public List<AgentRepositoryDto> Repositories { get; set; } = [];
 
     public List<AgentMcpServerDto> McpServers { get; set; } = [];
+}
+
+public class AgentAssignmentPermissionOptionViewModel
+{
+    public string UserId { get; set; } = string.Empty;
+
+    public string DisplayName { get; set; } = string.Empty;
+
+    public string Email { get; set; } = string.Empty;
 }

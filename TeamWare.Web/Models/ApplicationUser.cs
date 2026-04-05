@@ -25,4 +25,8 @@ public class ApplicationUser : IdentityUser
     public ICollection<PersonalAccessToken> PersonalAccessTokens { get; set; } = new List<PersonalAccessToken>();
 
     public AgentConfiguration? AgentConfiguration { get; set; }
+
+    public ICollection<AgentTaskAssignmentPermission> AgentTaskAssignmentPermissions { get; set; } = new List<AgentTaskAssignmentPermission>();
+
+    public ICollection<AgentTaskAssignmentPermission> AgentAssignmentAuthorizations { get; set; } = new List<AgentTaskAssignmentPermission>();
 }

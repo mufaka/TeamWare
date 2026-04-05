@@ -57,6 +57,36 @@
             </div>
         </div>
 
+        <div class="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
+            <h2 class="mb-2 text-lg font-semibold text-gray-900 dark:text-white">Task Assignment Permissions</h2>
+            <p class="mb-4 text-sm text-gray-500 dark:text-gray-400">Only the selected human users can assign tasks to this agent. Admin role alone is not enough.</p>
+
+            @if (Model.AllowedAssignerOptions.Any())
+            {
+                <div class="max-h-72 space-y-2 overflow-y-auto rounded-lg border border-gray-200 p-3 dark:border-gray-700">
+                    @foreach (var user in Model.AllowedAssignerOptions)
+                    {
+                        var isChecked = Model.AllowedAssignerUserIds.Contains(user.UserId);
+                        <label class="flex items-start gap-3 rounded-md px-2 py-2 hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                            <input type="checkbox"
+                                   name="AllowedAssignerUserIds"
+                                   value="@user.UserId"
+                                   @(isChecked ? "checked" : null)
+                                   class="mt-0.5 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800" />
+                            <span class="text-sm">
+                                <span class="block font-medium text-gray-900 dark:text-white">@user.DisplayName</span>
+                                <span class="block text-gray-500 dark:text-gray-400">@user.Email</span>
+                            </span>
+                        </label>
+                    }
+                </div>
+            }
+            else
+            {
+                <p class="text-sm text-gray-500 dark:text-gray-400">No human users are available to approve.</p>
+            }
+        </div>
+
         @* Agent Backend Section *@
         <div x-data="{ backend: '@(Model.Configuration.AgentBackend ?? "")' }" class="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
             <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-white">Agent Backend</h2>

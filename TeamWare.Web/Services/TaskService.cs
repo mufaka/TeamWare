@@ -31,6 +31,12 @@ public class TaskService : ITaskService
                 && (pm.Role == ProjectRole.Owner || pm.Role == ProjectRole.Admin));
     }
 
+    private async Task<bool> CanAssignAgentAsync(string agentUserId, string assignedByUserId)
+    {
+        return await _context.AgentTaskAssignmentPermissions
+            .AnyAsync(p => p.AgentUserId == agentUserId && p.AllowedAssignerUserId == assignedByUserId);
+    }
+
     public async Task<ServiceResult<TaskItem>> CreateTask(int projectId, string title, string? description,
         TaskItemPriority priority, DateTime? dueDate, string createdByUserId)
     {
@@ -183,9 +189,17 @@ public class TaskService : ITaskService
         var userIdList = userIds.ToList();
         foreach (var userId in userIdList)
         {
-            if (!await IsProjectMember(task.ProjectId, userId))
+            var user = await _context.Users
+                .FirstOrDefaultAsync(u => u.Id == userId);
+
+            if (user == null || !await IsProjectMember(task.ProjectId, userId))
             {
                 return ServiceResult.Failure($"User is not a member of this project.");
+            }
+
+            if (user.IsAgent && !await CanAssignAgentAsync(userId, assignedByUserId))
+            {
+                return ServiceResult.Failure($"You are not approved to assign tasks to agent \"{user.DisplayName}\".");
             }
 
             var existing = await _context.TaskAssignments

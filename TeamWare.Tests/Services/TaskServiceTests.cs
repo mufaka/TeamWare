@@ -33,13 +33,14 @@ public class TaskServiceTests : IDisposable
         _projectService = new ProjectService(_context);
     }
 
-    private ApplicationUser CreateUser(string email, string displayName)
+    private ApplicationUser CreateUser(string email, string displayName, bool isAgent = false)
     {
         var user = new ApplicationUser
         {
             UserName = email,
             Email = email,
-            DisplayName = displayName
+            DisplayName = displayName,
+            IsAgent = isAgent
         };
         _context.Users.Add(user);
         _context.SaveChanges();
@@ -280,6 +281,55 @@ public class TaskServiceTests : IDisposable
         var count = await _context.TaskAssignments
             .CountAsync(a => a.TaskItemId == create.Data.Id && a.UserId == owner.Id);
         Assert.Equal(1, count);
+    }
+
+    [Fact]
+    public async Task AssignMembers_AgentWithoutApproval_Fails()
+    {
+        var (project, owner) = await CreateProjectWithOwner();
+        var agent = CreateUser($"agent-{Guid.NewGuid():N}@test.com", "CodeBot", isAgent: true);
+        _context.ProjectMembers.Add(new ProjectMember
+        {
+            ProjectId = project.Id,
+            UserId = agent.Id,
+            Role = ProjectRole.Member
+        });
+        await _context.SaveChangesAsync();
+
+        var create = await _taskService.CreateTask(project.Id, "Protected Agent Task", null,
+            TaskItemPriority.Medium, null, owner.Id);
+
+        var result = await _taskService.AssignMembers(create.Data!.Id, [agent.Id], owner.Id);
+
+        Assert.False(result.Succeeded);
+        Assert.Contains(result.Errors, e => e.Contains("not approved to assign tasks to agent", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public async Task AssignMembers_AgentWithApproval_Succeeds()
+    {
+        var (project, owner) = await CreateProjectWithOwner();
+        var agent = CreateUser($"agent-{Guid.NewGuid():N}@test.com", "CodeBot", isAgent: true);
+        _context.ProjectMembers.Add(new ProjectMember
+        {
+            ProjectId = project.Id,
+            UserId = agent.Id,
+            Role = ProjectRole.Member
+        });
+        _context.AgentTaskAssignmentPermissions.Add(new AgentTaskAssignmentPermission
+        {
+            AgentUserId = agent.Id,
+            AllowedAssignerUserId = owner.Id
+        });
+        await _context.SaveChangesAsync();
+
+        var create = await _taskService.CreateTask(project.Id, "Approved Agent Task", null,
+            TaskItemPriority.Medium, null, owner.Id);
+
+        var result = await _taskService.AssignMembers(create.Data!.Id, [agent.Id], owner.Id);
+
+        Assert.True(result.Succeeded);
+        Assert.Equal(1, await _context.TaskAssignments.CountAsync(a => a.TaskItemId == create.Data.Id && a.UserId == agent.Id));
     }
 
     [Fact]

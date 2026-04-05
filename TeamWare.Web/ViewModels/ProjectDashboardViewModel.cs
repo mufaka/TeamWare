@@ -59,4 +59,6 @@ public class ProjectMemberViewModel
     public DateTime JoinedAt { get; set; }
 
     public bool IsAgent { get; set; }
+
+    public bool CanReceiveTaskAssignment { get; set; } = true;
 }
