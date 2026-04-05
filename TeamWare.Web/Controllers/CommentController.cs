@@ -1,8 +1,10 @@
 ﻿using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using TeamWare.Web.Data;
+using TeamWare.Web.Hubs;
 using TeamWare.Web.Models;
 using TeamWare.Web.Services;
 using TeamWare.Web.ViewModels;
@@ -17,22 +19,37 @@ public class CommentController : Controller
     private readonly IFileStorageService _fileStorageService;
     private readonly IProjectMemberService _memberService;
     private readonly ApplicationDbContext _context;
+    private readonly IHubContext<TaskHub> _taskHub;
 
     public CommentController(
         ICommentService commentService,
         IAttachmentService attachmentService,
         IFileStorageService fileStorageService,
         IProjectMemberService memberService,
-        ApplicationDbContext context)
+        ApplicationDbContext context,
+        IHubContext<TaskHub> taskHub)
     {
         _commentService = commentService;
         _attachmentService = attachmentService;
         _fileStorageService = fileStorageService;
         _memberService = memberService;
         _context = context;
+        _taskHub = taskHub;
     }
 
     private string GetUserId() => User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+
+    private async Task<string> GetDisplayNameAsync(string userId)
+    {
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        return user?.DisplayName ?? "Unknown";
+    }
+
+    private async Task BroadcastTaskUpdatedAsync(int taskId, string[] sections, string summary)
+    {
+        await _taskHub.Clients.Group(TaskHub.GetGroupName(taskId))
+            .SendAsync("TaskUpdated", new { taskId, sections, summary });
+    }
 
     private async Task<List<CommentViewModel>> BuildCommentViewModels(int taskItemId, string userId)
     {
@@ -109,6 +126,9 @@ public class CommentController : Controller
         else
         {
             TempData["SuccessMessage"] = "Comment added.";
+            var displayName = await GetDisplayNameAsync(GetUserId());
+            await BroadcastTaskUpdatedAsync(model.TaskItemId, ["comments", "activity"],
+                $"{displayName} added a comment");
         }
 
         if (Request.Headers["HX-Request"] == "true")
@@ -139,6 +159,9 @@ public class CommentController : Controller
         else
         {
             TempData["SuccessMessage"] = "Comment updated.";
+            var displayName = await GetDisplayNameAsync(GetUserId());
+            await BroadcastTaskUpdatedAsync(model.TaskItemId, ["comments", "activity"],
+                $"{displayName} edited a comment");
         }
 
         if (Request.Headers["HX-Request"] == "true")
@@ -163,6 +186,9 @@ public class CommentController : Controller
         else
         {
             TempData["SuccessMessage"] = "Comment deleted.";
+            var displayName = await GetDisplayNameAsync(GetUserId());
+            await BroadcastTaskUpdatedAsync(taskItemId, ["comments", "activity"],
+                $"{displayName} deleted a comment");
         }
 
         if (Request.Headers["HX-Request"] == "true")

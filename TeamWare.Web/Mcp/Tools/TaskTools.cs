@@ -2,7 +2,10 @@
 using System.Security.Claims;
 using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.SignalR;
 using ModelContextProtocol.Server;
+using TeamWare.Web.Hubs;
 using TeamWare.Web.Models;
 using TeamWare.Web.Services;
 
@@ -245,6 +248,8 @@ public class TaskTools
     public static async Task<string> update_task_status(
         ClaimsPrincipal user,
         ITaskService taskService,
+        IHubContext<TaskHub> taskHub,
+        UserManager<ApplicationUser> userManager,
         [Description("The ID of the task to update.")] int taskId,
         [Description("The new status: ToDo, InProgress, InReview, Done, Blocked, or Error.")] string status)
     {
@@ -262,6 +267,11 @@ public class TaskTools
         {
             return JsonSerializer.Serialize(new { error = string.Join("; ", result.Errors) }, JsonOptions);
         }
+
+        var appUser = await userManager.FindByIdAsync(userId);
+        var displayName = appUser?.DisplayName ?? "Unknown";
+        await taskHub.Clients.Group(TaskHub.GetGroupName(taskId))
+            .SendAsync("TaskUpdated", new { taskId, sections = new[] { "status", "activity" }, summary = $"{displayName} changed status to {parsedStatus}" });
 
         var task = result.Data!;
         var response = new
@@ -307,6 +317,8 @@ public class TaskTools
     public static async Task<string> add_comment(
         ClaimsPrincipal user,
         ICommentService commentService,
+        IHubContext<TaskHub> taskHub,
+        UserManager<ApplicationUser> userManager,
         [Description("The ID of the task to add a comment to.")] int taskId,
         [Description("The comment content (max 4000 characters).")] string content)
     {
@@ -329,6 +341,11 @@ public class TaskTools
         {
             return JsonSerializer.Serialize(new { error = string.Join("; ", result.Errors) }, JsonOptions);
         }
+
+        var appUser = await userManager.FindByIdAsync(userId);
+        var displayName = appUser?.DisplayName ?? "Unknown";
+        await taskHub.Clients.Group(TaskHub.GetGroupName(taskId))
+            .SendAsync("TaskUpdated", new { taskId, sections = new[] { "comments", "activity" }, summary = $"{displayName} added a comment" });
 
         var comment = result.Data!;
         var response = new

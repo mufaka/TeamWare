@@ -1,8 +1,12 @@
 ﻿using System.Security.Claims;
 using System.Text.Json;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using TeamWare.Tests.Helpers;
 using TeamWare.Web.Data;
+using TeamWare.Web.Hubs;
 using TeamWare.Web.Mcp.Tools;
 using TeamWare.Web.Models;
 using TeamWare.Web.Services;
@@ -18,6 +22,8 @@ public class TaskToolsTests : IDisposable
     private readonly CommentService _commentService;
     private readonly ActivityLogService _activityLogService;
     private readonly NotificationService _notificationService;
+    private readonly IHubContext<TaskHub> _taskHub;
+    private readonly UserManager<ApplicationUser> _userManager;
 
     public TaskToolsTests()
     {
@@ -36,10 +42,13 @@ public class TaskToolsTests : IDisposable
         _notificationService = new NotificationService(_context);
         _taskService = new TaskService(_context, _activityLogService, _notificationService);
         _commentService = new CommentService(_context, _notificationService);
+        _taskHub = new StubHubContext<TaskHub>();
+        _userManager = TestUserManagerFactory.Create(_context);
     }
 
     public void Dispose()
     {
+        _userManager.Dispose();
         _context.Dispose();
         _connection.Dispose();
     }
@@ -404,7 +413,7 @@ public class TaskToolsTests : IDisposable
         var createResult = await _taskService.CreateTask(project.Id, "Status Task", null, TaskItemPriority.Medium, null, owner.Id);
         var principal = CreateClaimsPrincipal(owner.Id);
 
-        var result = await TaskTools.update_task_status(principal, _taskService, createResult.Data!.Id, "InProgress");
+        var result = await TaskTools.update_task_status(principal, _taskService, _taskHub, _userManager, createResult.Data!.Id, "InProgress");
 
         using var doc = JsonDocument.Parse(result);
         var root = doc.RootElement;
@@ -420,7 +429,7 @@ public class TaskToolsTests : IDisposable
         var createResult = await _taskService.CreateTask(project.Id, "Task", null, TaskItemPriority.Medium, null, owner.Id);
         var principal = CreateClaimsPrincipal(owner.Id);
 
-        var result = await TaskTools.update_task_status(principal, _taskService, createResult.Data!.Id, "Cancelled");
+        var result = await TaskTools.update_task_status(principal, _taskService, _taskHub, _userManager, createResult.Data!.Id, "Cancelled");
 
         using var doc = JsonDocument.Parse(result);
         Assert.True(doc.RootElement.TryGetProperty("error", out var error));
@@ -433,7 +442,7 @@ public class TaskToolsTests : IDisposable
         var user = CreateUser("user-status@test.com", "User");
         var principal = CreateClaimsPrincipal(user.Id);
 
-        var result = await TaskTools.update_task_status(principal, _taskService, 99999, "Done");
+        var result = await TaskTools.update_task_status(principal, _taskService, _taskHub, _userManager, 99999, "Done");
 
         using var doc = JsonDocument.Parse(result);
         Assert.True(doc.RootElement.TryGetProperty("error", out _));
@@ -447,7 +456,7 @@ public class TaskToolsTests : IDisposable
         var outsider = CreateUser("outsider-status@test.com", "Outsider");
         var principal = CreateClaimsPrincipal(outsider.Id);
 
-        var result = await TaskTools.update_task_status(principal, _taskService, createResult.Data!.Id, "Done");
+        var result = await TaskTools.update_task_status(principal, _taskService, _taskHub, _userManager, createResult.Data!.Id, "Done");
 
         using var doc = JsonDocument.Parse(result);
         Assert.True(doc.RootElement.TryGetProperty("error", out _));
@@ -507,7 +516,7 @@ public class TaskToolsTests : IDisposable
         var createResult = await _taskService.CreateTask(project.Id, "Comment Task", null, TaskItemPriority.Medium, null, owner.Id);
         var principal = CreateClaimsPrincipal(owner.Id);
 
-        var result = await TaskTools.add_comment(principal, _commentService, createResult.Data!.Id, "Test comment");
+        var result = await TaskTools.add_comment(principal, _commentService, _taskHub, _userManager, createResult.Data!.Id, "Test comment");
 
         using var doc = JsonDocument.Parse(result);
         var root = doc.RootElement;
@@ -525,7 +534,7 @@ public class TaskToolsTests : IDisposable
         var createResult = await _taskService.CreateTask(project.Id, "Task", null, TaskItemPriority.Medium, null, owner.Id);
         var principal = CreateClaimsPrincipal(owner.Id);
 
-        var result = await TaskTools.add_comment(principal, _commentService, createResult.Data!.Id, "");
+        var result = await TaskTools.add_comment(principal, _commentService, _taskHub, _userManager, createResult.Data!.Id, "");
 
         using var doc = JsonDocument.Parse(result);
         Assert.True(doc.RootElement.TryGetProperty("error", out var error));
@@ -540,7 +549,7 @@ public class TaskToolsTests : IDisposable
         var principal = CreateClaimsPrincipal(owner.Id);
         var longContent = new string('A', 4001);
 
-        var result = await TaskTools.add_comment(principal, _commentService, createResult.Data!.Id, longContent);
+        var result = await TaskTools.add_comment(principal, _commentService, _taskHub, _userManager, createResult.Data!.Id, longContent);
 
         using var doc = JsonDocument.Parse(result);
         Assert.True(doc.RootElement.TryGetProperty("error", out var error));
@@ -553,7 +562,7 @@ public class TaskToolsTests : IDisposable
         var user = CreateUser("user-comment@test.com", "User");
         var principal = CreateClaimsPrincipal(user.Id);
 
-        var result = await TaskTools.add_comment(principal, _commentService, 99999, "Comment");
+        var result = await TaskTools.add_comment(principal, _commentService, _taskHub, _userManager, 99999, "Comment");
 
         using var doc = JsonDocument.Parse(result);
         Assert.True(doc.RootElement.TryGetProperty("error", out _));
@@ -655,7 +664,7 @@ public class TaskToolsTests : IDisposable
         var createResult = await _taskService.CreateTask(project.Id, "Task", null, TaskItemPriority.Medium, null, owner.Id);
         var principal = CreateClaimsPrincipal(owner.Id);
 
-        var result = await TaskTools.update_task_status(principal, _taskService, createResult.Data!.Id, "Blocked");
+        var result = await TaskTools.update_task_status(principal, _taskService, _taskHub, _userManager, createResult.Data!.Id, "Blocked");
 
         using var doc = JsonDocument.Parse(result);
         Assert.Equal("Blocked", doc.RootElement.GetProperty("status").GetString());
@@ -668,7 +677,7 @@ public class TaskToolsTests : IDisposable
         var createResult = await _taskService.CreateTask(project.Id, "Task", null, TaskItemPriority.Medium, null, owner.Id);
         var principal = CreateClaimsPrincipal(owner.Id);
 
-        var result = await TaskTools.update_task_status(principal, _taskService, createResult.Data!.Id, "Error");
+        var result = await TaskTools.update_task_status(principal, _taskService, _taskHub, _userManager, createResult.Data!.Id, "Error");
 
         using var doc = JsonDocument.Parse(result);
         Assert.Equal("Error", doc.RootElement.GetProperty("status").GetString());
