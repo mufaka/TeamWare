@@ -359,6 +359,23 @@ public class TaskController : Controller
     }
 
     [HttpGet]
+    public async Task<IActionResult> ChangeStatusPartial(int id)
+    {
+        var userId = GetUserId();
+        var result = await _taskService.GetTask(id, userId);
+        if (!result.Succeeded) return NotFound();
+
+        var task = result.Data!;
+        var viewModel = new TaskDetailViewModel
+        {
+            Id = task.Id,
+            Status = task.Status
+        };
+
+        return PartialView("_ChangeStatusSection", viewModel);
+    }
+
+    [HttpGet]
     public async Task<IActionResult> ActivityPartial(int id)
     {
         var userId = GetUserId();

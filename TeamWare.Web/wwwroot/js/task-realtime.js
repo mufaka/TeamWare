@@ -9,7 +9,7 @@
 
     // Section element → partial URL mapping
     var sectionMap = {};
-    var sectionIds = ["task-status-section", "comments-section", "task-activity-section"];
+    var sectionIds = ["task-status-section", "task-change-status-section", "comments-section", "task-activity-section"];
     for (var i = 0; i < sectionIds.length; i++) {
         var el = document.getElementById(sectionIds[i]);
         if (el && el.dataset.partialUrl) {
@@ -18,10 +18,11 @@
     }
 
     // Map section names from TaskUpdated payload to element IDs
-    var sectionNameToId = {
-        "status": "task-status-section",
-        "comments": "comments-section",
-        "activity": "task-activity-section"
+    // A single section name can map to multiple element IDs
+    var sectionNameToIds = {
+        "status": ["task-status-section", "task-change-status-section"],
+        "comments": ["comments-section"],
+        "activity": ["task-activity-section"]
     };
 
     // --- Toast Notifications ---
@@ -103,22 +104,24 @@
 
         for (var i = 0; i < sections.length; i++) {
             var sectionName = sections[i];
-            var elId = sectionNameToId[sectionName];
-            if (!elId) continue;
+            var elIds = sectionNameToIds[sectionName];
+            if (!elIds) continue;
 
-            var info = sectionMap[elId];
-            if (!info) continue;
+            for (var j = 0; j < elIds.length; j++) {
+                var info = sectionMap[elIds[j]];
+                if (!info) continue;
 
-            // Use htmx if available, otherwise fall back to fetch
-            if (typeof htmx !== "undefined") {
-                htmx.ajax("GET", info.url, { target: info.element, swap: "innerHTML" });
-            } else {
-                (function (target, url) {
-                    fetch(url, { credentials: "same-origin" })
-                        .then(function (r) { return r.text(); })
-                        .then(function (html) { target.innerHTML = html; })
-                        .catch(function (err) { console.error("Task realtime fetch error:", err); });
-                })(info.element, info.url);
+                // Use htmx if available, otherwise fall back to fetch
+                if (typeof htmx !== "undefined") {
+                    htmx.ajax("GET", info.url, { target: info.element, swap: "innerHTML" });
+                } else {
+                    (function (target, url) {
+                        fetch(url, { credentials: "same-origin" })
+                            .then(function (r) { return r.text(); })
+                            .then(function (html) { target.innerHTML = html; })
+                            .catch(function (err) { console.error("Task realtime fetch error:", err); });
+                    })(info.element, info.url);
+                }
             }
         }
     }

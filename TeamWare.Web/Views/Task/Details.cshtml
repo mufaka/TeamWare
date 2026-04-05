@@ -56,20 +56,8 @@
         <!-- Status Change -->
         <div class="rounded-lg border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-800">
             <h2 class="mb-3 text-sm font-semibold text-gray-900 dark:text-white">Change Status</h2>
-            <div class="flex flex-wrap gap-2">
-                @foreach (var s in Enum.GetValues<TeamWare.Web.Models.TaskItemStatus>())
-                {
-                    var isActive = s == Model.Status;
-                    <form asp-action="ChangeStatus" method="post">
-                        <input type="hidden" name="id" value="@Model.Id" />
-                        <input type="hidden" name="status" value="@s" />
-                        <button type="submit"
-                                class="rounded-md px-3 py-1.5 text-sm font-medium @(isActive ? "bg-indigo-600 text-white" : "border border-gray-300 text-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700")"
-                                @(isActive ? "disabled" : "")>
-                            @(s switch { TeamWare.Web.Models.TaskItemStatus.ToDo => "To Do", TeamWare.Web.Models.TaskItemStatus.InProgress => "In Progress", TeamWare.Web.Models.TaskItemStatus.InReview => "In Review", TeamWare.Web.Models.TaskItemStatus.Done => "Done", TeamWare.Web.Models.TaskItemStatus.Blocked => "Blocked", TeamWare.Web.Models.TaskItemStatus.Error => "Error", _ => s.ToString() })
-                        </button>
-                    </form>
-                }
+            <div id="task-change-status-section" data-partial-url="@Url.Action("ChangeStatusPartial", "Task", new { id = Model.Id })">
+                @await Html.PartialAsync("_ChangeStatusSection", Model)
             </div>
         </div>
 

@@ -1,0 +1,16 @@
+﻿@model TeamWare.Web.ViewModels.TaskDetailViewModel
+<div class="flex flex-wrap gap-2">
+    @foreach (var s in Enum.GetValues<TeamWare.Web.Models.TaskItemStatus>())
+    {
+        var isActive = s == Model.Status;
+        <form asp-action="ChangeStatus" method="post">
+            <input type="hidden" name="id" value="@Model.Id" />
+            <input type="hidden" name="status" value="@s" />
+            <button type="submit"
+                    class="rounded-md px-3 py-1.5 text-sm font-medium @(isActive ? "bg-indigo-600 text-white" : "border border-gray-300 text-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700")"
+                    @(isActive ? "disabled" : "")>
+                @(s switch { TeamWare.Web.Models.TaskItemStatus.ToDo => "To Do", TeamWare.Web.Models.TaskItemStatus.InProgress => "In Progress", TeamWare.Web.Models.TaskItemStatus.InReview => "In Review", TeamWare.Web.Models.TaskItemStatus.Done => "Done", TeamWare.Web.Models.TaskItemStatus.Blocked => "Blocked", TeamWare.Web.Models.TaskItemStatus.Error => "Error", _ => s.ToString() })
+            </button>
+        </form>
+    }
+</div>
