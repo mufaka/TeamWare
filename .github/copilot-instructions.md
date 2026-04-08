@@ -4,8 +4,11 @@
 - TeamWare is an ASP.NET Core MVC application. It should not use Razor Pages. Use Controllers and Views instead.
 - One type per file (MAINT-01).
 - Tests accompany every feature. No phase is complete without its test cases.
-- Follow the implementation plan in `TeamWare.Web/Specifications/ImplementationPlan.md`, `TeamWare.Web/Specifications/SocialFeaturesImplementationPlan.md`, `TeamWare.Web/Specifications/ProjectLoungeImplementationPlan.md`, `TeamWare.Web/Specifications/OllamaIntegrationImplementationPlan.md`, `TeamWare.Web/Specifications/McpServerImplementationPlan.md`, `TeamWare.Web/Specifications/AgentUsersImplementationPlan.md`, `TeamWare.Web/Specifications/CopilotAgentImplementationPlan.md`, and `TeamWare.Web/Specifications/ServerSideAgentConfigImplementationPlan.md`.
+- Follow the implementation plan in `TeamWare.Web/Specifications/ImplementationPlan.md`, `TeamWare.Web/Specifications/SocialFeaturesImplementationPlan.md`, `TeamWare.Web/Specifications/ProjectLoungeImplementationPlan.md`, `TeamWare.Web/Specifications/OllamaIntegrationImplementationPlan.md`, `TeamWare.Web/Specifications/McpServerImplementationPlan.md`, `TeamWare.Web/Specifications/AgentUsersImplementationPlan.md`, `TeamWare.Web/Specifications/CopilotAgentImplementationPlan.md`, `TeamWare.Web/Specifications/ServerSideAgentConfigImplementationPlan.md`, `TeamWare.Web/Specifications/RealtimeAgentActivityImplementationPlan.md`, and `TeamWare.Web/Specifications/EditMcpAndRepositoryImplementationPlan.md`.
 - In `_DashboardProjects.cshtml`, ensure the link to project details is correctly implemented using `asp-controller="Project" asp-action="Details" asp-route-id="@project.Id"`.
+
+## Idea Documents
+- Idea documents (e.g., files named *Idea.md in TeamWare.Web/Specifications/) are collaborative, human-in-the-loop documents. They present multiple approaches neutrally, pose open questions for the human to answer, and do not make decisions or declare a preferred direction. Decisions belong in specification documents, not idea documents.
 
 ---
 
@@ -68,6 +71,7 @@ Each phase in the implementation plan gets its own branch created from `master`.
 | Phase 48 | `phase-48/server-config-polish` |
 | Phase 49 | `phase-49/realtime-task-hub` |
 | Phase 50 | `phase-50/realtime-task-client` |
+| Phase 51 | `phase-51/edit-repo-mcp-inline` |
 
 When starting a phase:
 1. Create the phase branch from `master` in GitHub.
@@ -187,3 +191,11 @@ The following maps implementation plan work items to their canonical GitHub issu
 | 50.2 Details.cshtml Integration | #292 | — |
 | 50.3 Toast Notifications | #293 | — |
 | 50.4 End-to-End Testing and Polish | #294 | — |
+
+### Phase 51: Edit Agent Repositories and MCP Servers (label: `Phase 51: Edit Agent Repositories and MCP Servers`)
+
+| Work Item | Canonical Issue | Duplicate Issues |
+|-----------|----------------|------------------|
+| 51.1 Service Layer: Keep-Current Secret Logic | TBD | — |
+| 51.2 Repository Edit UI | TBD | — |
+| 51.3 MCP Server Edit UI | TBD | — |
