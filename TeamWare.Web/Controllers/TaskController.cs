@@ -105,7 +105,7 @@ public class TaskController : Controller
 
     [HttpGet]
     public async Task<IActionResult> Index(int projectId, TaskItemStatus? status, TaskItemPriority? priority,
-        string? assignee, string? sortBy, bool sortDesc = false, string? q = null)
+        string? assignee, string? sortBy, bool sortDesc = false, string? q = null, bool statusExplicit = false)
     {
         var userId = GetUserId();
 
@@ -117,6 +117,12 @@ public class TaskController : Controller
         }
 
         var membersResult = await _memberService.GetMembers(projectId, userId);
+
+        // Default to ToDo when no status filter has been explicitly set and there is no search query
+        if (status == null && !statusExplicit && string.IsNullOrWhiteSpace(q))
+        {
+            status = TaskItemStatus.ToDo;
+        }
 
         ServiceResult<List<TaskItem>> tasksResult;
         if (!string.IsNullOrWhiteSpace(q))
