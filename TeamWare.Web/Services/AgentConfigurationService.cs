@@ -147,7 +147,11 @@ public class AgentConfigurationService : IAgentConfigurationService
         repo.ProjectName = dto.ProjectName;
         repo.Url = dto.Url;
         repo.Branch = dto.Branch;
-        repo.EncryptedAccessToken = _encryptor.Encrypt(dto.AccessToken);
+        if (dto.ClearAccessToken)
+            repo.EncryptedAccessToken = null;
+        else if (!string.IsNullOrEmpty(dto.AccessToken))
+            repo.EncryptedAccessToken = _encryptor.Encrypt(dto.AccessToken);
+        // else: blank and not clearing — keep existing encrypted value unchanged
         repo.DisplayOrder = dto.DisplayOrder;
         repo.AgentConfiguration.UpdatedAt = DateTime.UtcNow;
 
@@ -211,10 +215,18 @@ public class AgentConfigurationService : IAgentConfigurationService
         server.Name = dto.Name;
         server.Type = dto.Type;
         server.Url = dto.Url;
-        server.EncryptedAuthHeader = _encryptor.Encrypt(dto.AuthHeader);
+        if (dto.ClearAuthHeader)
+            server.EncryptedAuthHeader = null;
+        else if (!string.IsNullOrEmpty(dto.AuthHeader))
+            server.EncryptedAuthHeader = _encryptor.Encrypt(dto.AuthHeader);
+        // else: blank and not clearing — keep existing encrypted value unchanged
         server.Command = dto.Command;
         server.Args = dto.Args;
-        server.EncryptedEnv = _encryptor.Encrypt(dto.Env);
+        if (dto.ClearEnv)
+            server.EncryptedEnv = null;
+        else if (!string.IsNullOrEmpty(dto.Env))
+            server.EncryptedEnv = _encryptor.Encrypt(dto.Env);
+        // else: blank and not clearing — keep existing encrypted value unchanged
         server.DisplayOrder = dto.DisplayOrder;
         server.AgentConfiguration.UpdatedAt = DateTime.UtcNow;
 

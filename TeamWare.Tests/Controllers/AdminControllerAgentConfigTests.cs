@@ -614,6 +614,468 @@ public class AdminControllerAgentConfigTests : IClassFixture<TeamWareWebApplicat
         Assert.Contains("http", content);
     }
 
+    // --- 51.2 Repository Edit UI ---
+
+    [Fact]
+    public async Task EditAgent_Get_ShowsEditButtonForRepository()
+    {
+        var agentId = await CreateAgentViaService("Edit Btn Repo Agent");
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var configService = scope.ServiceProvider.GetRequiredService<IAgentConfigurationService>();
+            await configService.AddRepositoryAsync(agentId, new Web.ViewModels.SaveAgentRepositoryDto
+            {
+                ProjectName = "EditBtnProject",
+                Url = "https://github.com/editbtn/repo",
+                Branch = "main"
+            });
+        }
+
+        var cookie = await LoginAsAdmin();
+        var request = new HttpRequestMessage(HttpMethod.Get, $"/Admin/EditAgent?id={agentId}");
+        request.Headers.Add("Cookie", cookie);
+
+        var response = await _client.SendAsync(request);
+        var content = await response.Content.ReadAsStringAsync();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Contains("data-edit-btn=", content);
+        Assert.Contains("UpdateAgentRepository", content);
+    }
+
+    [Fact]
+    public async Task UpdateAgentRepository_Success_RedirectsToEditAgent()
+    {
+        var agentId = await CreateAgentViaService("Update Repo Agent");
+        var projectName = await CreateProjectForAdmin("UpdateRepoProject");
+
+        int repoId;
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var configService = scope.ServiceProvider.GetRequiredService<IAgentConfigurationService>();
+            var result = await configService.AddRepositoryAsync(agentId, new Web.ViewModels.SaveAgentRepositoryDto
+            {
+                ProjectName = projectName,
+                Url = "https://github.com/old/url",
+                Branch = "main"
+            });
+            repoId = result.Data;
+        }
+
+        var adminCookie = await LoginAsAdmin();
+        var (antiForgeryToken, cookies) = await GetFormTokenAndCookies($"/Admin/EditAgent?id={agentId}", adminCookie);
+
+        var request = new HttpRequestMessage(HttpMethod.Post, $"/Admin/UpdateAgentRepository?userId={agentId}&repositoryId={repoId}");
+        request.Headers.Add("Cookie", cookies);
+        request.Content = new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["ProjectName"] = projectName,
+            ["Url"] = "https://github.com/new/url",
+            ["Branch"] = "develop",
+            ["DisplayOrder"] = "0",
+            ["__RequestVerificationToken"] = antiForgeryToken
+        });
+
+        var response = await _client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+        Assert.Contains("/Admin/EditAgent", response.Headers.Location?.ToString());
+
+        using var scope2 = _factory.Services.CreateScope();
+        var verifyService = scope2.ServiceProvider.GetRequiredService<IAgentConfigurationService>();
+        var configResult = await verifyService.GetConfigurationAsync(agentId);
+        Assert.True(configResult.Succeeded);
+        var repo = configResult.Data!.Repositories.Single();
+        Assert.Equal("https://github.com/new/url", repo.Url);
+        Assert.Equal("develop", repo.Branch);
+    }
+
+    [Fact]
+    public async Task UpdateAgentRepository_BlankToken_PreservesExistingToken()
+    {
+        var agentId = await CreateAgentViaService("Blank Token Repo Agent");
+        var projectName = await CreateProjectForAdmin("BlankTokenProject");
+
+        int repoId;
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var configService = scope.ServiceProvider.GetRequiredService<IAgentConfigurationService>();
+            var result = await configService.AddRepositoryAsync(agentId, new Web.ViewModels.SaveAgentRepositoryDto
+            {
+                ProjectName = projectName,
+                Url = "https://github.com/token/repo",
+                Branch = "main",
+                AccessToken = "secret-token"
+            });
+            repoId = result.Data;
+        }
+
+        var adminCookie = await LoginAsAdmin();
+        var (antiForgeryToken, cookies) = await GetFormTokenAndCookies($"/Admin/EditAgent?id={agentId}", adminCookie);
+
+        // POST with blank AccessToken and ClearAccessToken not set
+        var request = new HttpRequestMessage(HttpMethod.Post, $"/Admin/UpdateAgentRepository?userId={agentId}&repositoryId={repoId}");
+        request.Headers.Add("Cookie", cookies);
+        request.Content = new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["ProjectName"] = projectName,
+            ["Url"] = "https://github.com/token/repo",
+            ["Branch"] = "main",
+            ["AccessToken"] = "",
+            ["DisplayOrder"] = "0",
+            ["__RequestVerificationToken"] = antiForgeryToken
+        });
+
+        var response = await _client.SendAsync(request);
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+
+        using var scope2 = _factory.Services.CreateScope();
+        var verifyService = scope2.ServiceProvider.GetRequiredService<IAgentConfigurationService>();
+        var configResult = await verifyService.GetConfigurationAsync(agentId);
+        Assert.True(configResult.Succeeded);
+        // Masked token should still be present (non-null) indicating the secret was preserved
+        Assert.NotNull(configResult.Data!.Repositories.Single().AccessToken);
+    }
+
+    [Fact]
+    public async Task UpdateAgentRepository_ClearToken_NullsStoredToken()
+    {
+        var agentId = await CreateAgentViaService("Clear Token Repo Agent");
+        var projectName = await CreateProjectForAdmin("ClearTokenProject");
+
+        int repoId;
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var configService = scope.ServiceProvider.GetRequiredService<IAgentConfigurationService>();
+            var result = await configService.AddRepositoryAsync(agentId, new Web.ViewModels.SaveAgentRepositoryDto
+            {
+                ProjectName = projectName,
+                Url = "https://github.com/clear/repo",
+                Branch = "main",
+                AccessToken = "to-be-cleared"
+            });
+            repoId = result.Data;
+        }
+
+        var adminCookie = await LoginAsAdmin();
+        var (antiForgeryToken, cookies) = await GetFormTokenAndCookies($"/Admin/EditAgent?id={agentId}", adminCookie);
+
+        var request = new HttpRequestMessage(HttpMethod.Post, $"/Admin/UpdateAgentRepository?userId={agentId}&repositoryId={repoId}");
+        request.Headers.Add("Cookie", cookies);
+        request.Content = new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["ProjectName"] = projectName,
+            ["Url"] = "https://github.com/clear/repo",
+            ["Branch"] = "main",
+            ["ClearAccessToken"] = "true",
+            ["DisplayOrder"] = "0",
+            ["__RequestVerificationToken"] = antiForgeryToken
+        });
+
+        var response = await _client.SendAsync(request);
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+
+        using var scope2 = _factory.Services.CreateScope();
+        var verifyService = scope2.ServiceProvider.GetRequiredService<IAgentConfigurationService>();
+        var configResult = await verifyService.GetConfigurationAsync(agentId);
+        Assert.True(configResult.Succeeded);
+        Assert.Null(configResult.Data!.Repositories.Single().AccessToken);
+    }
+
+    // --- 51.3 MCP Server Edit UI ---
+
+    [Fact]
+    public async Task EditAgent_Get_ShowsEditButtonForMcpServer()
+    {
+        var agentId = await CreateAgentViaService("Edit Btn MCP Agent");
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var configService = scope.ServiceProvider.GetRequiredService<IAgentConfigurationService>();
+            await configService.AddMcpServerAsync(agentId, new Web.ViewModels.SaveAgentMcpServerDto
+            {
+                Name = "edit-btn-mcp",
+                Type = "http",
+                Url = "https://mcp.example.com"
+            });
+        }
+
+        var cookie = await LoginAsAdmin();
+        var request = new HttpRequestMessage(HttpMethod.Get, $"/Admin/EditAgent?id={agentId}");
+        request.Headers.Add("Cookie", cookie);
+
+        var response = await _client.SendAsync(request);
+        var content = await response.Content.ReadAsStringAsync();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Contains("data-edit-btn=", content);
+        Assert.Contains("UpdateAgentMcpServer", content);
+    }
+
+    [Fact]
+    public async Task UpdateAgentMcpServer_Http_Success_RedirectsToEditAgent()
+    {
+        var agentId = await CreateAgentViaService("Update HTTP MCP Agent");
+
+        int serverId;
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var configService = scope.ServiceProvider.GetRequiredService<IAgentConfigurationService>();
+            var result = await configService.AddMcpServerAsync(agentId, new Web.ViewModels.SaveAgentMcpServerDto
+            {
+                Name = "old-http-mcp",
+                Type = "http",
+                Url = "https://old.mcp.example.com"
+            });
+            serverId = result.Data;
+        }
+
+        var adminCookie = await LoginAsAdmin();
+        var (antiForgeryToken, cookies) = await GetFormTokenAndCookies($"/Admin/EditAgent?id={agentId}", adminCookie);
+
+        var request = new HttpRequestMessage(HttpMethod.Post, $"/Admin/UpdateAgentMcpServer?userId={agentId}&mcpServerId={serverId}");
+        request.Headers.Add("Cookie", cookies);
+        request.Content = new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["Name"] = "new-http-mcp",
+            ["Type"] = "http",
+            ["Url"] = "https://new.mcp.example.com",
+            ["DisplayOrder"] = "0",
+            ["__RequestVerificationToken"] = antiForgeryToken
+        });
+
+        var response = await _client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+        Assert.Contains("/Admin/EditAgent", response.Headers.Location?.ToString());
+
+        using var scope2 = _factory.Services.CreateScope();
+        var verifyService = scope2.ServiceProvider.GetRequiredService<IAgentConfigurationService>();
+        var configResult = await verifyService.GetConfigurationAsync(agentId);
+        var server = configResult.Data!.McpServers.Single();
+        Assert.Equal("new-http-mcp", server.Name);
+        Assert.Equal("https://new.mcp.example.com", server.Url);
+    }
+
+    [Fact]
+    public async Task UpdateAgentMcpServer_Stdio_Success_RedirectsToEditAgent()
+    {
+        var agentId = await CreateAgentViaService("Update Stdio MCP Agent");
+
+        int serverId;
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var configService = scope.ServiceProvider.GetRequiredService<IAgentConfigurationService>();
+            var result = await configService.AddMcpServerAsync(agentId, new Web.ViewModels.SaveAgentMcpServerDto
+            {
+                Name = "old-stdio-mcp",
+                Type = "stdio",
+                Command = "node"
+            });
+            serverId = result.Data;
+        }
+
+        var adminCookie = await LoginAsAdmin();
+        var (antiForgeryToken, cookies) = await GetFormTokenAndCookies($"/Admin/EditAgent?id={agentId}", adminCookie);
+
+        var request = new HttpRequestMessage(HttpMethod.Post, $"/Admin/UpdateAgentMcpServer?userId={agentId}&mcpServerId={serverId}");
+        request.Headers.Add("Cookie", cookies);
+        request.Content = new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["Name"] = "new-stdio-mcp",
+            ["Type"] = "stdio",
+            ["Command"] = "npx",
+            ["Args"] = "[\"-y\", \"mcp-server\"]",
+            ["DisplayOrder"] = "0",
+            ["__RequestVerificationToken"] = antiForgeryToken
+        });
+
+        var response = await _client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+        Assert.Contains("/Admin/EditAgent", response.Headers.Location?.ToString());
+
+        using var scope2 = _factory.Services.CreateScope();
+        var verifyService = scope2.ServiceProvider.GetRequiredService<IAgentConfigurationService>();
+        var configResult = await verifyService.GetConfigurationAsync(agentId);
+        var server = configResult.Data!.McpServers.Single();
+        Assert.Equal("new-stdio-mcp", server.Name);
+        Assert.Equal("npx", server.Command);
+    }
+
+    [Fact]
+    public async Task UpdateAgentMcpServer_BlankAuthHeader_PreservesExistingAuthHeader()
+    {
+        var agentId = await CreateAgentViaService("Blank Auth MCP Agent");
+
+        int serverId;
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var configService = scope.ServiceProvider.GetRequiredService<IAgentConfigurationService>();
+            var result = await configService.AddMcpServerAsync(agentId, new Web.ViewModels.SaveAgentMcpServerDto
+            {
+                Name = "auth-mcp",
+                Type = "http",
+                Url = "https://auth.mcp.example.com",
+                AuthHeader = "Bearer secret-token"
+            });
+            serverId = result.Data;
+        }
+
+        var adminCookie = await LoginAsAdmin();
+        var (antiForgeryToken, cookies) = await GetFormTokenAndCookies($"/Admin/EditAgent?id={agentId}", adminCookie);
+
+        var request = new HttpRequestMessage(HttpMethod.Post, $"/Admin/UpdateAgentMcpServer?userId={agentId}&mcpServerId={serverId}");
+        request.Headers.Add("Cookie", cookies);
+        request.Content = new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["Name"] = "auth-mcp",
+            ["Type"] = "http",
+            ["Url"] = "https://auth.mcp.example.com",
+            ["AuthHeader"] = "",
+            ["DisplayOrder"] = "0",
+            ["__RequestVerificationToken"] = antiForgeryToken
+        });
+
+        var response = await _client.SendAsync(request);
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+
+        using var scope2 = _factory.Services.CreateScope();
+        var verifyService = scope2.ServiceProvider.GetRequiredService<IAgentConfigurationService>();
+        var configResult = await verifyService.GetConfigurationAsync(agentId);
+        Assert.NotNull(configResult.Data!.McpServers.Single().AuthHeader);
+    }
+
+    [Fact]
+    public async Task UpdateAgentMcpServer_ClearAuthHeader_NullsStoredAuthHeader()
+    {
+        var agentId = await CreateAgentViaService("Clear Auth MCP Agent");
+
+        int serverId;
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var configService = scope.ServiceProvider.GetRequiredService<IAgentConfigurationService>();
+            var result = await configService.AddMcpServerAsync(agentId, new Web.ViewModels.SaveAgentMcpServerDto
+            {
+                Name = "clear-auth-mcp",
+                Type = "http",
+                Url = "https://clearauth.mcp.example.com",
+                AuthHeader = "Bearer to-be-cleared"
+            });
+            serverId = result.Data;
+        }
+
+        var adminCookie = await LoginAsAdmin();
+        var (antiForgeryToken, cookies) = await GetFormTokenAndCookies($"/Admin/EditAgent?id={agentId}", adminCookie);
+
+        var request = new HttpRequestMessage(HttpMethod.Post, $"/Admin/UpdateAgentMcpServer?userId={agentId}&mcpServerId={serverId}");
+        request.Headers.Add("Cookie", cookies);
+        request.Content = new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["Name"] = "clear-auth-mcp",
+            ["Type"] = "http",
+            ["Url"] = "https://clearauth.mcp.example.com",
+            ["ClearAuthHeader"] = "true",
+            ["DisplayOrder"] = "0",
+            ["__RequestVerificationToken"] = antiForgeryToken
+        });
+
+        var response = await _client.SendAsync(request);
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+
+        using var scope2 = _factory.Services.CreateScope();
+        var verifyService = scope2.ServiceProvider.GetRequiredService<IAgentConfigurationService>();
+        var configResult = await verifyService.GetConfigurationAsync(agentId);
+        Assert.Null(configResult.Data!.McpServers.Single().AuthHeader);
+    }
+
+    [Fact]
+    public async Task UpdateAgentMcpServer_BlankEnv_PreservesExistingEnv()
+    {
+        var agentId = await CreateAgentViaService("Blank Env MCP Agent");
+
+        int serverId;
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var configService = scope.ServiceProvider.GetRequiredService<IAgentConfigurationService>();
+            var result = await configService.AddMcpServerAsync(agentId, new Web.ViewModels.SaveAgentMcpServerDto
+            {
+                Name = "env-mcp",
+                Type = "stdio",
+                Command = "npx",
+                Env = "{\"API_KEY\": \"secret\"}"
+            });
+            serverId = result.Data;
+        }
+
+        var adminCookie = await LoginAsAdmin();
+        var (antiForgeryToken, cookies) = await GetFormTokenAndCookies($"/Admin/EditAgent?id={agentId}", adminCookie);
+
+        var request = new HttpRequestMessage(HttpMethod.Post, $"/Admin/UpdateAgentMcpServer?userId={agentId}&mcpServerId={serverId}");
+        request.Headers.Add("Cookie", cookies);
+        request.Content = new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["Name"] = "env-mcp",
+            ["Type"] = "stdio",
+            ["Command"] = "npx",
+            ["Env"] = "",
+            ["DisplayOrder"] = "0",
+            ["__RequestVerificationToken"] = antiForgeryToken
+        });
+
+        var response = await _client.SendAsync(request);
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+
+        using var scope2 = _factory.Services.CreateScope();
+        var verifyService = scope2.ServiceProvider.GetRequiredService<IAgentConfigurationService>();
+        var configResult = await verifyService.GetConfigurationAsync(agentId);
+        Assert.NotNull(configResult.Data!.McpServers.Single().Env);
+    }
+
+    [Fact]
+    public async Task UpdateAgentMcpServer_ClearEnv_NullsStoredEnv()
+    {
+        var agentId = await CreateAgentViaService("Clear Env MCP Agent");
+
+        int serverId;
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var configService = scope.ServiceProvider.GetRequiredService<IAgentConfigurationService>();
+            var result = await configService.AddMcpServerAsync(agentId, new Web.ViewModels.SaveAgentMcpServerDto
+            {
+                Name = "clear-env-mcp",
+                Type = "stdio",
+                Command = "npx",
+                Env = "{\"KEY\": \"to-be-cleared\"}"
+            });
+            serverId = result.Data;
+        }
+
+        var adminCookie = await LoginAsAdmin();
+        var (antiForgeryToken, cookies) = await GetFormTokenAndCookies($"/Admin/EditAgent?id={agentId}", adminCookie);
+
+        var request = new HttpRequestMessage(HttpMethod.Post, $"/Admin/UpdateAgentMcpServer?userId={agentId}&mcpServerId={serverId}");
+        request.Headers.Add("Cookie", cookies);
+        request.Content = new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["Name"] = "clear-env-mcp",
+            ["Type"] = "stdio",
+            ["Command"] = "npx",
+            ["ClearEnv"] = "true",
+            ["DisplayOrder"] = "0",
+            ["__RequestVerificationToken"] = antiForgeryToken
+        });
+
+        var response = await _client.SendAsync(request);
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+
+        using var scope2 = _factory.Services.CreateScope();
+        var verifyService = scope2.ServiceProvider.GetRequiredService<IAgentConfigurationService>();
+        var configResult = await verifyService.GetConfigurationAsync(agentId);
+        Assert.Null(configResult.Data!.McpServers.Single().Env);
+    }
+
     public void Dispose()
     {
         _client.Dispose();
