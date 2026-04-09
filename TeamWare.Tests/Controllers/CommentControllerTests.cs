@@ -215,6 +215,38 @@ public class CommentControllerTests : IClassFixture<TeamWareWebApplicationFactor
         Assert.Contains("HTMX comment", content);
     }
 
+    [Fact]
+    public async Task AddComment_HtmxRequest_RendersMarkdown()
+    {
+        var loginCookie = await CreateAndLoginUser();
+        var (_, taskId) = await CreateProjectAndTask(loginCookie);
+
+        var getRequest = new HttpRequestMessage(HttpMethod.Get, $"/Task/Details/{taskId}");
+        getRequest.Headers.Add("Cookie", loginCookie);
+        var getResponse = await _client.SendAsync(getRequest);
+        var getContent = await getResponse.Content.ReadAsStringAsync();
+        var token = ExtractAntiForgeryToken(getContent);
+        var responseCookies = getResponse.Headers.GetValues("Set-Cookie");
+        var allCookies = loginCookie + "; " + string.Join("; ", responseCookies);
+
+        var request = new HttpRequestMessage(HttpMethod.Post, "/Comment/Add");
+        request.Headers.Add("Cookie", allCookies);
+        request.Headers.Add("HX-Request", "true");
+        request.Content = new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["TaskItemId"] = taskId.ToString(),
+            ["Content"] = "Markdown **comment**",
+            ["__RequestVerificationToken"] = token
+        });
+
+        var response = await _client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var content = await response.Content.ReadAsStringAsync();
+        Assert.Contains("markdown-body", content);
+        Assert.Contains("<strong>comment</strong>", content);
+    }
+
     // --- Delete Comment ---
 
     [Fact]
@@ -272,6 +304,29 @@ public class CommentControllerTests : IClassFixture<TeamWareWebApplicationFactor
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Contains("Visible comment text", content);
+    }
+
+    [Fact]
+    public async Task TaskDetails_RendersCommentMarkdown()
+    {
+        var loginCookie = await CreateAndLoginUser();
+        var (_, taskId) = await CreateProjectAndTask(loginCookie);
+
+        using var scope = _factory.Services.CreateScope();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+        var user = await userManager.FindByEmailAsync("comment-test@test.com");
+
+        await CreateComment(taskId, user!.Id, "Rendered **markdown** comment");
+
+        var request = new HttpRequestMessage(HttpMethod.Get, $"/Task/Details/{taskId}");
+        request.Headers.Add("Cookie", loginCookie);
+
+        var response = await _client.SendAsync(request);
+        var content = await response.Content.ReadAsStringAsync();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Contains("markdown-body", content);
+        Assert.Contains("<strong>markdown</strong>", content);
     }
 
     public void Dispose()

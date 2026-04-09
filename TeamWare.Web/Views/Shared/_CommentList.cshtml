@@ -45,7 +45,7 @@
                     }
                 </div>
                 <div x-show="!editing" class="mt-2">
-                    <p class="whitespace-pre-wrap text-sm text-gray-700 dark:text-gray-300">@comment.Content</p>
+                    <div class="markdown-body text-sm text-gray-700 dark:text-gray-300">@MarkdownHelper.RenderMarkdown(comment.Content)</div>
                 </div>
                 @if (comment.Attachments != null && (comment.Attachments.Attachments.Any() || comment.Attachments.CanUpload))
                 {
