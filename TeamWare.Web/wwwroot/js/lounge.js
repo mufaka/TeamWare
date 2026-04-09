@@ -170,7 +170,9 @@
         if (isAtBottom) {
             scrollToBottom();
             // Auto mark as read
-            connection.invoke("MarkAsRead", projectId, msg.id).catch(function () { });
+            connection.invoke("MarkAsRead", projectId, msg.id).then(function () {
+                clearRoomBadge();
+            }).catch(function () { });
         } else {
             newMessagesIndicator.classList.remove("hidden");
         }
@@ -266,12 +268,35 @@
         }
     });
 
+    // --- Clear the sidebar unread badge for the current room in real time ---
+    function clearRoomBadge() {
+        var roomBadgeAttr = projectId !== null ? String(projectId) : "general";
+        var roomBadge = document.querySelector('[data-lounge-room-badge="' + roomBadgeAttr + '"]');
+        if (!roomBadge) return;
+
+        var badgeCount = parseInt(roomBadge.textContent.trim(), 10) || 0;
+        roomBadge.remove();
+
+        var totalBadge = document.getElementById("lounge-total-badge");
+        if (totalBadge) {
+            var totalCount = parseInt(totalBadge.textContent.trim(), 10) || 0;
+            totalCount -= badgeCount;
+            if (totalCount <= 0) {
+                totalBadge.remove();
+            } else {
+                totalBadge.textContent = totalCount;
+            }
+        }
+    }
+
     // --- Helper function to mark latest message as read ---
     function markLatestAsRead() {
         var lastMsg = messageList.querySelector("[data-message-id]:last-child");
         if (lastMsg) {
             var msgId = parseInt(lastMsg.dataset.messageId, 10);
-            connection.invoke("MarkAsRead", projectId, msgId).catch(function () { });
+            connection.invoke("MarkAsRead", projectId, msgId).then(function () {
+                clearRoomBadge();
+            }).catch(function () { });
         }
     }
 
@@ -316,12 +341,7 @@
         checkIfAtBottom();
         if (isAtBottom) {
             newMessagesIndicator.classList.add("hidden");
-            // Mark as read for the latest visible message
-            var lastMsg = messageList.querySelector("[data-message-id]:last-child");
-            if (lastMsg) {
-                var msgId = parseInt(lastMsg.dataset.messageId, 10);
-                connection.invoke("MarkAsRead", projectId, msgId).catch(function () { });
-            }
+            markLatestAsRead();
         }
     });
 
