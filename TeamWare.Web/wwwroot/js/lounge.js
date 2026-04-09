@@ -266,11 +266,27 @@
         }
     });
 
+    // --- Helper function to mark latest message as read ---
+    function markLatestAsRead() {
+        var lastMsg = messageList.querySelector("[data-message-id]:last-child");
+        if (lastMsg) {
+            var msgId = parseInt(lastMsg.dataset.messageId, 10);
+            connection.invoke("MarkAsRead", projectId, msgId).catch(function () { });
+        }
+    }
+
     // --- Connection Start ---
     connection.start().then(function () {
         return connection.invoke("JoinRoom", projectId);
     }).then(function () {
         scrollToBottom();
+        // Mark messages as read on initial load if at bottom
+        setTimeout(function () {
+            checkIfAtBottom();
+            if (isAtBottom) {
+                markLatestAsRead();
+            }
+        }, 100);
     }).catch(function (err) {
         console.error("SignalR connection error:", err.toString());
     });
@@ -286,6 +302,9 @@
             messageInput.value = "";
             btnSend.disabled = false;
             messageInput.focus();
+            // Mark the sent message as read after a brief delay
+            // to ensure the message is added to the DOM
+            setTimeout(markLatestAsRead, 50);
         }).catch(function (err) {
             console.error("Send error:", err.toString());
             btnSend.disabled = false;
