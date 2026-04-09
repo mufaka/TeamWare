@@ -14,6 +14,7 @@
             {
                 <span x-show="loungeCollapsed"
                       x-cloak
+                      id="lounge-total-badge"
                       class="inline-flex items-center justify-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
                     @Model.TotalUnreadCount
                 </span>
@@ -35,7 +36,8 @@
             <span>#general</span>
             @if (Model.GeneralUnreadCount > 0)
             {
-                <span class="ml-auto inline-flex items-center justify-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+                <span data-lounge-room-badge="general"
+                      class="ml-auto inline-flex items-center justify-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
                     @Model.GeneralUnreadCount
                 </span>
             }
@@ -48,7 +50,8 @@
                 <span class="truncate">@item.ProjectName</span>
                 @if (item.UnreadCount > 0)
                 {
-                    <span class="ml-auto inline-flex items-center justify-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+                    <span data-lounge-room-badge="@item.ProjectId"
+                          class="ml-auto inline-flex items-center justify-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
                         @item.UnreadCount
                     </span>
                 }
