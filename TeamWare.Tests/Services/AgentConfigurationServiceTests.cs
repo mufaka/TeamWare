@@ -509,6 +509,236 @@ public class AgentConfigurationServiceTests : IDisposable
         Assert.True(config2.UpdatedAt > firstUpdate);
     }
 
+    // --- 51.1 Keep-Current Secret Logic: Repository ---
+
+    [Fact]
+    public async Task UpdateRepositoryAsync_BlankToken_KeepsExistingEncryptedValue()
+    {
+        var user = await CreateAgentUser("agent20");
+        var addResult = await _service.AddRepositoryAsync(user.Id, new SaveAgentRepositoryDto
+        {
+            ProjectName = "Project1",
+            Url = "https://github.com/org/repo",
+            AccessToken = "ghp_originaltoken"
+        });
+
+        var updateResult = await _service.UpdateRepositoryAsync(addResult.Data, new SaveAgentRepositoryDto
+        {
+            ProjectName = "Project1",
+            Url = "https://github.com/org/repo",
+            Branch = "main",
+            AccessToken = null,
+            ClearAccessToken = false
+        });
+
+        Assert.True(updateResult.Succeeded);
+        var decrypted = await _service.GetDecryptedConfigurationAsync(user.Id);
+        Assert.Equal("ghp_originaltoken", decrypted.Data!.Repositories[0].AccessToken);
+    }
+
+    [Fact]
+    public async Task UpdateRepositoryAsync_ClearToken_NullsStoredToken()
+    {
+        var user = await CreateAgentUser("agent21");
+        var addResult = await _service.AddRepositoryAsync(user.Id, new SaveAgentRepositoryDto
+        {
+            ProjectName = "Project1",
+            Url = "https://github.com/org/repo",
+            AccessToken = "ghp_originaltoken"
+        });
+
+        var updateResult = await _service.UpdateRepositoryAsync(addResult.Data, new SaveAgentRepositoryDto
+        {
+            ProjectName = "Project1",
+            Url = "https://github.com/org/repo",
+            Branch = "main",
+            AccessToken = "ghp_ignoredvalue",
+            ClearAccessToken = true
+        });
+
+        Assert.True(updateResult.Succeeded);
+        var decrypted = await _service.GetDecryptedConfigurationAsync(user.Id);
+        Assert.Null(decrypted.Data!.Repositories[0].AccessToken);
+    }
+
+    [Fact]
+    public async Task UpdateRepositoryAsync_NewToken_EncryptsAndStoresIt()
+    {
+        var user = await CreateAgentUser("agent22");
+        var addResult = await _service.AddRepositoryAsync(user.Id, new SaveAgentRepositoryDto
+        {
+            ProjectName = "Project1",
+            Url = "https://github.com/org/repo"
+        });
+
+        var updateResult = await _service.UpdateRepositoryAsync(addResult.Data, new SaveAgentRepositoryDto
+        {
+            ProjectName = "Project1",
+            Url = "https://github.com/org/repo",
+            Branch = "main",
+            AccessToken = "ghp_brandnewtoken",
+            ClearAccessToken = false
+        });
+
+        Assert.True(updateResult.Succeeded);
+        var decrypted = await _service.GetDecryptedConfigurationAsync(user.Id);
+        Assert.Equal("ghp_brandnewtoken", decrypted.Data!.Repositories[0].AccessToken);
+    }
+
+    // --- 51.1 Keep-Current Secret Logic: MCP Server AuthHeader ---
+
+    [Fact]
+    public async Task UpdateMcpServerAsync_BlankAuthHeader_KeepsExistingEncryptedValue()
+    {
+        var user = await CreateAgentUser("agent23");
+        var addResult = await _service.AddMcpServerAsync(user.Id, new SaveAgentMcpServerDto
+        {
+            Name = "server1",
+            Type = "http",
+            Url = "https://mcp.example.com",
+            AuthHeader = "Bearer original-token"
+        });
+
+        var updateResult = await _service.UpdateMcpServerAsync(addResult.Data, new SaveAgentMcpServerDto
+        {
+            Name = "server1",
+            Type = "http",
+            Url = "https://mcp.example.com",
+            AuthHeader = null,
+            ClearAuthHeader = false
+        });
+
+        Assert.True(updateResult.Succeeded);
+        var decrypted = await _service.GetDecryptedConfigurationAsync(user.Id);
+        Assert.Equal("Bearer original-token", decrypted.Data!.McpServers[0].AuthHeader);
+    }
+
+    [Fact]
+    public async Task UpdateMcpServerAsync_ClearAuthHeader_NullsStoredAuthHeader()
+    {
+        var user = await CreateAgentUser("agent24");
+        var addResult = await _service.AddMcpServerAsync(user.Id, new SaveAgentMcpServerDto
+        {
+            Name = "server1",
+            Type = "http",
+            Url = "https://mcp.example.com",
+            AuthHeader = "Bearer original-token"
+        });
+
+        var updateResult = await _service.UpdateMcpServerAsync(addResult.Data, new SaveAgentMcpServerDto
+        {
+            Name = "server1",
+            Type = "http",
+            Url = "https://mcp.example.com",
+            ClearAuthHeader = true
+        });
+
+        Assert.True(updateResult.Succeeded);
+        var decrypted = await _service.GetDecryptedConfigurationAsync(user.Id);
+        Assert.Null(decrypted.Data!.McpServers[0].AuthHeader);
+    }
+
+    [Fact]
+    public async Task UpdateMcpServerAsync_NewAuthHeader_EncryptsAndStoresIt()
+    {
+        var user = await CreateAgentUser("agent25");
+        var addResult = await _service.AddMcpServerAsync(user.Id, new SaveAgentMcpServerDto
+        {
+            Name = "server1",
+            Type = "http",
+            Url = "https://mcp.example.com"
+        });
+
+        var updateResult = await _service.UpdateMcpServerAsync(addResult.Data, new SaveAgentMcpServerDto
+        {
+            Name = "server1",
+            Type = "http",
+            Url = "https://mcp.example.com",
+            AuthHeader = "Bearer new-token"
+        });
+
+        Assert.True(updateResult.Succeeded);
+        var decrypted = await _service.GetDecryptedConfigurationAsync(user.Id);
+        Assert.Equal("Bearer new-token", decrypted.Data!.McpServers[0].AuthHeader);
+    }
+
+    // --- 51.1 Keep-Current Secret Logic: MCP Server Env ---
+
+    [Fact]
+    public async Task UpdateMcpServerAsync_BlankEnv_KeepsExistingEncryptedValue()
+    {
+        var user = await CreateAgentUser("agent26");
+        var addResult = await _service.AddMcpServerAsync(user.Id, new SaveAgentMcpServerDto
+        {
+            Name = "server1",
+            Type = "stdio",
+            Command = "npx",
+            Env = "{\"API_KEY\":\"original-key\"}"
+        });
+
+        var updateResult = await _service.UpdateMcpServerAsync(addResult.Data, new SaveAgentMcpServerDto
+        {
+            Name = "server1",
+            Type = "stdio",
+            Command = "npx",
+            Env = null,
+            ClearEnv = false
+        });
+
+        Assert.True(updateResult.Succeeded);
+        var decrypted = await _service.GetDecryptedConfigurationAsync(user.Id);
+        Assert.Equal("{\"API_KEY\":\"original-key\"}", decrypted.Data!.McpServers[0].Env);
+    }
+
+    [Fact]
+    public async Task UpdateMcpServerAsync_ClearEnv_NullsStoredEnv()
+    {
+        var user = await CreateAgentUser("agent27");
+        var addResult = await _service.AddMcpServerAsync(user.Id, new SaveAgentMcpServerDto
+        {
+            Name = "server1",
+            Type = "stdio",
+            Command = "npx",
+            Env = "{\"API_KEY\":\"original-key\"}"
+        });
+
+        var updateResult = await _service.UpdateMcpServerAsync(addResult.Data, new SaveAgentMcpServerDto
+        {
+            Name = "server1",
+            Type = "stdio",
+            Command = "npx",
+            ClearEnv = true
+        });
+
+        Assert.True(updateResult.Succeeded);
+        var decrypted = await _service.GetDecryptedConfigurationAsync(user.Id);
+        Assert.Null(decrypted.Data!.McpServers[0].Env);
+    }
+
+    [Fact]
+    public async Task UpdateMcpServerAsync_NewEnv_EncryptsAndStoresIt()
+    {
+        var user = await CreateAgentUser("agent28");
+        var addResult = await _service.AddMcpServerAsync(user.Id, new SaveAgentMcpServerDto
+        {
+            Name = "server1",
+            Type = "stdio",
+            Command = "npx"
+        });
+
+        var updateResult = await _service.UpdateMcpServerAsync(addResult.Data, new SaveAgentMcpServerDto
+        {
+            Name = "server1",
+            Type = "stdio",
+            Command = "npx",
+            Env = "{\"API_KEY\":\"new-key\"}"
+        });
+
+        Assert.True(updateResult.Succeeded);
+        var decrypted = await _service.GetDecryptedConfigurationAsync(user.Id);
+        Assert.Equal("{\"API_KEY\":\"new-key\"}", decrypted.Data!.McpServers[0].Env);
+    }
+
     private async Task<ApplicationUser> CreateUser(string username, bool isAgent)
     {
         var user = new ApplicationUser

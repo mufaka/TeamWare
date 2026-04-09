@@ -324,7 +324,7 @@
 
         @if (Model.Repositories.Count > 0)
         {
-            <div class="mb-4 overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700">
+            <div x-data="{ editingId: null }" class="mb-4 overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700">
                 <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                     <thead class="bg-gray-50 dark:bg-gray-800">
                         <tr>
@@ -344,11 +344,89 @@
                                 <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-500 dark:text-gray-400">@repo.Branch</td>
                                 <td class="whitespace-nowrap px-4 py-3 text-sm font-mono text-gray-500 dark:text-gray-400">@(repo.AccessToken ?? "—")</td>
                                 <td class="whitespace-nowrap px-4 py-3 text-right text-sm">
+                                    <button type="button"
+                                            @@click="editingId = (editingId === @repo.Id ? null : @repo.Id); if (editingId === @repo.Id) $nextTick(() => $el.closest('table').querySelector('[data-edit-row=\'@repo.Id\']').scrollIntoView({ behavior: 'smooth', block: 'nearest' }))"
+                                            class="mr-3 text-blue-600 hover:underline dark:text-blue-400"
+                                            data-edit-btn="@repo.Id">
+                                        <span x-show="editingId !== @repo.Id">Edit</span>
+                                        <span x-show="editingId === @repo.Id">Cancel</span>
+                                    </button>
                                     <form asp-action="RemoveAgentRepository" method="post" class="inline"
                                           onsubmit="return confirm('Remove this repository?');">
                                         <input type="hidden" name="userId" value="@Model.UserId" />
                                         <input type="hidden" name="repositoryId" value="@repo.Id" />
                                         <button type="submit" class="text-red-600 hover:underline dark:text-red-400">Remove</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            <tr x-show="editingId === @repo.Id" x-transition data-edit-row="@repo.Id">
+                                <td colspan="5" class="bg-gray-50 px-4 py-4 dark:bg-gray-800/50">
+                                    <form asp-action="UpdateAgentRepository" method="post" class="space-y-3">
+                                        <input type="hidden" name="userId" value="@Model.UserId" />
+                                        <input type="hidden" name="repositoryId" value="@repo.Id" />
+                                        <input type="hidden" name="DisplayOrder" value="@repo.DisplayOrder" />
+                                        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Project Name</label>
+                                                <select name="ProjectName" required
+                                                        class="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:focus:border-blue-400">
+                                                    @{
+                                                        var projectNames = Model.AvailableProjects.Select(p => p.Name).ToList();
+                                                        var repoProjectInList = projectNames.Contains(repo.ProjectName);
+                                                    }
+                                                    @if (!repoProjectInList)
+                                                    {
+                                                        @:<option value="@repo.ProjectName" disabled selected>@repo.ProjectName (no longer available)</option>
+                                                    }
+                                                    @foreach (var project in Model.AvailableProjects)
+                                                    {
+                                                        if (project.Name == repo.ProjectName)
+                                                        {
+                                                            @:<option value="@project.Name" selected="selected">@project.Name</option>
+                                                        }
+                                                        else
+                                                        {
+                                                            @:<option value="@project.Name">@project.Name</option>
+                                                        }
+                                                    }
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">URL</label>
+                                                <input name="Url" value="@repo.Url" required
+                                                       class="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:focus:border-blue-400"
+                                                       placeholder="https://github.com/org/repo" />
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Branch</label>
+                                                <input name="Branch" value="@repo.Branch"
+                                                       class="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:focus:border-blue-400" />
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Access Token</label>
+                                                <input name="AccessToken" type="password"
+                                                       placeholder="@(repo.AccessToken ?? "No token set")"
+                                                       class="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:focus:border-blue-400" />
+                                                @if (repo.AccessToken != null)
+                                                {
+                                                    <div class="mt-2 flex items-center gap-2">
+                                                        <input type="checkbox" name="ClearAccessToken" value="true" id="clearToken_@repo.Id"
+                                                               class="h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500 dark:border-gray-600 dark:bg-gray-800" />
+                                                        <label for="clearToken_@repo.Id" class="text-sm text-red-600 dark:text-red-400">Clear access token</label>
+                                                    </div>
+                                                }
+                                            </div>
+                                        </div>
+                                        <div class="flex items-center gap-3">
+                                            <button type="submit"
+                                                    class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900">
+                                                Save Changes
+                                            </button>
+                                            <button type="button" @@click="editingId = null"
+                                                    class="text-sm text-gray-500 hover:underline dark:text-gray-400">
+                                                Cancel
+                                            </button>
+                                        </div>
                                     </form>
                                 </td>
                             </tr>
@@ -427,7 +505,7 @@
 
         @if (Model.McpServers.Count > 0)
         {
-            <div class="mb-4 overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700">
+            <div x-data="{ editingId: null }" class="mb-4 overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700">
                 <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                     <thead class="bg-gray-50 dark:bg-gray-800">
                         <tr>
@@ -455,12 +533,112 @@
                                     @(server.Type == "http" && !string.IsNullOrEmpty(server.AuthHeader) ? server.AuthHeader : "—")
                                 </td>
                                 <td class="whitespace-nowrap px-4 py-3 text-right text-sm">
+                                    <button type="button"
+                                            @@click="editingId = (editingId === @server.Id ? null : @server.Id); if (editingId === @server.Id) $nextTick(() => $el.closest('table').querySelector('[data-edit-row=\'@server.Id\']').scrollIntoView({ behavior: 'smooth', block: 'nearest' }))"
+                                            class="mr-3 text-blue-600 hover:underline dark:text-blue-400"
+                                            data-edit-btn="@server.Id">
+                                        <span x-show="editingId !== @server.Id">Edit</span>
+                                        <span x-show="editingId === @server.Id">Cancel</span>
+                                    </button>
                                     <form asp-action="RemoveAgentMcpServer" method="post" class="inline"
                                           onsubmit="return confirm('Remove this MCP server?');">
                                         <input type="hidden" name="userId" value="@Model.UserId" />
                                         <input type="hidden" name="mcpServerId" value="@server.Id" />
                                         <button type="submit" class="text-red-600 hover:underline dark:text-red-400">Remove</button>
                                     </form>
+                                </td>
+                            </tr>
+                            <tr x-show="editingId === @server.Id" x-transition data-edit-row="@server.Id">
+                                <td colspan="5" class="bg-gray-50 px-4 py-4 dark:bg-gray-800/50">
+                                    <div x-data="{ serverType: '@server.Type' }">
+                                        <form asp-action="UpdateAgentMcpServer" method="post" class="space-y-3">
+                                            <input type="hidden" name="userId" value="@Model.UserId" />
+                                            <input type="hidden" name="mcpServerId" value="@server.Id" />
+                                            <input type="hidden" name="DisplayOrder" value="@server.DisplayOrder" />
+                                            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                                <div>
+                                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Name</label>
+                                                    <input name="Name" value="@server.Name" required
+                                                           class="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:focus:border-blue-400" />
+                                                </div>
+                                                <div>
+                                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Type</label>
+                                                    <select name="Type" x-model="serverType"
+                                                            class="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:focus:border-blue-400">
+                                                        <option value="http">HTTP</option>
+                                                        <option value="stdio">Stdio</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+
+                                            @* HTTP-specific fields *@
+                                            <div x-show="serverType === 'http'" x-transition class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                                <div>
+                                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">URL</label>
+                                                    <input name="Url" value="@server.Url"
+                                                           class="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:focus:border-blue-400"
+                                                           placeholder="https://mcp-server.example.com" />
+                                                </div>
+                                                <div>
+                                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Auth Header</label>
+                                                    <input name="AuthHeader" type="password"
+                                                           placeholder="@(server.AuthHeader ?? "No auth header set")"
+                                                           class="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:focus:border-blue-400" />
+                                                    @if (server.AuthHeader != null)
+                                                    {
+                                                        <div class="mt-2 flex items-center gap-2">
+                                                            <input type="checkbox" name="ClearAuthHeader" value="true" id="clearAuth_@server.Id"
+                                                                   class="h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500 dark:border-gray-600 dark:bg-gray-800" />
+                                                            <label for="clearAuth_@server.Id" class="text-sm text-red-600 dark:text-red-400">Clear auth header</label>
+                                                        </div>
+                                                    }
+                                                </div>
+                                            </div>
+
+                                            @* Stdio-specific fields *@
+                                            <div x-show="serverType === 'stdio'" x-transition class="space-y-3">
+                                                <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                                    <div>
+                                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Command</label>
+                                                        <input name="Command" value="@server.Command"
+                                                               class="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:focus:border-blue-400"
+                                                               placeholder="e.g., npx" />
+                                                    </div>
+                                                    <div>
+                                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Arguments (JSON array)</label>
+                                                        <input name="Args" value="@server.Args"
+                                                               class="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:focus:border-blue-400"
+                                                               placeholder='["-y", "@@modelcontextprotocol/server"]' />
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Environment Variables (JSON object)</label>
+                                                    <input name="Env" type="password"
+                                                           placeholder="@(server.Env ?? "No env vars set")"
+                                                           class="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:focus:border-blue-400" />
+                                                    @if (server.Env != null)
+                                                    {
+                                                        <div class="mt-2 flex items-center gap-2">
+                                                            <input type="checkbox" name="ClearEnv" value="true" id="clearEnv_@server.Id"
+                                                                   class="h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500 dark:border-gray-600 dark:bg-gray-800" />
+                                                            <label for="clearEnv_@server.Id" class="text-sm text-red-600 dark:text-red-400">Clear environment variables</label>
+                                                        </div>
+                                                    }
+                                                </div>
+                                            </div>
+
+                                            <div class="flex items-center gap-3">
+                                                <button type="submit"
+                                                        class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900">
+                                                    Save Changes
+                                                </button>
+                                                <button type="button" @@click="editingId = null"
+                                                        class="text-sm text-gray-500 hover:underline dark:text-gray-400">
+                                                    Cancel
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
                                 </td>
                             </tr>
                         }
