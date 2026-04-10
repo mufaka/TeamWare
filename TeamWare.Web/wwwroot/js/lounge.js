@@ -358,7 +358,8 @@
 
     // --- Helper function to mark latest message as read ---
     function markLatestAsRead() {
-        var lastMsg = messageList.querySelector("[data-message-id]:last-child");
+        var messages = messageList.querySelectorAll(":scope > [data-message-id]");
+        var lastMsg = messages.length > 0 ? messages[messages.length - 1] : null;
         if (lastMsg) {
             var msgId = parseInt(lastMsg.dataset.messageId, 10);
             connection.invoke("MarkAsRead", projectId, msgId).then(function () {
