@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using TeamWare.Web.Data;
 using TeamWare.Web.Models;
 using TeamWare.Web.Services;
 
@@ -15,17 +16,20 @@ public class PatAuthenticationHandler : AuthenticationHandler<AuthenticationSche
 
     private readonly IPersonalAccessTokenService _tokenService;
     private readonly UserManager<ApplicationUser> _userManager;
+    private readonly ApplicationDbContext _dbContext;
 
     public PatAuthenticationHandler(
         IOptionsMonitor<AuthenticationSchemeOptions> options,
         ILoggerFactory logger,
         UrlEncoder encoder,
         IPersonalAccessTokenService tokenService,
-        UserManager<ApplicationUser> userManager)
+        UserManager<ApplicationUser> userManager,
+        ApplicationDbContext dbContext)
         : base(options, logger, encoder)
     {
         _tokenService = tokenService;
         _userManager = userManager;
+        _dbContext = dbContext;
     }
 
     protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
@@ -56,6 +60,13 @@ public class PatAuthenticationHandler : AuthenticationHandler<AuthenticationSche
         if (user.IsAgent && !user.IsAgentActive)
         {
             return AuthenticateResult.Fail("Agent is currently paused.");
+        }
+
+        // Update LastActiveAt for agent users on every MCP request
+        if (user.IsAgent)
+        {
+            user.LastActiveAt = DateTime.UtcNow;
+            await _dbContext.SaveChangesAsync();
         }
 
         var roles = await _userManager.GetRolesAsync(user);
