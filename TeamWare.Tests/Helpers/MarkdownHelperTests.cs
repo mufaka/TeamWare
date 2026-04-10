@@ -89,6 +89,15 @@ public class MarkdownHelperTests
     }
 
     [Fact]
+    public void RenderMarkdown_SoftLineBreak_RendersBreakTag()
+    {
+        var result = MarkdownHelper.RenderMarkdown("First line\nSecond line");
+
+        Assert.Contains("First line<br", result.ToString());
+        Assert.Contains("Second line", result.ToString());
+    }
+
+    [Fact]
     public void RenderMarkdown_RawHtml_IsEscaped()
     {
         var result = MarkdownHelper.RenderMarkdown("<script>alert('xss')</script>");

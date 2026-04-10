@@ -48,6 +48,15 @@
         isAtBottom = (messageArea.scrollHeight - messageArea.scrollTop - messageArea.clientHeight) < threshold;
     }
 
+    function autoResizeMessageInput() {
+        if (!messageInput || messageInput.tagName !== "TEXTAREA") return;
+
+        var maxHeight = 160;
+        messageInput.style.height = "auto";
+        messageInput.style.height = Math.min(messageInput.scrollHeight, maxHeight) + "px";
+        messageInput.style.overflowY = messageInput.scrollHeight > maxHeight ? "auto" : "hidden";
+    }
+
     function formatTimestamp(dateStr) {
         var d = new Date(dateStr);
         var now = new Date();
@@ -382,6 +391,7 @@
         btnSend.disabled = true;
         connection.invoke("SendMessage", projectId, content).then(function () {
             messageInput.value = "";
+            autoResizeMessageInput();
             btnSend.disabled = false;
             messageInput.focus();
             // Mark the sent message as read after a brief delay
@@ -545,6 +555,8 @@
 
     // --- Mention Autocomplete (18.5) ---
     messageInput.addEventListener("input", function () {
+        autoResizeMessageInput();
+
         var val = messageInput.value;
         var cursorPos = messageInput.selectionStart;
 
@@ -570,24 +582,41 @@
     });
 
     messageInput.addEventListener("keydown", function (e) {
-        if (!mentionActive) return;
+        if (mentionActive) {
+            var items = mentionDropdown.querySelectorAll("[data-mention-username]");
+            var activeItem = mentionDropdown.querySelector(".bg-blue-100, .dark\\:bg-blue-800");
 
-        var items = mentionDropdown.querySelectorAll("[data-mention-username]");
-        var activeItem = mentionDropdown.querySelector(".bg-blue-100, .dark\\:bg-blue-800");
-
-        if (e.key === "ArrowDown") {
-            e.preventDefault();
-            selectNextMention(items, activeItem, 1);
-        } else if (e.key === "ArrowUp") {
-            e.preventDefault();
-            selectNextMention(items, activeItem, -1);
-        } else if (e.key === "Enter" || e.key === "Tab") {
-            if (activeItem) {
+            if (e.key === "ArrowDown") {
                 e.preventDefault();
-                insertMention(activeItem.dataset.mentionUsername);
+                selectNextMention(items, activeItem, 1);
+                return;
             }
-        } else if (e.key === "Escape") {
-            hideMentionDropdown();
+
+            if (e.key === "ArrowUp") {
+                e.preventDefault();
+                selectNextMention(items, activeItem, -1);
+                return;
+            }
+
+            if (e.key === "Enter" || e.key === "Tab") {
+                if (activeItem) {
+                    e.preventDefault();
+                    insertMention(activeItem.dataset.mentionUsername);
+                    return;
+                }
+            } else if (e.key === "Escape") {
+                hideMentionDropdown();
+                return;
+            }
+        }
+
+        if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            if (typeof messageForm.requestSubmit === "function") {
+                messageForm.requestSubmit();
+            } else {
+                messageForm.dispatchEvent(new Event("submit", { cancelable: true }));
+            }
         }
     });
 
@@ -669,6 +698,8 @@
 
     // --- Initial scroll and new messages divider ---
     (function () {
+        autoResizeMessageInput();
+
         // Convert server-rendered UTC timestamps to local time
         convertServerTimestamps(messageList);
         if (lastReadId) {
