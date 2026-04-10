@@ -10,6 +10,7 @@ public static class MarkdownHelper
         .UseAutoLinks()
         .UseGenericAttributes()
         .UseSoftlineBreakAsHardlineBreak()
+        .UseMediaLinks()
         .Build();
 
     public static HtmlString RenderMarkdown(string? markdown)
