@@ -76,7 +76,8 @@ public class PatAuthenticationHandlerTests : IDisposable
             new NullLoggerFactory(),
             UrlEncoder.Default,
             _tokenService,
-            _userManager);
+            _userManager,
+            _context);
 
         await handler.InitializeAsync(
             new AuthenticationScheme(PatAuthenticationHandler.SchemeName, null, typeof(PatAuthenticationHandler)),

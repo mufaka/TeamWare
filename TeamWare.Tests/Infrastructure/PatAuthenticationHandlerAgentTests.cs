@@ -81,7 +81,8 @@ public class PatAuthenticationHandlerAgentTests : IDisposable
             new NullLoggerFactory(),
             UrlEncoder.Default,
             _tokenService,
-            _userManager);
+            _userManager,
+            _context);
 
         await handler.InitializeAsync(
             new AuthenticationScheme(PatAuthenticationHandler.SchemeName, null, typeof(PatAuthenticationHandler)),
@@ -158,6 +159,43 @@ public class PatAuthenticationHandlerAgentTests : IDisposable
         var result = await handler.AuthenticateAsync();
 
         Assert.True(result.Succeeded);
+    }
+
+    [Fact]
+    public async Task AgentUser_ActiveAgent_UpdatesLastActiveAt()
+    {
+        var agent = CreateUser(isAgent: true, isAgentActive: true);
+        Assert.Null(agent.LastActiveAt);
+
+        var tokenResult = await _tokenService.CreateTokenAsync(agent.Id, "Agent Token", null);
+
+        var (handler, _) = await CreateHandlerAsync($"Bearer {tokenResult.Data!}");
+        var result = await handler.AuthenticateAsync();
+
+        Assert.True(result.Succeeded);
+
+        // Reload the user from the database to get the updated value
+        var updatedAgent = await _context.Users.FindAsync(agent.Id);
+        Assert.NotNull(updatedAgent!.LastActiveAt);
+        Assert.True(updatedAgent.LastActiveAt > DateTime.UtcNow.AddMinutes(-1));
+    }
+
+    [Fact]
+    public async Task HumanUser_DoesNotUpdateLastActiveAt()
+    {
+        var human = CreateUser(isAgent: false);
+        Assert.Null(human.LastActiveAt);
+
+        var tokenResult = await _tokenService.CreateTokenAsync(human.Id, "Human Token", null);
+
+        var (handler, _) = await CreateHandlerAsync($"Bearer {tokenResult.Data!}");
+        var result = await handler.AuthenticateAsync();
+
+        Assert.True(result.Succeeded);
+
+        // Reload the user from the database
+        var updatedHuman = await _context.Users.FindAsync(human.Id);
+        Assert.Null(updatedHuman!.LastActiveAt);
     }
 
     public void Dispose()
