@@ -372,12 +372,10 @@
         return connection.invoke("JoinRoom", projectId);
     }).then(function () {
         scrollToBottom();
-        // Mark messages as read on initial load if at bottom
+        // Mark messages as read on initial load
         setTimeout(function () {
             checkIfAtBottom();
-            if (isAtBottom) {
-                markLatestAsRead();
-            }
+            markLatestAsRead();
         }, 100);
     }).catch(function (err) {
         console.error("SignalR connection error:", err.toString());
