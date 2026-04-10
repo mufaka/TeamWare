@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using TeamWare.Web.Data;
+using TeamWare.Web.Helpers;
 using TeamWare.Web.Models;
 using TeamWare.Web.Services;
 
@@ -111,6 +112,7 @@ public class LoungeHub : Hub
             message.Id,
             message.ProjectId,
             message.Content,
+            RenderedContent = MarkdownHelper.RenderMarkdown(message.Content).ToString(),
             message.CreatedAt,
             Author = new
             {
@@ -139,6 +141,7 @@ public class LoungeHub : Hub
         {
             message.Id,
             message.Content,
+            RenderedContent = MarkdownHelper.RenderMarkdown(message.Content).ToString(),
             message.IsEdited,
             message.EditedAt
         });

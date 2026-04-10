@@ -193,6 +193,7 @@
         var authorName = msg.author ? escapeHtml(msg.author.displayName) : "Unknown";
         var timestamp = formatTimestamp(msg.createdAt);
         var isOwnMessage = msg.author && msg.author.id === currentUserId;
+        var renderedContent = msg.renderedContent || renderContent(msg.content);
 
         // Build action buttons HTML
         var actionsHtml = '<div class="mt-1 hidden gap-1 group-hover:flex">';
@@ -220,7 +221,7 @@
                     '<span class="text-sm font-semibold text-gray-900 dark:text-white">' + authorName + '</span>' +
                     '<span class="message-timestamp text-xs text-gray-500 dark:text-gray-400" data-utc="' + msg.createdAt + '">' + timestamp + '</span>' +
                 '</div>' +
-                '<div class="message-content markdown-body mt-1 text-sm text-gray-700 dark:text-gray-300" data-content="' + escapeHtml(msg.content) + '">' + renderContent(msg.content) + '</div>' +
+                '<div class="message-content markdown-body mt-1 text-sm text-gray-700 dark:text-gray-300" data-content="' + escapeHtml(msg.content) + '">' + renderedContent + '</div>' +
                 '<div class="mt-1 flex flex-wrap gap-1" data-reactions></div>' +
                 actionsHtml +
                 '<div id="task-status-' + msg.id + '"></div>' +
@@ -250,7 +251,7 @@
         var contentEl = el.querySelector(".message-content");
         if (contentEl) {
             contentEl.setAttribute("data-content", msg.content);
-            contentEl.innerHTML = renderContent(msg.content);
+            contentEl.innerHTML = msg.renderedContent || renderContent(msg.content);
         }
         // Add edited indicator if not already present
         var headerEl = el.querySelector(".flex.items-baseline");

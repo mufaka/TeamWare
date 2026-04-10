@@ -98,6 +98,20 @@ public class MarkdownHelperTests
     }
 
     [Fact]
+    public void RenderMarkdown_MixedParagraphsAndSoftBreaks_PreservesStructure()
+    {
+        var markdown = "# Idea: Enhanced Inbox Workflow\n\n**Task:** [#76](https://teamware.example.com/tasks/76)\n**Priority:** Medium\n**Status:** Rejected";
+
+        var result = MarkdownHelper.RenderMarkdown(markdown).ToString();
+
+        Assert.Contains("<h1>Idea: Enhanced Inbox Workflow</h1>", result);
+        Assert.Contains("<a href=\"https://teamware.example.com/tasks/76\">#76</a>", result);
+        Assert.Contains("<br", result);
+        Assert.Contains("<strong>Priority:</strong> Medium", result);
+        Assert.Contains("<strong>Status:</strong> Rejected", result);
+    }
+
+    [Fact]
     public void RenderMarkdown_RawHtml_IsEscaped()
     {
         var result = MarkdownHelper.RenderMarkdown("<script>alert('xss')</script>");
