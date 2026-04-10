@@ -1,8 +1,9 @@
-# Idea: Enhanced Inbox Workflow with Progressive Refinement
+﻿# Idea: Enhanced Inbox Workflow with Subtask System — REJECTED
 
 **Task:** [#76](https://teamware.example.com/tasks/76)
 **Priority:** Medium
 **Context:** Improving the inbox-to-task workflow to support complex work items that require multiple stages of refinement before implementation
+**Status:** ❌ **Rejected** — The scope of changes required (15 identified gaps spanning data model, status logic, every query surface, MCP tools, SignalR, and the CopilotAgent) far exceeds the benefit for the use case. The current inbox-to-task workflow is sufficient.
 
 ---
 
@@ -28,6 +29,8 @@ This works well for straightforward items but breaks down when:
 - Clear ownership via `TaskAssignment` (many-to-many: task ↔ users)
 - Project-scoped tasks with status tracking (`ToDo`, `InProgress`, `InReview`, `Done`, `Blocked`, `Error`)
 - Activity logging and notifications already in place
+- MCP server with task/inbox tools consumed by external agents and the CopilotAgent
+- Real-time SignalR `TaskHub` for live task updates
 
 **Limitations:**
 - No way to assign users during inbox processing (only after conversion to task)
@@ -38,109 +41,22 @@ This works well for straightforward items but breaks down when:
 
 ---
 
-## Proposed Solutions
+## Chosen Direction: Subtask System
 
-This document explores **three approaches** with increasing complexity and capability. Team feedback will determine the best direction.
+After evaluating three approaches (see [Also Considered](#also-considered) below), the **subtask system** provides the best balance of capability and complexity for this feature. It introduces a formal parent-child task hierarchy where an inbox item converts to a *parent task* with multiple *subtasks* representing workflow stages, with automatic sequential dependency enforcement.
 
----
+### Why Subtasks
 
-## Approach 1: Workflow Metadata on Tasks (Minimal Change)
+- Gives us parent-child relationships and automatic dependency enforcement without the weight of a full workflow engine
+- Assign different users to different stages upfront during inbox processing
+- A single parent task provides clear visibility into the entire workflow
+- Subtasks are still full `TaskItem` entities — they get comments, assignments, activity logging, and notifications for free
+- Ad-hoc subtasks can be added later without requiring a template
+- Fully backward compatible — existing tasks with no parent simply behave as they do today
 
-### Concept
-Add workflow stage metadata directly to `TaskItem` without changing the core data model significantly.
+### Proposed Data Model Changes
 
-### Changes Required
-
-#### 1.1 Add Workflow Fields to `TaskItem`
-
-```csharp
-public class TaskItem
-{
-    // ... existing fields ...
-
-    public WorkflowStage WorkflowStage { get; set; } = WorkflowStage.Implementation;
-
-    public int? BlockedByTaskId { get; set; }
-
-    public TaskItem? BlockedByTask { get; set; }
-}
-
-public enum WorkflowStage
-{
-    Idea = 0,           // Initial concept/proposal
-    Specification = 1,  // Detailed requirements/design
-    Planning = 2,       // Technical planning/architecture
-    Implementation = 3, // Actual development work
-    Validation = 4      // Testing/verification (optional)
-}
-```
-
-#### 1.2 Enhanced Inbox Processing
-
-Add a new `ConvertToTaskWithWorkflow` method to `InboxService`:
-
-```csharp
-public async Task<ServiceResult<TaskItem>> ConvertToTaskWithWorkflow(
-    int inboxItemId,
-    string userId,
-    int projectId,
-    WorkflowStage startingStage,
-    TaskItemPriority priority,
-    string[]? assigneeUserIds = null,  // NEW: assign immediately
-    DateTime? dueDate = null,
-    bool isNextAction = false)
-{
-    // Create task with workflow stage
-    // Optionally assign users right away
-    // Set up blockers if needed
-}
-```
-
-#### 1.3 UI Changes
-
-- **Inbox processing screen:** Add dropdown to select starting workflow stage
-- **Inbox processing screen:** Add multi-select for initial assignees
-- **Task detail view:** Show workflow stage badge
-- **Task detail view:** Allow setting "blocked by" another task
-- **Task list filters:** Filter by workflow stage
-
-### Pros
-✅ Minimal database schema changes
-✅ Leverages existing task status system
-✅ Can assign users during inbox processing
-✅ Simple to implement (~1-2 days)
-✅ Backward compatible (existing tasks default to `Implementation` stage)
-
-### Cons
-❌ Workflow stages are informal metadata, not enforced
-❌ Blocked-by relationship is manual (no automatic dependency checking)
-❌ Doesn't naturally represent multi-stage workflows (one task = one stage)
-❌ Assignees for *future* stages must be manually re-assigned
-❌ No visibility into "this idea will eventually need 3 more tasks"
-
-### Use Case Example
-
-**Inbox Item:** "Add dark mode support"
-**Processing:**
-1. Convert to task with stage = `Specification`, assign to designer Sarah
-2. Sarah creates spec document, marks task `Done`
-3. Create *new* task manually for `Planning` stage, assign to architect John, set "blocked by" previous task
-4. John creates technical plan, marks `Done`
-5. Create *new* task for `Implementation`, assign to developer Alex
-6. Alex implements, marks `Done`
-
-**Note:** This still requires manually creating 3 separate tasks. The workflow is tracked but not automated.
-
----
-
-## Approach 2: Subtask System (Moderate Complexity)
-
-### Concept
-Introduce a formal parent-child task hierarchy where an inbox item converts to a *parent task* with multiple *subtasks* representing workflow stages.
-
-### Changes Required
-
-#### 2.1 Add Subtask Support to `TaskItem`
+Add self-referential parent-child support to `TaskItem`:
 
 ```csharp
 public class TaskItem
@@ -153,84 +69,20 @@ public class TaskItem
 
     public ICollection<TaskItem> Subtasks { get; set; } = new List<TaskItem>();
 
-    public WorkflowStage WorkflowStage { get; set; } = WorkflowStage.Implementation;
-
-    public int? SequenceOrder { get; set; }  // For ordering subtasks
+    public int? SequenceOrder { get; set; }  // For ordering subtasks within a parent
 }
 ```
 
-#### 2.2 Subtask Service Layer
+### Proposed Service Layer
 
 New `ISubtaskService` with methods:
-- `CreateSubtask(parentTaskId, title, stage, assignees, sequenceOrder)`
+- `CreateSubtask(parentTaskId, title, assignees, sequenceOrder)`
 - `GetSubtasks(parentTaskId)`
 - `GetBlockingSubtask(taskId)` → Returns the previous subtask that must complete first
 - `CanStartSubtask(subtaskId)` → Checks if prior subtask is `Done`
 
-#### 2.3 Enhanced Inbox Workflow Conversion
-
-New method: `ConvertToWorkflow(inboxItemId, projectId, stages[])`:
-
-```csharp
-// Example call:
-await _inboxService.ConvertToWorkflow(
-    inboxItemId: 42,
-    projectId: 14,
-    stages: new[] {
-        new WorkflowStageDefinition {
-            Stage = WorkflowStage.Specification,
-            AssigneeUserIds = new[] { "designer-user-id" },
-            Title = "Design dark mode UI/UX"
-        },
-        new WorkflowStageDefinition {
-            Stage = WorkflowStage.Planning,
-            AssigneeUserIds = new[] { "architect-user-id" },
-            Title = "Plan dark mode architecture"
-        },
-        new WorkflowStageDefinition {
-            Stage = WorkflowStage.Implementation,
-            AssigneeUserIds = new[] { "dev-user-id" },
-            Title = "Implement dark mode"
-        }
-    }
-);
-```
-
-This creates:
-1. **Parent task:** "Add dark mode support" (no assignees, serves as container)
-2. **Subtask 1:** "Design dark mode UI/UX" (stage=Spec, assigned to Sarah, order=1, status=ToDo)
-3. **Subtask 2:** "Plan dark mode architecture" (stage=Planning, assigned to John, order=2, status=Blocked)
-4. **Subtask 3:** "Implement dark mode" (stage=Implementation, assigned to Alex, order=3, status=Blocked)
-
-#### 2.4 Automatic Dependency Enforcement
-
-Add background job or service logic:
-- When subtask N is marked `Done`, check if subtask N+1 exists and update its status from `Blocked` → `ToDo`
-- Send notification to assignees of subtask N+1
-- Update parent task status based on subtask completion (e.g., parent is `Done` only when all subtasks are `Done`)
-
-#### 2.5 UI Changes
-
-- **Inbox processing:** New "Convert to Workflow" button with stage builder UI
-- **Task detail view:** Show subtask list with stage badges, completion indicators, assignees
-- **Task list:** Option to show/hide subtasks (default: collapsed under parent)
-- **My Tasks view:** Show user's assigned subtasks with "Blocked by X" indicator
-- **Activity log:** Track subtask creation, completion, unblocking
-
-### Pros
-✅ Formal parent-child relationships in database
-✅ Automatic dependency enforcement (prior task must complete first)
-✅ Assign different users to different stages upfront
-✅ Clear visibility: one parent task shows the entire workflow
-✅ Subtasks can still have comments, attachments, their own assignees
-✅ Flexible: can add ad-hoc subtasks later
-
-### Cons
-❌ More complex database schema (self-referential foreign key)
-❌ UI complexity for managing subtask trees
-❌ What if a subtask itself needs subtasks? (Do we allow nesting?)
-❌ Queries become more complex (need to traverse tree)
-❌ ~3-5 days implementation effort
+Enhanced `InboxService` with new conversion method:
+- `ConvertToWorkflow(inboxItemId, projectId, stages[])` → Creates parent + ordered subtasks
 
 ### Use Case Example
 
@@ -238,9 +90,9 @@ Add background job or service logic:
 **Processing (via new UI):**
 1. Click "Convert to Workflow"
 2. UI shows stage builder:
-   - Stage 1: Specification → Assign Sarah → Title: "Design dark mode UI"
-   - Stage 2: Planning → Assign John → Title: "Architect dark mode system"
-   - Stage 3: Implementation → Assign Alex → Title: "Implement dark mode"
+   - Stage 1: Assign Sarah → Title: "Design dark mode UI"
+   - Stage 2: Assign John → Title: "Architect dark mode system"
+   - Stage 3: Assign Alex → Title: "Implement dark mode"
 3. Submit → Creates parent + 3 subtasks
 4. Sarah sees "Design dark mode UI" in her tasks (status=ToDo)
 5. John sees "Architect dark mode system" (status=Blocked, blocked by Sarah's task)
@@ -250,257 +102,212 @@ Add background job or service logic:
 
 ---
 
-## Approach 3: Formal Workflow Engine (High Complexity)
+## Discovered Gaps
 
-### Concept
-Introduce a dedicated `Workflow` and `WorkflowStep` entity system, decoupled from `TaskItem`, where workflows are reusable templates.
-
-### Changes Required
-
-#### 3.1 New Entities
-
-```csharp
-public class Workflow
-{
-    public int Id { get; set; }
-
-    public string Name { get; set; } = string.Empty;  // e.g., "Feature Development Workflow"
-
-    public int ProjectId { get; set; }
-
-    public Project Project { get; set; } = null!;
-
-    public bool IsTemplate { get; set; }  // If true, can be reused for multiple items
-
-    public ICollection<WorkflowStep> Steps { get; set; } = new List<WorkflowStep>();
-}
-
-public class WorkflowStep
-{
-    public int Id { get; set; }
-
-    public int WorkflowId { get; set; }
-
-    public Workflow Workflow { get; set; } = null!;
-
-    public string Name { get; set; } = string.Empty;  // e.g., "Specification"
-
-    public WorkflowStage Stage { get; set; }
-
-    public int SequenceOrder { get; set; }
-
-    public int? TaskItemId { get; set; }  // Created when workflow is instantiated
-
-    public TaskItem? TaskItem { get; set; }
-
-    public WorkflowStepStatus Status { get; set; } = WorkflowStepStatus.Pending;
-}
-
-public enum WorkflowStepStatus
-{
-    Pending = 0,
-    Active = 1,
-    Completed = 2,
-    Skipped = 3
-}
-
-public class WorkflowInstance
-{
-    public int Id { get; set; }
-
-    public int WorkflowId { get; set; }
-
-    public Workflow Workflow { get; set; } = null!;
-
-    public int? InboxItemId { get; set; }
-
-    public InboxItem? InboxItem { get; set; }
-
-    public DateTime CreatedAt { get; set; }
-}
-```
-
-#### 3.2 Workflow Service Layer
-
-New `IWorkflowService`:
-- `CreateWorkflowTemplate(projectId, name, steps[])`
-- `InstantiateWorkflow(workflowId, inboxItemId)` → Creates tasks for each step
-- `AdvanceWorkflow(workflowInstanceId)` → Moves to next step when current completes
-- `GetWorkflowProgress(workflowInstanceId)` → Returns completion percentage, current step, etc.
-
-#### 3.3 Inbox Integration
-
-New conversion option: "Apply Workflow Template"
-- User selects a predefined workflow template
-- System creates tasks for each step, links them to workflow instance
-- Steps activate sequentially as prior ones complete
-
-#### 3.4 UI Changes
-
-- **Project settings:** Workflow template builder (define reusable workflows)
-- **Inbox processing:** Dropdown to select workflow template + assign users per step
-- **Workflow progress view:** Visual timeline showing current step, completed steps, upcoming steps
-- **Dashboard widget:** "Active Workflows" showing all in-flight workflow instances
-
-### Pros
-✅ Maximum flexibility: workflows are first-class citizens
-✅ Reusable templates across projects
-✅ Can support complex workflows (branching, parallel steps, conditional steps)
-✅ Clear separation of concerns (workflow logic vs task execution)
-✅ Analytics-friendly (track workflow completion rates, bottlenecks)
-✅ Could support workflow versioning (template evolves over time)
-
-### Cons
-❌ Significant complexity (~7-10 days implementation)
-❌ Steeper learning curve for users
-❌ May be overkill for simple use cases
-❌ Requires UI for template management
-❌ Database schema becomes much heavier
-❌ Risk of over-engineering if workflows aren't used frequently
-
-### Use Case Example
-
-**Project Admin Creates Template:**
-1. Navigate to Project Settings → Workflows
-2. Create template "Feature Development Workflow"
-3. Add steps:
-   - Step 1: Idea Review (stage=Idea)
-   - Step 2: Specification (stage=Specification)
-   - Step 3: Technical Planning (stage=Planning)
-   - Step 4: Implementation (stage=Implementation)
-   - Step 5: QA (stage=Validation)
-4. Save template
-
-**User Processes Inbox Item:**
-1. Select inbox item "Add dark mode support"
-2. Click "Apply Workflow"
-3. Select "Feature Development Workflow"
-4. Assign roles:
-   - Idea Review → Product Manager (Mark)
-   - Specification → Designer (Sarah)
-   - Technical Planning → Architect (John)
-   - Implementation → Developer (Alex)
-   - QA → Tester (Jane)
-5. Submit → Creates 5 tasks linked to workflow instance
-6. Mark completes idea review → Sarah's spec task activates
-7. And so on...
+A review of the existing codebase against this proposal surfaced the following gaps that need team input before a specification can be written. They are grouped by category.
 
 ---
 
-## Comparison Matrix
+### Data Model & Schema
 
-| Feature | Approach 1: Metadata | Approach 2: Subtasks | Approach 3: Workflow Engine |
-|---------|----------------------|----------------------|-----------------------------|
-| **Complexity** | Low | Medium | High |
-| **Implementation Time** | 1-2 days | 3-5 days | 7-10 days |
-| **Assign Users in Inbox** | ✅ Yes | ✅ Yes | ✅ Yes |
-| **Sequential Dependencies** | ⚠️ Manual | ✅ Automatic | ✅ Automatic |
-| **Multi-Stage Visibility** | ❌ No (separate tasks) | ✅ Yes (parent task) | ✅ Yes (workflow view) |
-| **Reusable Templates** | ❌ No | ❌ No | ✅ Yes |
-| **Backward Compatibility** | ✅ Full | ✅ Full | ✅ Full (optional feature) |
-| **UI Changes** | Minimal | Moderate | Significant |
-| **Supports Ad-Hoc Workflows** | ✅ Yes | ✅ Yes | ⚠️ Requires template |
-| **Analytics/Reporting** | ⚠️ Basic | ✅ Good | ✅ Excellent |
-| **Risk of Over-Engineering** | ✅ Low | ⚠️ Medium | ❌ High |
+#### Gap 1: Self-Referential FK Cascade Strategy
 
----
+SQL Server does not allow `ON DELETE CASCADE` on self-referencing foreign keys. The EF Core migration will fail if we configure `DeleteBehavior.Cascade` on the `ParentTaskId` relationship. Deletion of a parent and its subtasks must be handled in application code.
 
-## Recommendation for Team Discussion
+Additionally, when a parent task is deleted, the `InboxItem.ConvertedToTaskId` that references it would be left dangling (currently configured as `DeleteBehavior.SetNull`, so it would become `null` — but the inbox item loses its link to the work that was done).
 
-### For Teams with Occasional Complex Items
-**→ Approach 1 (Workflow Metadata)** is likely sufficient. Simple, fast to implement, doesn't over-complicate the system. Workflow stages are tracked but enforcement is manual.
+> **Question:** Is application-level cascade delete (service loads subtasks, deletes them in a loop, then deletes parent) acceptable? Should we also clear or update `InboxItem.ConvertedToTaskId` as part of that flow, or is `SetNull` sufficient?
 
-### For Teams with Regular Multi-Phase Work
-**→ Approach 2 (Subtasks)** provides the best balance of capability and complexity. Automatic dependency management, clear parent-child relationships, intuitive UI. This is the **recommended default** for most teams.
+#### Gap 2: `InboxItem.ConvertedToTaskId` is Singular
 
-### For Teams Running Formal, Repeatable Processes
-**→ Approach 3 (Workflow Engine)** is worth the investment if you have standardized workflows (e.g., "all features go through these 5 stages") and want analytics, templates, and maximum control.
+The current `InboxItem` has a single `ConvertedToTaskId` FK. The proposal assumes this points to the parent task, but that's implicit. If the user later wants to trace "what tasks came from this inbox item?", they can only follow one link to the parent and then query its children.
 
----
+> **Question:** Is pointing `ConvertedToTaskId` at the parent (container) task sufficient for traceability? Or do we need a one-to-many relationship (e.g., a new `InboxItem.ConvertedToTasks` collection)?
 
-## Alternative/Hybrid Ideas
+#### Gap 3: `WorkflowStage` Enum — Do We Need It?
 
-### Hybrid: Subtasks + Workflow Templates (Approach 2.5)
-- Implement Approach 2 (subtask system)
-- Add a simple template storage mechanism (JSON in database or config files)
-- When processing inbox, offer "Create from template" which pre-fills subtasks
-- Avoids the full complexity of a workflow engine while enabling reusability
+The original proposal included a `WorkflowStage` enum (Idea, Specification, Planning, Implementation, Validation) on each subtask alongside a `SequenceOrder` integer. But `SequenceOrder` alone is sufficient for dependency ordering. The `WorkflowStage` enum is limiting — teams may want stages like "Legal Review," "Security Audit," or "Localization" that don't fit fixed categories.
 
-### Defer Assignment Until Each Stage
-- Don't assign users during inbox processing
-- Each subtask starts as `ToDo` with no assignees
-- When a subtask becomes active, notify project members to self-assign or project lead assigns
-- Reduces upfront planning burden, increases flexibility
+> **Question:** Should subtasks simply have a title and `SequenceOrder` (no stage enum)? Or is there value in a categorization field? If so, should it be a free-text label rather than a fixed enum?
 
-### Inbox Item as Perpetual Parent
-- Instead of converting `InboxItem` → `TaskItem`, keep `InboxItem` as the parent entity
-- Add `InboxItem.Status` with values like `Unprocessed`, `InSpecification`, `InPlanning`, `InImplementation`, `Done`
-- Tasks are created as children of `InboxItem` rather than replacing it
-- Preserves the original capture context
+#### Gap 4: `IsNextAction` / `IsSomedayMaybe` on Parent Tasks
+
+In GTD methodology, "next action" applies to a specific actionable item. A parent container task isn't itself actionable — its subtasks are. If a parent is marked `IsNextAction`, the semantics are unclear. Similarly, marking a parent `IsSomedayMaybe` could conflict with actively-sequenced subtasks underneath it.
+
+> **Question:** Should `IsNextAction` and `IsSomedayMaybe` be restricted to leaf tasks (tasks with no subtasks)? Or should the flags propagate/be ignored on parents?
+
+#### Gap 5: Nesting Depth — Can a Subtask Have Its Own Subtasks?
+
+The proposal supports single-level parent-child. But what if a subtask like "Implement dark mode" itself needs to be broken into sub-items? Allowing arbitrary nesting adds significant complexity to queries, UI rendering, status propagation, and deletion.
+
+> **Question:** Should we enforce single-level nesting only (a subtask cannot be a parent)? This is simpler and covers the primary use case. Deeper nesting could be a future enhancement if needed.
 
 ---
 
-## Questions for Team Feedback
+### Status & Dependency Logic
 
-1. **How often do we encounter inbox items that need multiple stages?**
-   - If < 10% of inbox items: Approach 1 is sufficient
-   - If 10-40%: Approach 2 is ideal
-   - If > 40%: Consider Approach 3
+#### Gap 6: `Blocked` Status Semantics Are Overloaded
 
-2. **Do we have standardized workflows we want to reuse?**
-   - If yes → Approach 3 or Hybrid 2.5
-   - If no → Approach 1 or 2
+The existing `TaskItemStatus.Blocked` is a general-purpose status that any user can set manually for any reason (e.g., "waiting on external vendor"). The proposal reuses it for automatic sequential-dependency blocking. This creates ambiguity: if a subtask is `Blocked`, is it because a prior subtask isn't done, or because a human manually blocked it?
 
-3. **Who should decide the workflow stages?**
-   - Person processing inbox? (supports ad-hoc workflows)
-   - Project admin? (supports templates/standards)
-   - Both? (hybrid)
+If a user manually blocks a subtask that was auto-blocked by a dependency, and then the dependency completes, should the system auto-unblock it (overriding the manual block) or leave it blocked?
 
-4. **Should we support assigning users during inbox processing, or defer to later?**
-   - Assign upfront: Requires knowing who will handle each stage
-   - Defer: More flexible but adds coordination overhead
+> **Question:** How should we distinguish automatic dependency blocking from manual blocking? Options:
+> - (A) Add a `BlockReason` field (enum: `None`, `DependencyNotMet`, `Manual`)
+> - (B) Use a separate boolean `IsAutoBlocked` alongside the existing status
+> - (C) Don't use `Blocked` status for dependencies at all — instead, prevent status transitions on subtasks whose predecessor isn't `Done` (enforcement at the service layer, not via status)
 
-5. **Do we need workflow analytics (e.g., "avg time in specification stage")?**
-   - If yes → Lean toward Approach 2 or 3
-   - If no → Approach 1 is fine
+#### Gap 7: Parent Task Status Derivation Rules
 
-6. **Can a subtask have its own subtasks?**
-   - If yes → Need to design for tree depth (Approach 2 becomes more complex)
-   - If no → Single-level parent-child is simpler
+The proposal says "parent is `Done` only when all subtasks are `Done`" but doesn't cover the full matrix:
 
-7. **How do we handle blocked tasks that are NOT part of a workflow?**
-   - `BlockedByTaskId` in Approach 1/2 can work for any task
-   - Should blocking be a general feature or workflow-specific?
+| Subtask States | What Should Parent Status Be? |
+|---|---|
+| All `ToDo` | `ToDo`? |
+| One `InProgress`, rest `ToDo`/`Blocked` | `InProgress`? |
+| One `Error` | `Error`? |
+| Some `Done`, one `InProgress` | `InProgress`? |
+| Some `Done`, one `InReview` | `InReview`? |
+| All `Done` | `Done` |
+| Mix of `Done` and `Blocked` | ??? |
+
+> **Question:** Should parent status be automatically derived from subtask states, or should it remain independent (manually set)? If derived, what are the rules? A simple approach: parent is `InProgress` if any subtask is not `ToDo` and not all are `Done`; parent is `Done` when all subtasks are `Done`.
+
+#### Gap 8: Where Does Dependency Propagation Logic Live?
+
+The current `TaskService.ChangeStatus` fires an activity log entry and sends notifications to assigned users. It has no extensibility point for side effects like unblocking sibling subtasks. The proposal mentions "background job or service logic" but doesn't specify the architecture.
+
+> **Question:** Where should the "complete subtask N → unblock subtask N+1 → update parent status" logic live?
+> - (A) Inline in `TaskService.ChangeStatus` (adds coupling to subtask logic in the general status-change path)
+> - (B) A new `ISubtaskService` that wraps or is called after `ChangeStatus`
+> - (C) A domain event / observer pattern (new pattern for the codebase)
+> - (D) Called explicitly by the controller/MCP tool after `ChangeStatus` returns
+
+#### Gap 9: Activity Log and Notifications for Automatic Transitions
+
+When subtask N completing auto-unblocks subtask N+1, who is the `userId` for the activity log entry? `ActivityLogService.LogChange` requires a `userId` parameter. Automatic system transitions don't have an acting user.
+
+Similarly, `NotificationType` has no value for "your task was automatically unblocked." The `ActivityChangeType` enum also lacks values for subtask-specific events (e.g., subtask created, subtask auto-unblocked).
+
+> **Question:** How should system-initiated actions be attributed?
+> - (A) Use the userId of the person who completed the predecessor subtask (they indirectly caused the unblock)
+> - (B) Introduce a system/sentinel userId for automated actions
+> - (C) Make `userId` nullable on `ActivityLogEntry` for system actions
+>
+> What new enum values are needed?
+> - `ActivityChangeType`: `SubtaskCreated`, `AutoUnblocked`, `ParentStatusDerived`?
+> - `NotificationType`: `SubtaskUnblocked`, `SubtaskCompleted`?
+
+---
+
+### Query & Display Surface Impact
+
+#### Gap 10: `ProgressService` / `ProjectStatistics` Will Double-Count
+
+`ProgressService.GetProjectStatistics` counts **all** `TaskItems` in a project grouped by status. If parent tasks exist alongside their subtasks, every metric — dashboard counts, the MCP `ProjectSummaryResource`, completion percentages — will be inflated. A parent with 3 subtasks would count as 4 tasks.
+
+> **Question:** How should aggregate counts handle the hierarchy?
+> - (A) Exclude parent tasks from counts (only count leaf tasks)
+> - (B) Exclude subtasks from counts (only count top-level tasks, using derived status)
+> - (C) Count everything but provide separate "parent" and "subtask" breakdowns
+> - (D) Let the user choose via a filter toggle
+
+#### Gap 11: `GetWhatsNext` / "My Assignments" Behavior
+
+`GetWhatsNext` returns all tasks assigned to a user, sorted by priority and due date. If the parent task is a pure container with no assignees, it won't appear. But if someone *is* assigned to the parent, it shows up alongside their subtasks.
+
+> **Question:** Should parent tasks (tasks that have subtasks) appear in the "My Assignments" / "What's Next" view?
+> - (A) Never — parent tasks are containers, only subtasks appear in personal views
+> - (B) Always — let the user see both
+> - (C) Only if the parent has no subtasks (i.e., it's being used as a plain task)
+>
+> Related: Can users be assigned to parent tasks at all, or only to subtasks?
+
+#### Gap 12: Search (`SearchTasks`) Doesn't Account for Hierarchy
+
+`TaskService.SearchTasks` searches title and description. If a user searches for "dark mode," they could get the parent task *and* all its subtasks. The result list would be confusing without visual hierarchy indicators. If results only show the parent, subtask content is invisible to search.
+
+> **Question:** Should search results include both parent and subtask matches? If so, should they be grouped (parent shown with its matching subtasks indented beneath it)? Or should subtask results link back to their parent?
+
+#### Gap 13: MCP Tool Surfaces
+
+The codebase has MCP tools consumed by external agents and the CopilotAgent: `TaskTools` (`list_tasks`, `get_task`, `create_task`, `update_task_status`), `InboxTools` (`process_inbox_item`), and `ProjectSummaryResource`. None of these are aware of parent-child relationships.
+
+> **Question:** What MCP changes are needed?
+> - Should `list_tasks` expose `parentTaskId` and support a `parentTaskId` filter?
+> - Should `get_task` return the subtask list in its response?
+> - Do we need a new `create_subtask` tool, or is `create_task` with an optional `parentTaskId` sufficient?
+> - How does the `CopilotAgent` polling loop (`AgentPollingLoop`) handle parent vs. subtask assignments? Should agents only be assigned to subtasks?
+> - Should `process_inbox_item` gain an optional workflow conversion mode, or should that be a separate tool?
+
+#### Gap 14: SignalR `TaskHub` and Real-Time Updates
+
+The `TaskHub` broadcasts real-time updates scoped to individual task groups (`task-{taskId}`). If completing subtask N auto-unblocks subtask N+1, viewers of subtask N+1's detail page need a real-time push. The parent task's viewers also need to see updated status/progress. Currently there's no mechanism to broadcast to sibling or parent task groups from a single status change.
+
+> **Question:** When a subtask status changes, should the broadcast also push updates to:
+> - (A) The parent task group (so viewers of the parent see updated subtask status)
+> - (B) The next sibling subtask group (so viewers see it unblock in real-time)
+> - (C) Both
+> - (D) Neither — let the client poll or refresh for sibling/parent updates
+
+---
+
+### Subtask Variants
+
+#### Gap 15: Ad-Hoc Subtasks vs. Sequential Subtasks
+
+The proposal says subtasks can be added ad-hoc later. But the sequential dependency model assumes subtasks have a `SequenceOrder` and that completion of N unblocks N+1. What happens when someone adds an ad-hoc subtask to an existing workflow?
+
+- Does it get inserted into the sequence (requiring reordering)?
+- Does it exist outside the sequence (no auto-blocking/unblocking)?
+- Can a parent task have a mix of sequential and non-sequential subtasks?
+
+> **Question:** Should we distinguish between "sequenced subtasks" (part of a dependency chain) and "unordered subtasks" (independent work items under the same parent)?
+> - (A) All subtasks are sequenced — adding one inserts it into the chain
+> - (B) All subtasks are unordered — dependencies are optional and manual
+> - (C) Subtasks have a nullable `SequenceOrder` — if set, they participate in the chain; if null, they're independent
+> - (D) Two separate concepts: "workflow steps" (sequenced) and "subtasks" (unordered)
+
+---
+
+## Use Case Walkthrough with Gaps Resolved
+
+*This section illustrates how the feature works end-to-end. Open questions are noted inline — once the team answers the gaps above, this walkthrough can be updated and used as the basis for the specification.*
+
+1. **Inbox capture:** User adds "Add dark mode support" to inbox.
+2. **Inbox processing:** User clicks "Convert to Workflow." UI presents a stage builder where they define subtasks with titles, optional assignees, and sequence order.
+3. **Task creation:** System creates a parent task (title from inbox item) and N subtasks. `InboxItem.ConvertedToTaskId` → parent task. First subtask status = `ToDo`, remaining = *[depends on Gap 6 decision]*.
+4. **First subtask worked:** Sarah completes "Design dark mode UI." `ChangeStatus(Done)` is called → *[Gap 8: where does propagation run?]* → next subtask unblocks → *[Gap 9: who is the actor for the log entry?]* → parent status updates → *[Gap 7: derived or manual?]* → SignalR pushes to *[Gap 14: which groups?]*.
+5. **User checks dashboard:** Project statistics show task counts → *[Gap 10: are parents counted?]*. Sarah checks "My Assignments" → *[Gap 11: does she see the parent?]*.
+6. **Ad-hoc subtask added:** Mid-workflow, someone adds "Write migration guide" → *[Gap 15: sequenced or independent?]*.
+7. **Final subtask completes:** Alex finishes implementation → parent auto-completes → *[Gap 7]*.
+8. **Agent interaction:** CopilotAgent calls `my_assignments` via MCP → *[Gap 13: does it see the parent or just its subtask?]*.
+
+---
+
+## Also Considered
+
+### Approach 1: Workflow Metadata on Tasks (Rejected — Too Limited)
+
+Add `WorkflowStage` and `BlockedByTaskId` fields directly to `TaskItem` without introducing parent-child relationships.
+
+**Why we passed:** This approach tracks workflow stages as informal metadata but doesn't represent multi-stage workflows as a cohesive unit. Users must manually create separate tasks for each stage and manually set "blocked by" links. There's no automatic dependency enforcement, no single-parent visibility, and no way to see the full workflow at a glance. It solves the "assign during inbox processing" problem but not the core workflow orchestration need.
+
+### Approach 3: Formal Workflow Engine (Rejected — Over-Engineered)
+
+Introduce dedicated `Workflow`, `WorkflowStep`, and `WorkflowInstance` entities decoupled from `TaskItem`, with reusable workflow templates.
+
+**Why we passed:** This approach provides maximum flexibility (reusable templates, branching/parallel steps, workflow versioning, analytics) but at 7-10 days of implementation effort and significant schema/UI weight. It requires a template management UI, a workflow visualization view, and a separate conceptual model that users must learn. For a team that needs multi-stage inbox processing — not a full BPM engine — this is more machinery than the problem warrants. If we later need reusable templates, a lightweight "Approach 2.5" hybrid (JSON template storage that pre-fills subtasks) can be added on top of the subtask system without the full engine.
 
 ---
 
 ## Next Steps
 
-1. **Team reviews this document** and provides feedback via comments/task discussion
-2. **Vote or discuss** which approach aligns with our needs
-3. **Create detailed technical spec** for chosen approach
-4. **Prototype UI mockups** to validate user experience
-5. **Break down implementation** into subtasks (ironic!)
-6. **Implement, test, deploy** incrementally
-
----
-
-## Open Questions / Risks
-
-- **Performance:** How do subtask queries scale with hundreds of parent tasks?
-  *Mitigation:* Add index on `ParentTaskId`, use pagination
-
-- **Permissions:** Should subtasks inherit parent task's project membership? Or have independent access control?
-  *Recommendation:* Inherit for simplicity
-
-- **Deletion:** If a parent task is deleted, cascade delete subtasks or orphan them?
-  *Recommendation:* Cascade delete (with confirmation prompt)
-
-- **Status Propagation:** Should parent task status auto-update based on subtask statuses?
-  *Example:* Parent is `InProgress` if any subtask is `InProgress`
-
-- **Assignment Conflicts:** What if a subtask is assigned to a user not in the project?
-  *Validation:* Enforce project membership check during assignment
+1. **Team reviews this document** and provides feedback on the open questions (Gaps 1–15)
+2. **Answers are documented inline** in this idea document via comments or direct edits
+3. **Create a formal specification** based on the resolved decisions
+4. **Break down implementation** into phased work items
+5. **Implement, test, deploy** incrementally
 
 ---
 
@@ -559,22 +366,34 @@ public class TaskAssignment
 }
 ```
 
+### Key Services Affected
+- `TaskService` — `ChangeStatus`, `GetTasksForProject`, `GetWhatsNext`, `SearchTasks`, `DeleteTask`
+- `InboxService` — `ConvertToTask`, `ClarifyItem`
+- `ProgressService` — `GetProjectStatistics`
+- `ActivityLogService` — `LogChange` (requires `userId`)
+- `NotificationService` — `CreateNotification`
+- `TaskTools` (MCP) — `list_tasks`, `get_task`, `create_task`, `update_task_status`
+- `InboxTools` (MCP) — `process_inbox_item`
+- `ProjectSummaryResource` (MCP)
+- `TaskHub` (SignalR) — real-time broadcasts
+- `AgentPollingLoop` (CopilotAgent) — task assignment filtering
+
+### Key Enums That May Need New Values
+- `ActivityChangeType` — subtask-specific events
+- `NotificationType` — subtask-specific notifications
+- `TaskItemStatus` — possibly no changes, but `Blocked` semantics need clarification
+
 ---
 
-**Document Version:** 1.0
+**Document Version:** 3.0
 **Author:** Agent (Bill Claude)
 **Date:** 2026-04-09
-**Status:** Draft for Team Review
-**Feedback Deadline:** TBD
+**Revised:** 2026-07-17
+**Status:** ❌ Rejected — scope exceeds benefit
+**Rejection Reason:** The gap analysis (Gaps 1–15) revealed that introducing subtasks touches the data model, self-referential FK cascade handling, every query/counting surface (`ProgressService`, `GetWhatsNext`, `SearchTasks`), all MCP tools, the SignalR `TaskHub`, the CopilotAgent polling loop, activity log attribution for system actions, and the `Blocked` status semantics. The implementation effort and ongoing maintenance cost are not justified by the frequency of multi-stage inbox items.
 
 ---
 
 ## How to Provide Feedback
 
-Please add comments to this task (#76) with:
-- Your preferred approach (1, 2, or 3)
-- Any concerns or suggestions
-- Answers to the "Questions for Team Feedback" section
-- Additional use cases or edge cases to consider
-
-We'll schedule a team discussion once all feedback is collected.
+This idea has been rejected. The document is retained for historical reference. If the need for multi-stage inbox workflows resurfaces, this analysis and the 15 identified gaps provide a starting point for a future proposal.
