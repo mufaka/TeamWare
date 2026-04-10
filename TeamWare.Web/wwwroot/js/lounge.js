@@ -93,6 +93,63 @@
         return div.innerHTML;
     }
 
+    function parseGenericAttributes(input) {
+        var attrs = {};
+        var attrRegex = /([a-zA-Z_:][\w:.-]*)\s*=\s*"([^"]*)"/g;
+        var match;
+
+        while ((match = attrRegex.exec(input)) !== null) {
+            attrs[match[1]] = match[2];
+        }
+
+        return attrs;
+    }
+
+    function applyGenericAttributesToElement(element, textNode, allowedAttributes) {
+        var match = textNode.textContent.match(/^\s*\{([^}]+)\}/);
+        var applied = false;
+
+        if (!match) return false;
+
+        var attrs = parseGenericAttributes(match[1]);
+        Object.keys(attrs).forEach(function (key) {
+            if (allowedAttributes.indexOf(key) >= 0) {
+                element.setAttribute(key, attrs[key]);
+                applied = true;
+            }
+        });
+
+        if (!applied) return false;
+
+        textNode.textContent = textNode.textContent.substring(match[0].length);
+        if (!textNode.textContent.length) {
+            textNode.parentNode.removeChild(textNode);
+        }
+
+        return true;
+    }
+
+    function applyGenericAttributes(html) {
+        var container = document.createElement("div");
+        container.innerHTML = html;
+
+        container.querySelectorAll("a").forEach(function (link) {
+            var nextNode = link.nextSibling;
+            if (nextNode && nextNode.nodeType === 3) {
+                applyGenericAttributesToElement(link, nextNode, ["target", "rel", "class", "title"]);
+            }
+        });
+
+        container.querySelectorAll("img").forEach(function (image) {
+            var nextNode = image.nextSibling;
+            if (nextNode && nextNode.nodeType === 3) {
+                applyGenericAttributesToElement(image, nextNode, ["class", "width", "height", "loading", "decoding", "alt"]);
+            }
+        });
+
+        return container.innerHTML;
+    }
+
     function highlightMentions(html) {
         return html.replace(/@(\w+)/g, '<span class="font-semibold text-blue-600 dark:text-blue-400">@$1</span>');
     }
@@ -108,7 +165,7 @@
     function renderContent(text) {
         var html;
         if (typeof marked !== "undefined") {
-            html = marked.parse(escapeHtml(text));
+            html = applyGenericAttributes(marked.parse(escapeHtml(text)));
         } else {
             html = escapeHtml(text);
         }

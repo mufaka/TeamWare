@@ -8,6 +8,7 @@ public static class MarkdownHelper
     private static readonly MarkdownPipeline Pipeline = new MarkdownPipelineBuilder()
         .DisableHtml()
         .UseAutoLinks()
+        .UseGenericAttributes()
         .Build();
 
     public static HtmlString RenderMarkdown(string? markdown)
