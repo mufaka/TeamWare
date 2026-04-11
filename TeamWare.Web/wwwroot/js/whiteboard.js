@@ -243,6 +243,15 @@
             });
 
         if (chatForm && chatInput) {
+            chatInput.addEventListener("keydown", function (event) {
+                if (event.key !== "Enter" || event.shiftKey || event.isComposing) {
+                    return;
+                }
+
+                event.preventDefault();
+                chatForm.requestSubmit();
+            });
+
             chatForm.addEventListener("submit", function (event) {
                 event.preventDefault();
 

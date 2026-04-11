@@ -64,6 +64,23 @@ public class WhiteboardSessionViewTests : IClassFixture<TeamWareWebApplicationFa
     }
 
     [Fact]
+    public async Task SessionView_HtmlEncodesExistingChatMessages()
+    {
+        var (ownerId, cookie) = await CreateAndLoginUser("session-chat-encode@test.com", "Owner");
+        var whiteboardId = await CreateWhiteboard(ownerId, "Encoded Chat View Board");
+        await CreateChatMessage(whiteboardId, ownerId, "<script>alert('xss')</script>");
+
+        var request = new HttpRequestMessage(HttpMethod.Get, $"/Whiteboard/Session/{whiteboardId}");
+        request.Headers.Add("Cookie", cookie);
+        var response = await _client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var html = await response.Content.ReadAsStringAsync();
+        Assert.Contains("&lt;script&gt;alert(&#x27;xss&#x27;)&lt;/script&gt;", html);
+        Assert.DoesNotContain("<script>alert('xss')</script>", html);
+    }
+
+    [Fact]
     public async Task SessionView_OwnerSeesInviteSearchUi()
     {
         var (ownerId, cookie) = await CreateAndLoginUser("session-invite-ui@test.com", "Owner");

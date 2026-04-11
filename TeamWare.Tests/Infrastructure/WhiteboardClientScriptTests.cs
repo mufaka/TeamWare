@@ -49,6 +49,17 @@ public class WhiteboardClientScriptTests
     }
 
     [Fact]
+    public void WhiteboardClientScript_SubmitsChatOnEnterAndPreservesShiftEnter()
+    {
+        var script = ReadScript("whiteboard.js");
+
+        Assert.Contains("chatInput.addEventListener(\"keydown\"", script);
+        Assert.Contains("event.key !== \"Enter\"", script);
+        Assert.Contains("event.shiftKey", script);
+        Assert.Contains("chatForm.requestSubmit()", script);
+    }
+
+    [Fact]
     public void WhiteboardClientScript_WiresColorPickersAndDeleteButton()
     {
         var script = ReadScript("whiteboard.js");
@@ -59,6 +70,7 @@ public class WhiteboardClientScriptTests
         Assert.Contains("setStrokeColor", script);
         Assert.Contains("setFillColor", script);
         Assert.Contains("deleteSelectedShape", script);
+        Assert.Contains("textContent = message.content || message.Content || \"\"", script);
     }
 
     private static string ReadScript(string fileName)

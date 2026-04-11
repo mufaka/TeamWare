@@ -1,5 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
-using System.Net;
+using Microsoft.EntityFrameworkCore;
 using TeamWare.Web.Data;
 using TeamWare.Web.Models;
 using TeamWare.Web.ViewModels;
@@ -33,8 +32,6 @@ public class WhiteboardChatService : IWhiteboardChatService
             return ServiceResult<WhiteboardChatMessageDto>.Failure("Message content cannot exceed 4000 characters.");
         }
 
-        var sanitizedContent = WebUtility.HtmlEncode(trimmedContent);
-
         var whiteboard = await _context.Whiteboards
             .AsNoTracking()
             .FirstOrDefaultAsync(w => w.Id == whiteboardId);
@@ -54,7 +51,7 @@ public class WhiteboardChatService : IWhiteboardChatService
         {
             WhiteboardId = whiteboardId,
             UserId = userId,
-            Content = sanitizedContent,
+            Content = trimmedContent,
             CreatedAt = DateTime.UtcNow
         };
 

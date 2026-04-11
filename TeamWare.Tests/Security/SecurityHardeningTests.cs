@@ -229,7 +229,7 @@ public class SecurityHardeningTests : IClassFixture<TeamWareWebApplicationFactor
     }
 
     [Fact]
-    public async Task WhiteboardChatMessage_ContentIsHtmlEncoded()
+    public async Task WhiteboardChatMessage_ContentIsStoredRawForSafeRendering()
     {
         var user = await CreateUser("security-whiteboard-chat@test.com", "Author");
 
@@ -241,7 +241,7 @@ public class SecurityHardeningTests : IClassFixture<TeamWareWebApplicationFactor
         var result = await service.SendMessageAsync(whiteboardId, user.Id, "<script>alert('xss')</script>");
 
         Assert.True(result.Succeeded);
-        Assert.Equal("&lt;script&gt;alert(&#39;xss&#39;)&lt;/script&gt;", result.Data!.Content);
+        Assert.Equal("<script>alert('xss')</script>", result.Data!.Content);
         Assert.Equal(result.Data.Content, context.WhiteboardChatMessages.Single(m => m.WhiteboardId == whiteboardId).Content);
     }
 
