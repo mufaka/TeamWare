@@ -69,6 +69,11 @@ builder.Services.AddScoped<IAiAssistantService, AiAssistantService>();
 builder.Services.AddScoped<IPersonalAccessTokenService, PersonalAccessTokenService>();
 builder.Services.AddSingleton<IAgentSecretEncryptor, AgentSecretEncryptor>();
 builder.Services.AddScoped<IAgentConfigurationService, AgentConfigurationService>();
+builder.Services.AddScoped<IWhiteboardService, WhiteboardService>();
+builder.Services.AddScoped<IWhiteboardInvitationService, WhiteboardInvitationService>();
+builder.Services.AddScoped<IWhiteboardProjectService, WhiteboardProjectService>();
+builder.Services.AddScoped<IWhiteboardChatService, WhiteboardChatService>();
+builder.Services.AddSingleton<IWhiteboardPresenceTracker, WhiteboardPresenceTracker>();
 
 builder.Services.AddMemoryCache();
 builder.Services.AddHttpClient("Ollama");
@@ -137,6 +142,7 @@ app.MapControllerRoute(
 app.MapHub<PresenceHub>("/hubs/presence");
 app.MapHub<LoungeHub>("/hubs/lounge");
 app.MapHub<TaskHub>("/hubs/task");
+app.MapHub<WhiteboardHub>("/hubs/whiteboard");
 
 app.MapMcp("/mcp").RequireAuthorization(new Microsoft.AspNetCore.Authorization.AuthorizeAttribute
 {

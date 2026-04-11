@@ -20,6 +20,10 @@ public class ApplicationUser : IdentityUser
 
     public bool IsAgentActive { get; set; } = true;
 
+    public ICollection<Whiteboard> OwnedWhiteboards { get; set; } = new List<Whiteboard>();
+
+    public ICollection<WhiteboardInvitation> WhiteboardInvitations { get; set; } = new List<WhiteboardInvitation>();
+
     public ICollection<LoungeMessage> LoungeMessages { get; set; } = new List<LoungeMessage>();
 
     public ICollection<PersonalAccessToken> PersonalAccessTokens { get; set; } = new List<PersonalAccessToken>();

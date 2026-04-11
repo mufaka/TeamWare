@@ -53,6 +53,12 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 
     public DbSet<AgentTaskAssignmentPermission> AgentTaskAssignmentPermissions => Set<AgentTaskAssignmentPermission>();
 
+    public DbSet<Whiteboard> Whiteboards => Set<Whiteboard>();
+
+    public DbSet<WhiteboardInvitation> WhiteboardInvitations => Set<WhiteboardInvitation>();
+
+    public DbSet<WhiteboardChatMessage> WhiteboardChatMessages => Set<WhiteboardChatMessage>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -74,6 +80,72 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             entity.Property(p => p.Description).HasMaxLength(2000);
             entity.Property(p => p.Status).HasConversion<string>().HasMaxLength(20);
             entity.HasIndex(p => p.Status);
+        });
+
+        builder.Entity<Whiteboard>(entity =>
+        {
+            entity.HasKey(w => w.Id);
+            entity.Property(w => w.Title).IsRequired().HasMaxLength(200);
+
+            entity.HasOne(w => w.Owner)
+                .WithMany(u => u.OwnedWhiteboards)
+                .HasForeignKey(w => w.OwnerId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(w => w.Project)
+                .WithMany(p => p.Whiteboards)
+                .HasForeignKey(w => w.ProjectId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(w => w.CurrentPresenter)
+                .WithMany()
+                .HasForeignKey(w => w.CurrentPresenterId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasIndex(w => w.OwnerId);
+            entity.HasIndex(w => w.ProjectId);
+        });
+
+        builder.Entity<WhiteboardInvitation>(entity =>
+        {
+            entity.HasKey(i => i.Id);
+
+            entity.HasOne(i => i.Whiteboard)
+                .WithMany(w => w.Invitations)
+                .HasForeignKey(i => i.WhiteboardId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(i => i.User)
+                .WithMany(u => u.WhiteboardInvitations)
+                .HasForeignKey(i => i.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(i => i.InvitedByUser)
+                .WithMany()
+                .HasForeignKey(i => i.InvitedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(i => i.WhiteboardId);
+            entity.HasIndex(i => i.UserId);
+            entity.HasIndex(i => new { i.WhiteboardId, i.UserId }).IsUnique();
+        });
+
+        builder.Entity<WhiteboardChatMessage>(entity =>
+        {
+            entity.HasKey(m => m.Id);
+            entity.Property(m => m.Content).IsRequired().HasMaxLength(4000);
+
+            entity.HasOne(m => m.Whiteboard)
+                .WithMany(w => w.ChatMessages)
+                .HasForeignKey(m => m.WhiteboardId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(m => m.User)
+                .WithMany()
+                .HasForeignKey(m => m.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(m => new { m.WhiteboardId, m.CreatedAt });
         });
 
         builder.Entity<ProjectMember>(entity =>

@@ -1,6 +1,7 @@
 ﻿using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using TeamWare.Web.Models;
 using TeamWare.Web.Services;
 using TeamWare.Web.ViewModels;
 
@@ -10,10 +11,17 @@ namespace TeamWare.Web.Controllers;
 public class NotificationController : Controller
 {
     private readonly INotificationService _notificationService;
+    private readonly IWhiteboardService _whiteboardService;
+    private readonly IWhiteboardInvitationService _whiteboardInvitationService;
 
-    public NotificationController(INotificationService notificationService)
+    public NotificationController(
+        INotificationService notificationService,
+        IWhiteboardService whiteboardService,
+        IWhiteboardInvitationService whiteboardInvitationService)
     {
         _notificationService = notificationService;
+        _whiteboardService = whiteboardService;
+        _whiteboardInvitationService = whiteboardInvitationService;
     }
 
     private string GetUserId() => User.FindFirstValue(ClaimTypes.NameIdentifier)!;
@@ -84,6 +92,48 @@ public class NotificationController : Controller
     public async Task<IActionResult> DropdownContent()
     {
         return await NotificationDropdownPartial();
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> Follow(int id)
+    {
+        var userId = GetUserId();
+        var notifications = await _notificationService.GetUnreadForUser(userId);
+        var notification = notifications.FirstOrDefault(n => n.Id == id);
+
+        if (notification == null)
+        {
+            TempData["ErrorMessage"] = "Notification not found.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        await _notificationService.MarkAsRead(notification.Id, userId);
+
+        if (notification.Type == NotificationType.WhiteboardInvitation && notification.ReferenceId.HasValue)
+        {
+            var whiteboardId = notification.ReferenceId.Value;
+            var accessResult = await _whiteboardService.CanAccessAsync(whiteboardId, userId, User.IsInRole("Admin"));
+
+            if (accessResult.Succeeded && accessResult.Data)
+            {
+                return RedirectToAction("Session", "Whiteboard", new { id = whiteboardId });
+            }
+
+            var cleanupResult = await _whiteboardInvitationService.CleanupInvalidInvitationsAsync(whiteboardId);
+            if (!cleanupResult.Succeeded)
+            {
+                await _whiteboardInvitationService.RevokeAsync(whiteboardId, userId);
+                TempData["ErrorMessage"] = "This whiteboard is no longer available.";
+            }
+            else
+            {
+                TempData["ErrorMessage"] = "You no longer have permission to access this whiteboard.";
+            }
+
+            return RedirectToAction("Index", "Whiteboard");
+        }
+
+        return RedirectToAction(nameof(Index));
     }
 
     private async Task<IActionResult> NotificationDropdownPartial()

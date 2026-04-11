@@ -15,6 +15,13 @@ else
                     <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
                         @Html.LocalTime(notification.CreatedAt)
                     </p>
+                    @if (notification.Type == TeamWare.Web.Models.NotificationType.WhiteboardInvitation && notification.ReferenceId.HasValue)
+                    {
+                        <a asp-controller="Notification" asp-action="Follow" asp-route-id="@notification.Id"
+                           class="mt-2 inline-flex items-center text-xs font-medium text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300">
+                            Open Whiteboard
+                        </a>
+                    }
                 </div>
                 <div class="flex items-center gap-1 shrink-0">
                     <form hx-post="@Url.Action("MarkAsRead", "Notification", new { id = notification.Id })"

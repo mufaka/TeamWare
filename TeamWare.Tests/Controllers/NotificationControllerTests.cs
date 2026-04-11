@@ -97,6 +97,96 @@ public class NotificationControllerTests : IClassFixture<TeamWareWebApplicationF
         return notification.Id;
     }
 
+    private async Task<(string UserId, int NotificationId, int WhiteboardId)> CreateWhiteboardInvitationNotification(string userEmail, bool createInvitation = true, bool savedBoard = false, bool removeMembership = false)
+    {
+        using var scope = _factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+
+        var invitee = await userManager.FindByEmailAsync(userEmail);
+        var owner = new ApplicationUser
+        {
+            UserName = $"owner-{Guid.NewGuid():N}@test.com",
+            Email = $"owner-{Guid.NewGuid():N}@test.com",
+            DisplayName = "Whiteboard Owner"
+        };
+        await userManager.CreateAsync(owner, "TestPass1!");
+
+        int? projectId = null;
+        if (savedBoard)
+        {
+            var project = new Project
+            {
+                Name = $"Whiteboard Project {Guid.NewGuid():N}",
+                Status = ProjectStatus.Active,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+            context.Projects.Add(project);
+            await context.SaveChangesAsync();
+
+            context.ProjectMembers.Add(new ProjectMember
+            {
+                ProjectId = project.Id,
+                UserId = owner.Id,
+                Role = ProjectRole.Owner,
+                JoinedAt = DateTime.UtcNow
+            });
+
+            if (!removeMembership)
+            {
+                context.ProjectMembers.Add(new ProjectMember
+                {
+                    ProjectId = project.Id,
+                    UserId = invitee!.Id,
+                    Role = ProjectRole.Member,
+                    JoinedAt = DateTime.UtcNow
+                });
+            }
+
+            await context.SaveChangesAsync();
+            projectId = project.Id;
+        }
+
+        var whiteboard = new Whiteboard
+        {
+            Title = "Notification Whiteboard",
+            OwnerId = owner.Id,
+            CurrentPresenterId = owner.Id,
+            ProjectId = projectId,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+        context.Whiteboards.Add(whiteboard);
+        await context.SaveChangesAsync();
+
+        if (createInvitation)
+        {
+            context.WhiteboardInvitations.Add(new WhiteboardInvitation
+            {
+                WhiteboardId = whiteboard.Id,
+                UserId = invitee!.Id,
+                InvitedByUserId = owner.Id,
+                CreatedAt = DateTime.UtcNow
+            });
+            await context.SaveChangesAsync();
+        }
+
+        var notification = new Notification
+        {
+            UserId = invitee!.Id,
+            Message = "Whiteboard invite",
+            Type = NotificationType.WhiteboardInvitation,
+            IsRead = false,
+            CreatedAt = DateTime.UtcNow,
+            ReferenceId = whiteboard.Id
+        };
+        context.Notifications.Add(notification);
+        await context.SaveChangesAsync();
+
+        return (invitee.Id, notification.Id, whiteboard.Id);
+    }
+
     // --- Index ---
 
     [Fact]
@@ -180,6 +270,67 @@ public class NotificationControllerTests : IClassFixture<TeamWareWebApplicationF
 
         Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
         Assert.Contains("/Notification", response.Headers.Location?.ToString());
+    }
+
+    [Fact]
+    public async Task Follow_WhiteboardInvitation_RedirectsToWhiteboardSession()
+    {
+        var loginCookie = await CreateAndLoginUser("whiteboard-follow@test.com");
+        var (_, notificationId, whiteboardId) = await CreateWhiteboardInvitationNotification("whiteboard-follow@test.com");
+
+        var request = new HttpRequestMessage(HttpMethod.Get, $"/Notification/Follow/{notificationId}");
+        request.Headers.Add("Cookie", loginCookie);
+
+        var response = await _client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+        Assert.Contains($"/Whiteboard/Session/{whiteboardId}", response.Headers.Location?.ToString());
+    }
+
+    [Fact]
+    public async Task Follow_DeletedWhiteboardInvitation_CleansUpInvitationAndRedirectsToLandingPage()
+    {
+        var loginCookie = await CreateAndLoginUser("whiteboard-follow-deleted@test.com");
+        var (userId, notificationId, whiteboardId) = await CreateWhiteboardInvitationNotification("whiteboard-follow-deleted@test.com");
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var whiteboard = await context.Whiteboards.FindAsync(whiteboardId);
+            context.Whiteboards.Remove(whiteboard!);
+            await context.SaveChangesAsync();
+        }
+
+        var request = new HttpRequestMessage(HttpMethod.Get, $"/Notification/Follow/{notificationId}");
+        request.Headers.Add("Cookie", loginCookie);
+
+        var response = await _client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+        Assert.Equal("/Whiteboard", response.Headers.Location?.ToString());
+
+        using var verificationScope = _factory.Services.CreateScope();
+        var verificationContext = verificationScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        Assert.Null(await verificationContext.WhiteboardInvitations.SingleOrDefaultAsync(i => i.WhiteboardId == whiteboardId && i.UserId == userId));
+    }
+
+    [Fact]
+    public async Task Follow_SavedWhiteboardWithoutMembership_CleansUpInvitationAndRedirectsToLandingPage()
+    {
+        var loginCookie = await CreateAndLoginUser("whiteboard-follow-removed@test.com");
+        var (userId, notificationId, whiteboardId) = await CreateWhiteboardInvitationNotification("whiteboard-follow-removed@test.com", savedBoard: true, removeMembership: true);
+
+        var request = new HttpRequestMessage(HttpMethod.Get, $"/Notification/Follow/{notificationId}");
+        request.Headers.Add("Cookie", loginCookie);
+
+        var response = await _client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+        Assert.Equal("/Whiteboard", response.Headers.Location?.ToString());
+
+        using var verificationScope = _factory.Services.CreateScope();
+        var verificationContext = verificationScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        Assert.Null(await verificationContext.WhiteboardInvitations.SingleOrDefaultAsync(i => i.WhiteboardId == whiteboardId && i.UserId == userId));
     }
 
     // --- Dismiss ---
