@@ -69,10 +69,6 @@
                    class="flex items-center rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700">
                     Invitations
                 </a>
-                <a asp-controller="Project" asp-action="Index"
-                   class="flex items-center rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700">
-                    Projects
-                </a>
                 @if (User.Identity?.IsAuthenticated == true)
                 {
                     <a asp-controller="Whiteboard" asp-action="Index"
@@ -80,6 +76,10 @@
                         Whiteboards
                     </a>
                 }
+                <a asp-controller="Project" asp-action="Index"
+                   class="flex items-center rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700">
+                    Projects
+                </a>
                 <a asp-controller="Inbox" asp-action="Index"
                    class="flex items-center justify-between rounded-lg pl-7 pr-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700">
                     <span>Inbox</span>

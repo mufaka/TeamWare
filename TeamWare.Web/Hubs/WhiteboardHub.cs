@@ -60,6 +60,18 @@ public class WhiteboardHub : Hub
             var displayName = await GetDisplayNameAsync(userId);
             await Clients.Group(GetGroupName(whiteboardId)).SendAsync("UserJoined", userId, displayName);
         }
+
+        // If the owner is (re)joining and there's no active presenter, make them the presenter
+        var whiteboard = await _dbContext.Whiteboards.FindAsync(whiteboardId);
+        if (whiteboard != null && whiteboard.OwnerId == userId && string.IsNullOrWhiteSpace(whiteboard.CurrentPresenterId))
+        {
+            whiteboard.CurrentPresenterId = userId;
+            whiteboard.UpdatedAt = DateTime.UtcNow;
+            await _dbContext.SaveChangesAsync();
+
+            var displayName = await GetDisplayNameAsync(userId);
+            await Clients.Group(GetGroupName(whiteboardId)).SendAsync("PresenterChanged", userId, displayName);
+        }
     }
 
     public async Task LeaveBoard(int whiteboardId)
