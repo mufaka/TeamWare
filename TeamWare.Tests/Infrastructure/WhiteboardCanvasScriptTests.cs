@@ -65,6 +65,28 @@ public class WhiteboardCanvasScriptTests
         Assert.Contains("JSON.parse", script);
     }
 
+    [Fact]
+    public void WhiteboardCanvasScript_UsesPointerEventsForInteraction()
+    {
+        var script = ReadScript("whiteboard-canvas.js");
+
+        Assert.Contains("pointerdown", script);
+        Assert.Contains("pointermove", script);
+        Assert.Contains("pointerup", script);
+        Assert.Contains("setPointerCapture", script);
+    }
+
+    [Fact]
+    public void WhiteboardCanvasScript_ExposesPenModeAndColorConfiguration()
+    {
+        var script = ReadScript("whiteboard-canvas.js");
+
+        Assert.Contains("\"pen\"", script);
+        Assert.Contains("setStrokeColor", script);
+        Assert.Contains("setFillColor", script);
+        Assert.Contains("devicePixelRatio", script);
+    }
+
     private static string ReadScript(string fileName)
     {
         var path = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "TeamWare.Web", "wwwroot", "js", fileName));

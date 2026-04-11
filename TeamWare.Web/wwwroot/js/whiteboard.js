@@ -44,6 +44,31 @@
             });
         });
 
+        var strokeColorInput = document.getElementById("whiteboard-stroke-color");
+        if (strokeColorInput) {
+            canvas.setStrokeColor(strokeColorInput.value);
+            strokeColorInput.addEventListener("input", function () {
+                canvas.setStrokeColor(strokeColorInput.value);
+            });
+        }
+
+        var fillColorInput = document.getElementById("whiteboard-fill-color");
+        if (fillColorInput) {
+            canvas.setFillColor(fillColorInput.value);
+            fillColorInput.addEventListener("input", function () {
+                canvas.setFillColor(fillColorInput.value);
+            });
+        }
+
+        var deleteButton = document.getElementById("whiteboard-delete-button");
+        if (deleteButton) {
+            deleteButton.addEventListener("click", function () {
+                if (isPresenter) {
+                    canvas.deleteSelectedShape();
+                }
+            });
+        }
+
         var debouncedSendUpdate = debounce(function () {
             if (!isPresenter || !connection || connection.state !== signalR.HubConnectionState.Connected) {
                 return;

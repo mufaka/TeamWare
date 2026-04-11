@@ -48,6 +48,19 @@ public class WhiteboardClientScriptTests
         Assert.Contains("whiteboard-chat-form", script);
     }
 
+    [Fact]
+    public void WhiteboardClientScript_WiresColorPickersAndDeleteButton()
+    {
+        var script = ReadScript("whiteboard.js");
+
+        Assert.Contains("whiteboard-stroke-color", script);
+        Assert.Contains("whiteboard-fill-color", script);
+        Assert.Contains("whiteboard-delete-button", script);
+        Assert.Contains("setStrokeColor", script);
+        Assert.Contains("setFillColor", script);
+        Assert.Contains("deleteSelectedShape", script);
+    }
+
     private static string ReadScript(string fileName)
     {
         var path = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "TeamWare.Web", "wwwroot", "js", fileName));
