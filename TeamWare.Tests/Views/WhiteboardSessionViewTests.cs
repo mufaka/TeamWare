@@ -33,7 +33,9 @@ public class WhiteboardSessionViewTests : IClassFixture<TeamWareWebApplicationFa
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var html = await response.Content.ReadAsStringAsync();
-        Assert.Contains("whiteboard-canvas.js", html);
+        Assert.Contains("joint.min.js", html);
+        Assert.Contains("joint.css", html);
+        Assert.Contains("whiteboard-joint.js", html);
         Assert.Contains("whiteboard.js", html);
         Assert.Contains("data-whiteboard-session", html);
         Assert.Contains("data-is-owner=\"true\"", html);

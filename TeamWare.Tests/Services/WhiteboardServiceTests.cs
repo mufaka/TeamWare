@@ -181,6 +181,20 @@ public class WhiteboardServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task SaveCanvasAsync_AsPresenter_WithJointJsPayload_UpdatesCanvasData()
+    {
+        var owner = CreateUser("joint-presenter@test.com", "Presenter");
+        var whiteboard = await CreateWhiteboardAsync(owner.Id, "Joint Canvas Board");
+        var canvasData = "{\"cells\":[{\"type\":\"standard.Rectangle\",\"position\":{\"x\":10,\"y\":20},\"size\":{\"width\":120,\"height\":60}}]}";
+
+        var result = await _service.SaveCanvasAsync(whiteboard.Id, canvasData, owner.Id);
+
+        Assert.True(result.Succeeded);
+        var updated = await _context.Whiteboards.FindAsync(whiteboard.Id);
+        Assert.Equal(canvasData, updated!.CanvasData);
+    }
+
+    [Fact]
     public async Task SaveCanvasAsync_AsNonPresenter_Fails()
     {
         var owner = CreateUser("canvas-owner@test.com", "Owner");

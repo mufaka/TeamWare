@@ -238,6 +238,12 @@ public class WhiteboardService : IWhiteboardService
                 return false;
             }
 
+            if (document.RootElement.TryGetProperty("cells", out var cellsElement)
+                && cellsElement.ValueKind != JsonValueKind.Array)
+            {
+                return false;
+            }
+
             return true;
         }
         catch (JsonException)

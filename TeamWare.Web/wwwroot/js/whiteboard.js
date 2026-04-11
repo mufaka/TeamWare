@@ -3,7 +3,10 @@
 (function () {
     document.addEventListener("DOMContentLoaded", function () {
         var session = document.querySelector("[data-whiteboard-session]");
-        if (!session || typeof signalR === "undefined" || typeof WhiteboardCanvas === "undefined") {
+        // Support both JointJS engine (WhiteboardJoint) and legacy canvas engine (WhiteboardCanvas)
+        var hasJoint = typeof WhiteboardJoint !== "undefined";
+        var hasCanvas = typeof WhiteboardCanvas !== "undefined";
+        if (!session || typeof signalR === "undefined" || (!hasJoint && !hasCanvas)) {
             return;
         }
 
@@ -23,14 +26,20 @@
         var isTemporary = session.getAttribute("data-is-temporary") === "true";
         var currentUserId = session.getAttribute("data-current-user-id");
         var isPresenter = session.getAttribute("data-is-presenter") === "true";
-        var canvas = new WhiteboardCanvas(session, {
-            isPresenter: isPresenter
-        });
+
+        // Instantiate the appropriate engine
+        var canvas;
+        if (hasJoint) {
+            canvas = new WhiteboardJoint(session, { isPresenter: isPresenter });
+        } else {
+            canvas = new WhiteboardCanvas(session, { isPresenter: isPresenter });
+        }
 
         if (initialCanvasElement) {
             canvas.deserialize(initialCanvasElement.textContent || "");
         }
 
+        // Mode buttons (shared between both engines)
         document.querySelectorAll("[data-whiteboard-mode]").forEach(function (button) {
             button.addEventListener("click", function () {
                 document.querySelectorAll("[data-whiteboard-mode]").forEach(function (candidate) {
@@ -44,6 +53,69 @@
             });
         });
 
+        // JointJS shape buttons
+        if (hasJoint) {
+            var shapeButtons = {
+                "btn-rect": "addRectangle",
+                "btn-circle": "addCircle",
+                "btn-diamond": "addDiamond",
+                "btn-cylinder": "addCylinder",
+                "btn-text": "addText"
+            };
+            Object.keys(shapeButtons).forEach(function (id) {
+                var btn = document.getElementById(id);
+                if (btn) {
+                    btn.addEventListener("click", function () {
+                        if (isPresenter && canvas[shapeButtons[id]]) {
+                            canvas[shapeButtons[id]]();
+                        }
+                    });
+                }
+            });
+
+            // Edit buttons
+            var undoBtn = document.getElementById("btn-undo");
+            if (undoBtn) undoBtn.addEventListener("click", function () { if (isPresenter) canvas.undo(); });
+            var redoBtn = document.getElementById("btn-redo");
+            if (redoBtn) redoBtn.addEventListener("click", function () { if (isPresenter) canvas.redo(); });
+            var clearBtn = document.getElementById("btn-clear");
+            if (clearBtn) clearBtn.addEventListener("click", function () { if (isPresenter) canvas.clearAll(); });
+
+            // View buttons
+            var zoomInBtn = document.getElementById("btn-zoom-in");
+            if (zoomInBtn) zoomInBtn.addEventListener("click", function () { canvas.zoomIn(); });
+            var zoomOutBtn = document.getElementById("btn-zoom-out");
+            if (zoomOutBtn) zoomOutBtn.addEventListener("click", function () { canvas.zoomOut(); });
+            var fitBtn = document.getElementById("btn-fit");
+            if (fitBtn) fitBtn.addEventListener("click", function () { canvas.fitAll(); });
+
+            // Export/Import
+            var exportBtn = document.getElementById("btn-export");
+            if (exportBtn) exportBtn.addEventListener("click", function () { canvas.exportJSON(); });
+            var importBtn = document.getElementById("btn-import");
+            if (importBtn) importBtn.addEventListener("click", function () { if (isPresenter) canvas.importJSON(); });
+
+            // Pen color
+            var penColorInput = document.getElementById("pen-color-input");
+            if (penColorInput) {
+                penColorInput.addEventListener("input", function (e) {
+                    canvas.setPenColor(e.target.value);
+                    var swatch = document.getElementById("pen-color-swatch");
+                    if (swatch) swatch.style.background = e.target.value;
+                });
+            }
+
+            // Pen width
+            document.querySelectorAll(".pen-size").forEach(function (btn) {
+                btn.addEventListener("click", function () {
+                    document.querySelectorAll(".pen-size").forEach(function (b) { b.classList.remove("active"); });
+                    btn.classList.add("active");
+                    canvas.setPenWidth(btn.getAttribute("data-width"));
+                });
+            });
+        }
+
+        // Legacy canvas controls
         var strokeColorInput = document.getElementById("whiteboard-stroke-color");
         if (strokeColorInput) {
             canvas.setStrokeColor(strokeColorInput.value);
@@ -60,11 +132,16 @@
             });
         }
 
+        // Delete button (works for both engines)
         var deleteButton = document.getElementById("whiteboard-delete-button");
         if (deleteButton) {
             deleteButton.addEventListener("click", function () {
                 if (isPresenter) {
-                    canvas.deleteSelectedShape();
+                    if (hasJoint) {
+                        canvas.deleteSelected();
+                    } else {
+                        canvas.deleteSelectedShape();
+                    }
                 }
             });
         }
