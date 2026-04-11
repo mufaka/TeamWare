@@ -55,7 +55,7 @@ public class WhiteboardChatServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task SendMessageAsync_HtmlContent_IsEncodedBeforePersistence()
+    public async Task SendMessageAsync_HtmlContent_IsStoredAsRawText()
     {
         var user = CreateUser("chat-xss@test.com", "Author");
         var whiteboard = await CreateWhiteboardAsync(user.Id, "Chat XSS Board");
@@ -63,7 +63,7 @@ public class WhiteboardChatServiceTests : IDisposable
         var result = await _service.SendMessageAsync(whiteboard.Id, user.Id, "<script>alert('xss')</script>");
 
         Assert.True(result.Succeeded);
-        Assert.Equal("&lt;script&gt;alert(&#39;xss&#39;)&lt;/script&gt;", result.Data!.Content);
+        Assert.Equal("<script>alert('xss')</script>", result.Data!.Content);
         Assert.Equal(result.Data.Content, _context.WhiteboardChatMessages.Single().Content);
     }
 
