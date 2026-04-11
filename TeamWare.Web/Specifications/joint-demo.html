@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JointJS Diagram Sandbox</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@joint/core@4.2.4/dist/joint.css">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #1e2330;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+            color: #e0e6f0;
+        }
+
+        /* ── Toolbar ───────────────────────────────────────────────── */
+        #toolbar {
+            background: #252d3d;
+            border-bottom: 1px solid #3a4460;
+            padding: 6px 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-shrink: 0;
+            flex-wrap: wrap;
+            user-select: none;
+        }
+
+        .tb-sep   { width: 1px; height: 26px; background: #3a4460; margin: 0 4px; flex-shrink: 0; }
+        .tb-label { font-size: 10px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: #5a6a8a; padding: 0 2px; }
+
+        .tb-btn {
+            padding: 5px 11px;
+            background: #323d52;
+            border: 1px solid #4a5570;
+            color: #c8d4e8;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12.5px;
+            font-family: inherit;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            white-space: nowrap;
+            transition: background 0.12s, border-color 0.12s, color 0.12s;
+            line-height: 1;
+        }
+        .tb-btn:hover        { background: #3e4d68; border-color: #6a7a9a; color: #e8f0ff; }
+        .tb-btn:disabled     { opacity: 0.35; cursor: default; pointer-events: none; }
+        .tb-btn.active       { background: #1d4ed8; border-color: #3b82f6; color: #eff6ff; }
+        .tb-btn.active:hover { background: #1e40af; }
+        .tb-btn.danger:hover { background: #5c2020; border-color: #c0392b; color: #ffb3b3; }
+
+        .swatch         { display: inline-block; width: 12px; height: 12px; border-radius: 2px; flex-shrink: 0; }
+        .swatch.circle  { border-radius: 50%; }
+        .swatch.diamond { transform: rotate(45deg); width: 10px; height: 10px; }
+
+        /* ── Canvas area ───────────────────────────────────────────── */
+        #canvas-wrap {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            background: #f5f6f8;
+        }
+
+        #canvas { width: 100%; height: 100%; }
+
+        /*
+         * Transparent overlay placed above the paper.
+         * In draw/lasso mode it gets pointer-events:all, which blocks all
+         * JointJS mouse events (elements won't move, select, etc.).
+         * In select mode it stays pointer-events:none and is invisible.
+         */
+        #interaction-block {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        /*
+         * SVG layer for temporary freehand/lasso paths.
+         * Its inner <g> is kept in sync with the paper's translate+scale
+         * so paths drawn here are in paper-local coordinates.
+         */
+        #draw-layer {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            overflow: visible;
+            z-index: 5;
+        }
+
+        /* Guarantee no fill on any temporary drawing paths regardless of joint.css */
+        #draw-layer path { fill: none; }
+
+        /* ── Pen settings controls ──────────────────────────────────── */
+        .pen-color-wrap {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            cursor: pointer;
+        }
+        #pen-color-swatch {
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+            border: 2px solid #5a6a8a;
+            flex-shrink: 0;
+            transition: border-color 0.12s;
+        }
+        .pen-color-wrap:hover #pen-color-swatch { border-color: #6a7a9a; }
+        #pen-color-input {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+            padding: 0;
+            border: none;
+        }
+        .pen-size { padding: 5px 8px; }
+        .pen-size svg { display: block; }
+
+        /* ── Status bar ─────────────────────────────────────────────── */
+        #status-bar {
+            background: #252d3d;
+            border-top: 1px solid #3a4460;
+            color: #5a6a8a;
+            font-size: 11px;
+            padding: 4px 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+            gap: 20px;
+        }
+        #status-hint { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        #status-msg  { color: #8aaad0; font-style: italic; white-space: nowrap; flex-shrink: 0; }
+    </style>
+</head>
+<body>
+
+<!-- ── Toolbar ───────────────────────────────────────────────────── -->
+<div id="toolbar">
+
+    <span class="tb-label">Mode</span>
+    <button class="tb-btn active" id="btn-mode-select">↖ Select</button>
+    <button class="tb-btn"        id="btn-mode-draw"  >✏ Draw</button>
+    <button class="tb-btn"        id="btn-mode-lasso" >⬡ Lasso</button>
+
+    <div class="tb-sep"></div>
+
+    <span class="tb-label">Pen</span>
+    <div class="pen-color-wrap" title="Pen color">
+        <div id="pen-color-swatch" style="background:#374151;"></div>
+        <input type="color" id="pen-color-input" value="#374151">
+    </div>
+    <button class="tb-btn pen-size active" data-width="2" title="Fine">
+        <svg width="26" height="14" viewBox="0 0 26 14"><line x1="2" y1="7" x2="24" y2="7" stroke="currentColor" stroke-width="2"  stroke-linecap="round"/></svg>
+    </button>
+    <button class="tb-btn pen-size" data-width="4" title="Medium">
+        <svg width="26" height="14" viewBox="0 0 26 14"><line x1="2" y1="7" x2="24" y2="7" stroke="currentColor" stroke-width="4"  stroke-linecap="round"/></svg>
+    </button>
+    <button class="tb-btn pen-size" data-width="8" title="Thick">
+        <svg width="26" height="14" viewBox="0 0 26 14"><line x1="2" y1="7" x2="24" y2="7" stroke="currentColor" stroke-width="8"  stroke-linecap="round"/></svg>
+    </button>
+    <button class="tb-btn pen-size" data-width="16" title="Extra thick">
+        <svg width="26" height="14" viewBox="0 0 26 14"><line x1="2" y1="7" x2="24" y2="7" stroke="currentColor" stroke-width="13" stroke-linecap="round"/></svg>
+    </button>
+
+    <div class="tb-sep"></div>
+
+    <span class="tb-label">Shapes</span>
+    <button class="tb-btn" id="btn-rect">
+        <span class="swatch" style="background:#3b82f6"></span> Rectangle
+    </button>
+    <button class="tb-btn" id="btn-circle">
+        <span class="swatch circle" style="background:#ec4899"></span> Circle
+    </button>
+    <button class="tb-btn" id="btn-diamond">
+        <span class="swatch diamond" style="background:#10b981"></span> Diamond
+    </button>
+    <button class="tb-btn" id="btn-cylinder">
+        <span class="swatch" style="background:#f59e0b;border-radius:40% 40% 0 0/20%"></span> Cylinder
+    </button>
+    <button class="tb-btn" id="btn-text">
+        <b style="font-size:13px;line-height:1">T</b> Text
+    </button>
+
+    <div class="tb-sep"></div>
+
+    <span class="tb-label">Edit</span>
+    <button class="tb-btn"        id="btn-undo"   disabled>↩ Undo</button>
+    <button class="tb-btn"        id="btn-redo"   disabled>↪ Redo</button>
+    <button class="tb-btn danger" id="btn-delete"         >✕ Delete</button>
+    <button class="tb-btn danger" id="btn-clear"          >⬛ Clear</button>
+
+    <div class="tb-sep"></div>
+
+    <span class="tb-label">View</span>
+    <button class="tb-btn" id="btn-zoom-in">＋ Zoom In</button>
+    <button class="tb-btn" id="btn-zoom-out">－ Zoom Out</button>
+    <button class="tb-btn" id="btn-fit">⊡ Fit All</button>
+
+    <div class="tb-sep"></div>
+
+    <span class="tb-label">File</span>
+    <button class="tb-btn" id="btn-export">↓ Export JSON</button>
+    <button class="tb-btn" id="btn-import">↑ Import JSON</button>
+
+</div>
+
+<!-- ── Canvas ─────────────────────────────────────────────────────── -->
+<div id="canvas-wrap">
+    <div id="canvas"></div>
+    <div id="interaction-block"></div>
+    <svg id="draw-layer" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
+        <g id="draw-vp"></g>
+    </svg>
+</div>
+
+<!-- ── Status bar ────────────────────────────────────────────────── -->
+<div id="status-bar">
+    <span id="status-hint"></span>
+    <span id="status-msg">Ready</span>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@joint/core@4.2.4/dist/joint.min.js"></script>
+<script>
+(function () {
+    'use strict';
+
+    const { dia, shapes, elementTools, linkTools } = joint;
+
+    // ── Constants ───────────────────────────────────────────────────
+    const MIN_SCALE  = 0.2;
+    const MAX_SCALE  = 4;
+    const GRID_SIZE  = 10;
+    const SNAP_LINKS = 20;
+
+    const HINTS = {
+        select: 'Click shape to select · Hover → drag blue ● to connect · Double-click to rename · Shift+drag or middle-click to pan · Scroll to zoom',
+        draw:   'Click and drag to draw a freehand shape · Release to finish · Esc to cancel',
+        lasso:  'Lasso: click and drag a freehand region · Shapes whose centre falls inside will be selected · Esc to cancel'
+    };
+
+    // ── Graph & Paper ───────────────────────────────────────────────
+    const graph = new dia.Graph({}, { cellNamespace: shapes });
+
+    const paper = new dia.Paper({
+        el: document.getElementById('canvas'),
+        model: graph,
+        width: '100%',
+        height: '100%',
+        gridSize: GRID_SIZE,
+        drawGrid: { name: 'dot', args: { color: '#c0c8d8', size: 2 } },
+        cellViewNamespace: shapes,
+        background: { color: '#f5f6f8' },
+        defaultConnectionPoint: { name: 'boundary', args: { sticky: true } },
+        defaultRouter:    { name: 'orthogonal' },
+        defaultConnector: { name: 'rounded', args: { radius: 8 } },
+        defaultLink: () => new shapes.standard.Link({
+            attrs: {
+                line: {
+                    stroke: '#4a5568',
+                    strokeWidth: 2,
+                    targetMarker: { type: 'path', fill: '#4a5568', stroke: 'none', d: 'M 10 -5 0 0 10 5 Z' }
+                }
+            }
+        }),
+        validateConnection(srcView, _srcMag, tgtView) { return srcView !== tgtView; },
+        snapLinks: { radius: SNAP_LINKS },
+        linkPinning: false,
+        interactive: { labelMove: false }
+    });
+
+    // ── Draw-layer sync ─────────────────────────────────────────────
+    // The #draw-vp group mirrors the paper's pan/zoom so that paths
+    // drawn using paper-local coordinates appear in the right place.
+    const drawVp = document.getElementById('draw-vp');
+
+    function syncDrawLayer() {
+        const { tx, ty } = paper.translate();
+        const { sx }     = paper.scale();
+        drawVp.setAttribute('transform', `translate(${tx},${ty}) scale(${sx},${sx})`);
+    }
+
+    paper.on('translate scale', syncDrawLayer);
+    syncDrawLayer();
+
+    // ── Ports ───────────────────────────────────────────────────────
+    const PORT_DOT = { r: 5, magnet: true, fill: '#fff', stroke: '#3b82f6', strokeWidth: 2, visibility: 'hidden', cursor: 'crosshair' };
+
+    function portsConfig() {
+        return {
+            groups: {
+                top:    { position: 'top',    attrs: { circle: { ...PORT_DOT } } },
+                right:  { position: 'right',  attrs: { circle: { ...PORT_DOT } } },
+                bottom: { position: 'bottom', attrs: { circle: { ...PORT_DOT } } },
+                left:   { position: 'left',   attrs: { circle: { ...PORT_DOT } } }
+            },
+            items: [{ group: 'top' }, { group: 'right' }, { group: 'bottom' }, { group: 'left' }]
+        };
+    }
+
+    function setPorts(model, visible) {
+        const v = visible ? 'visible' : 'hidden';
+        model.getPorts().forEach(p => model.portProp(p.id, 'attrs/circle/visibility', v));
+    }
+
+    paper.on('element:mouseenter', v => { if (mode === 'select') setPorts(v.model, true); });
+    paper.on('element:mouseleave', v => setPorts(v.model, false));
+
+    // ── Resize control tool ─────────────────────────────────────────
+    const ResizeTool = elementTools.Control.extend({
+        getPosition(view) {
+            const { width, height } = view.model.size();
+            return { x: width, y: height };
+        },
+        setPosition(view, coords) {
+            view.model.resize(
+                Math.max(GRID_SIZE * 3, Math.round(coords.x / GRID_SIZE) * GRID_SIZE),
+                Math.max(GRID_SIZE * 2, Math.round(coords.y / GRID_SIZE) * GRID_SIZE)
+            );
+        }
+    });
+
+    // ── Selection ───────────────────────────────────────────────────
+    // activeView  — single selected view with full tools (resize, remove)
+    // lassoModels — Set of models highlighted via lasso (Boundary tool only)
+
+    let activeView   = null;
+    const lassoModels = new Set();
+
+    function selectSingle(view) {
+        clearAllSelection();
+        activeView = view;
+
+        if (view.model.isLink()) {
+            view.addTools(new dia.ToolsView({ tools: [
+                new linkTools.Remove({ distance: '50%', offset: 10 }),
+                new linkTools.Vertices({ snapRadius: 10 }),
+                new linkTools.Segments(),
+                new linkTools.SourceArrowhead(),
+                new linkTools.TargetArrowhead()
+            ]}));
+            setStatus('Link selected — drag vertices to reshape · double-click to add label');
+        } else {
+            view.addTools(new dia.ToolsView({ tools: [
+                new elementTools.Remove({ x: '100%', y: 0, offset: { x: 10, y: -10 } }),
+                new elementTools.Boundary({
+                    padding: 5, useModelGeometry: true, rotate: true,
+                    attrs: { stroke: '#3b82f6', strokeWidth: 1.5, strokeDasharray: '5 3', fill: 'none' }
+                }),
+                new ResizeTool({
+                    handleAttributes: { fill: '#3b82f6', stroke: '#fff', 'stroke-width': 1.5, r: 5, cursor: 'se-resize' }
+                })
+            ]}));
+            setStatus('Selected — drag to move · drag ◢ to resize · double-click to rename · Del to delete');
+        }
+    }
+
+    function addLassoHighlight(model) {
+        if (lassoModels.has(model)) return;
+        lassoModels.add(model);
+        const view = paper.findViewByModel(model);
+        if (view && !model.isLink()) {
+            view.addTools(new dia.ToolsView({ tools: [
+                new elementTools.Boundary({
+                    padding: 5, useModelGeometry: true,
+                    attrs: { stroke: '#3b82f6', strokeWidth: 1.5, strokeDasharray: '5 3', fill: 'rgba(59,130,246,0.06)' }
+                })
+            ]}));
+        }
+    }
+
+    function clearAllSelection() {
+        if (activeView) { activeView.removeTools(); activeView = null; }
+        lassoModels.forEach(model => {
+            const view = paper.findViewByModel(model);
+            if (view) view.removeTools();
+        });
+        lassoModels.clear();
+    }
+
+    function deleteSelected() {
+        const toDelete = new Set();
+        if (activeView) toDelete.add(activeView.model);
+        lassoModels.forEach(m => toDelete.add(m));
+        if (!toDelete.size) return;
+        clearAllSelection();
+        toDelete.forEach(m => m.remove());
+        captureSnapshot();
+        setStatus(`Deleted ${toDelete.size} item${toDelete.size > 1 ? 's' : ''}`);
+    }
+
+    // ── Mode ────────────────────────────────────────────────────────
+    let mode = 'select';
+    const block = document.getElementById('interaction-block');
+
+    function setMode(newMode) {
+        // Hide any visible ports before leaving select mode
+        if (mode === 'select' && newMode !== 'select') {
+            graph.getElements().forEach(el => setPorts(el, false));
+        }
+        // Cancel any in-progress draws when switching
+        if (drawState)  cancelDraw();
+        if (lassoState) cancelLasso();
+
+        mode = newMode;
+        block.style.pointerEvents = mode === 'select' ? 'none' : 'all';
+        block.style.cursor        = mode === 'select' ? ''      : 'crosshair';
+
+        ['select', 'draw', 'lasso'].forEach(m => {
+            document.getElementById(`btn-mode-${m}`).classList.toggle('active', m === mode);
+        });
+
+        document.getElementById('status-hint').textContent = HINTS[mode];
+        setStatus({ select: 'Ready', draw: 'Draw mode — click and drag to draw', lasso: 'Lasso mode — drag to select shapes' }[mode]);
+    }
+
+    document.getElementById('btn-mode-select').addEventListener('click', () => setMode('select'));
+    document.getElementById('btn-mode-draw'  ).addEventListener('click', () => setMode('draw'));
+    document.getElementById('btn-mode-lasso' ).addEventListener('click', () => setMode('lasso'));
+
+    // ── Paper events (select mode only) ─────────────────────────────
+    paper.on('element:pointerclick', (view, evt) => {
+        if (mode !== 'select') return;
+        evt.stopPropagation();
+        selectSingle(view);
+    });
+
+    paper.on('link:pointerclick', (view, evt) => {
+        if (mode !== 'select') return;
+        evt.stopPropagation();
+        selectSingle(view);
+    });
+
+    paper.on('blank:pointerclick', () => {
+        if (mode !== 'select') return;
+        clearAllSelection();
+        setStatus('Ready');
+    });
+
+    paper.on('element:pointerdblclick', view => {
+        if (mode !== 'select') return;
+        const model = view.model;
+        const next  = prompt('Label:', model.attr('label/text') || '');
+        if (next !== null) { model.attr('label/text', next); captureSnapshot(); }
+    });
+
+    paper.on('link:pointerdblclick', view => {
+        if (mode !== 'select') return;
+        const model   = view.model;
+        const labels  = model.labels();
+        const current = labels[0]?.attrs?.text?.text || '';
+        const next    = prompt('Link label:', current);
+        if (next !== null) {
+            model.labels(next.trim()
+                ? [{ position: 0.5, attrs: { text: { text: next, fontSize: 12, fontFamily: 'inherit' } } }]
+                : []);
+            captureSnapshot();
+        }
+    });
+
+    // ── Pan (Shift+drag or middle-click) ────────────────────────────
+    // Works in ALL modes; handled from both the paper and the overlay.
+    let panning   = false;
+    let panOrigin = { x: 0, y: 0 };
+
+    function tryStartPan(evt) {
+        if (!(evt.shiftKey || evt.button === 1)) return false;
+        panning               = true;
+        panOrigin             = { x: evt.clientX, y: evt.clientY };
+        document.body.style.cursor = 'grabbing';
+        evt.preventDefault();
+        return true;
+    }
+
+    // Pan start in select mode (blank area, via JointJS)
+    paper.on('blank:pointerdown', (evt) => tryStartPan(evt));
+
+    // Pan start in draw/lasso mode (via overlay)
+    block.addEventListener('mousedown', (evt) => {
+        if (tryStartPan(evt)) return;
+        if (mode === 'draw')  startDraw(evt);
+        if (mode === 'lasso') startLasso(evt);
+    });
+
+    document.addEventListener('mousemove', evt => {
+        if (panning) {
+            const { tx, ty } = paper.translate();
+            paper.translate(tx + evt.clientX - panOrigin.x, ty + evt.clientY - panOrigin.y);
+            panOrigin = { x: evt.clientX, y: evt.clientY };
+            syncDrawLayer();
+            return;
+        }
+        if (drawState)  continueDraw(evt);
+        if (lassoState) continueLasso(evt);
+    });
+
+    document.addEventListener('mouseup', () => {
+        if (panning) { panning = false; document.body.style.cursor = ''; return; }
+        if (drawState)  finishDraw();
+        if (lassoState) finishLasso();
+    });
+
+    // ── Zoom (scroll wheel on canvas-wrap, works in all modes) ──────
+    document.getElementById('canvas-wrap').addEventListener('wheel', evt => {
+        evt.preventDefault();
+        const { sx }   = paper.scale();
+        const factor   = evt.deltaY < 0 ? 1.12 : 1 / 1.12;
+        const newScale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, sx * factor));
+        if (newScale === sx) return;
+
+        const rect     = paper.el.getBoundingClientRect();
+        const ox       = evt.clientX - rect.left;
+        const oy       = evt.clientY - rect.top;
+        const { tx, ty } = paper.translate();
+        paper.translate(ox - (ox - tx) * (newScale / sx), oy - (oy - ty) * (newScale / sx));
+        paper.scale(newScale);
+        syncDrawLayer();
+        setStatus(`Zoom ${Math.round(newScale * 100)}%`);
+    }, { passive: false });
+
+    // ── Freehand path utilities ──────────────────────────────────────
+    function makeSvgPath(attrs) {
+        const el = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        Object.entries(attrs).forEach(([k, v]) => el.setAttribute(k, v));
+        el.setAttribute('pointer-events', 'none');
+        drawVp.appendChild(el);
+        return el;
+    }
+
+    function removeSvgEl(el) {
+        if (el && el.parentNode) el.parentNode.removeChild(el);
+    }
+
+    // Only record a point if it's far enough from the last one (reduces noise)
+    function isfarEnough(pts, pt, minDist) {
+        if (!pts.length) return true;
+        const last = pts[pts.length - 1];
+        return Math.hypot(pt.x - last.x, pt.y - last.y) >= minDist;
+    }
+
+    // Build an open path from recorded points using straight line segments.
+    // At a 4px capture threshold the density is high enough that the result
+    // looks smooth without any Bézier overshoot or shadow artifacts.
+    function buildLinePath(pts) {
+        if (pts.length < 2) return '';
+        const f = n => n.toFixed(1);
+        return pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${f(p.x)} ${f(p.y)}`).join(' ');
+    }
+
+    // Closed polygon path for lasso outline
+    function buildPolygonPath(pts) {
+        const f = n => n.toFixed(1);
+        return pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${f(p.x)} ${f(p.y)}`).join(' ') + ' Z';
+    }
+
+    // Ray-casting point-in-polygon test (paper-local coordinates)
+    function pointInPolygon(pt, poly) {
+        let inside = false;
+        for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+            const xi = poly[i].x, yi = poly[i].y, xj = poly[j].x, yj = poly[j].y;
+            if ((yi > pt.y) !== (yj > pt.y) && pt.x < (xj - xi) * (pt.y - yi) / (yj - yi) + xi) {
+                inside = !inside;
+            }
+        }
+        return inside;
+    }
+
+    // ── Pen settings ────────────────────────────────────────────────
+    let penColor = '#374151';
+    let penWidth = 2;
+
+    document.getElementById('pen-color-input').addEventListener('input', e => {
+        penColor = e.target.value;
+        document.getElementById('pen-color-swatch').style.background = penColor;
+    });
+
+    document.querySelectorAll('.pen-size').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.pen-size').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            penWidth = parseInt(btn.dataset.width, 10);
+        });
+    });
+
+    // ── Freehand draw mode ───────────────────────────────────────────
+    let drawState = null; // { pts: [], el: SVGPathElement, color, width }
+
+    function startDraw(evt) {
+        const pt    = paper.clientToLocalPoint(evt.clientX, evt.clientY);
+        const color = penColor;
+        const width = penWidth;
+        const el    = makeSvgPath({
+            fill: 'none', stroke: color, 'stroke-width': String(width),
+            'stroke-linecap': 'round', 'stroke-linejoin': 'round'
+        });
+        // Show a tiny dot at the starting point so the stroke is visible immediately.
+        el.setAttribute('d', `M ${pt.x.toFixed(1)} ${pt.y.toFixed(1)} l 0 0`);
+        drawState = { pts: [pt], el, color, width };
+        evt.preventDefault();
+    }
+
+    function continueDraw(evt) {
+        if (!drawState) return;
+        const pt = paper.clientToLocalPoint(evt.clientX, evt.clientY);
+        // Always render to the current cursor position for a smooth live preview,
+        // but only commit the point to pts[] once it's far enough from the last
+        // committed point (reduces noise in the final stored path).
+        if (isfarEnough(drawState.pts, pt, 4)) {
+            drawState.pts.push(pt);
+        }
+        // Render the committed points PLUS the live cursor position as the final segment.
+        const preview = [...drawState.pts, pt];
+        drawState.el.setAttribute('d', buildLinePath(preview));
+    }
+
+    function finishDraw() {
+        if (!drawState) return;
+        const { pts, el, color, width } = drawState;
+        drawState = null;
+        removeSvgEl(el);
+
+        if (pts.length < 2) return; // too short — ignore
+
+        const xs = pts.map(p => p.x), ys = pts.map(p => p.y);
+        const x0 = Math.min(...xs), y0 = Math.min(...ys);
+        const w  = Math.max(Math.max(...xs) - x0, GRID_SIZE);
+        const h  = Math.max(Math.max(...ys) - y0, GRID_SIZE);
+
+        // Translate points so they're relative to the element's top-left corner
+        const local = pts.map(p => ({ x: p.x - x0, y: p.y - y0 }));
+        const d     = buildLinePath(local);
+
+        const element = new shapes.standard.Path({
+            position: { x: x0, y: y0 },
+            size:     { width: w, height: h },
+            ports:    portsConfig(),
+            attrs: {
+                body: {
+                    d,
+                    fill: 'transparent',   // invisible but keeps interior clickable
+                    stroke: color,
+                    strokeWidth: width,
+                    strokeLinecap: 'round',
+                    strokeLinejoin: 'round'
+                },
+                label: { text: '' }
+            }
+        });
+
+        graph.addCell(element);
+        captureSnapshot();
+        setMode('select'); // return to select and auto-select the new shape
+        const view = paper.findViewByModel(element);
+        if (view) selectSingle(view);
+    }
+
+    function cancelDraw() {
+        if (!drawState) return;
+        removeSvgEl(drawState.el);
+        drawState = null;
+    }
+
+    // ── Lasso select mode ────────────────────────────────────────────
+    let lassoState = null; // { pts: [], el: SVGPathElement }
+
+    function startLasso(evt) {
+        const pt = paper.clientToLocalPoint(evt.clientX, evt.clientY);
+        const el = makeSvgPath({
+            fill: 'rgba(59,130,246,0.12)', stroke: '#3b82f6',
+            'stroke-width': '2', 'stroke-linejoin': 'round'
+        });
+        clearAllSelection();
+        lassoState = { pts: [pt], el };
+        evt.preventDefault();
+    }
+
+    function continueLasso(evt) {
+        if (!lassoState) return;
+        const pt = paper.clientToLocalPoint(evt.clientX, evt.clientY);
+        if (!isfarEnough(lassoState.pts, pt, 3)) return;
+        lassoState.pts.push(pt);
+        lassoState.el.setAttribute('d', buildPolygonPath(lassoState.pts));
+    }
+
+    function finishLasso() {
+        if (!lassoState) return;
+        const { pts, el } = lassoState;
+        lassoState = null;
+        removeSvgEl(el);
+
+        if (pts.length < 2) return;
+
+        const found = graph.getElements().filter(el => {
+            const c = el.getBBox().center();
+            return pointInPolygon(c, pts);
+        });
+
+        if (found.length === 1) {
+            // Single match — give it full selection treatment
+            const view = paper.findViewByModel(found[0]);
+            if (view) selectSingle(view);
+        } else if (found.length > 1) {
+            found.forEach(model => addLassoHighlight(model));
+            setStatus(`${found.length} shapes selected — Del to delete · click a shape to select individually`);
+        } else {
+            setStatus('No shapes in lasso region');
+        }
+    }
+
+    function cancelLasso() {
+        if (!lassoState) return;
+        removeSvgEl(lassoState.el);
+        lassoState = null;
+    }
+
+    // ── Shape helpers ─────────────────────────────────────────────────
+    function viewCenter() {
+        const { tx, ty } = paper.translate();
+        const { sx }     = paper.scale();
+        return {
+            x: (paper.el.clientWidth  / 2 - tx) / sx,
+            y: (paper.el.clientHeight / 2 - ty) / sx
+        };
+    }
+
+    function snap(v) { return Math.round(v / GRID_SIZE) * GRID_SIZE; }
+
+    function addElement(element) {
+        const { x, y }          = viewCenter();
+        const { width, height } = element.size();
+        element.position(snap(x - width / 2), snap(y - height / 2));
+        graph.addCell(element);
+        setMode('select');
+        const view = paper.findViewByModel(element);
+        if (view) selectSingle(view);
+    }
+
+    // ── Shape buttons ─────────────────────────────────────────────────
+    document.getElementById('btn-rect').addEventListener('click', () => {
+        addElement(new shapes.standard.Rectangle({
+            size: { width: 120, height: 60 },
+            ports: portsConfig(),
+            attrs: {
+                body:  { fill: '#dbeafe', stroke: '#3b82f6', strokeWidth: 1.5, rx: 5, ry: 5 },
+                label: { text: 'Rectangle', fill: '#1e3a8a', fontSize: 13 }
+            }
+        }));
+    });
+
+    document.getElementById('btn-circle').addEventListener('click', () => {
+        addElement(new shapes.standard.Circle({
+            size: { width: 100, height: 100 },
+            ports: portsConfig(),
+            attrs: {
+                body:  { fill: '#fce7f3', stroke: '#ec4899', strokeWidth: 1.5 },
+                label: { text: 'Circle', fill: '#831843', fontSize: 13 }
+            }
+        }));
+    });
+
+    document.getElementById('btn-diamond').addEventListener('click', () => {
+        addElement(new shapes.standard.Path({
+            size: { width: 130, height: 80 },
+            ports: portsConfig(),
+            attrs: {
+                body: {
+                    d: 'M 0 calc(0.5*h) calc(0.5*w) 0 calc(w) calc(0.5*h) calc(0.5*w) calc(h) Z',
+                    fill: '#d1fae5', stroke: '#10b981', strokeWidth: 1.5
+                },
+                label: { text: 'Decision', fill: '#064e3b', fontSize: 13 }
+            }
+        }));
+    });
+
+    document.getElementById('btn-cylinder').addEventListener('click', () => {
+        addElement(new shapes.standard.Cylinder({
+            size: { width: 80, height: 100 },
+            ports: portsConfig(),
+            attrs: {
+                body:  { fill: '#fef3c7', stroke: '#f59e0b', strokeWidth: 1.5 },
+                top:   { fill: '#fde68a', stroke: '#f59e0b', strokeWidth: 1.5 },
+                label: { text: 'Database', fill: '#78350f', fontSize: 13 }
+            }
+        }));
+    });
+
+    document.getElementById('btn-text').addEventListener('click', () => {
+        addElement(new shapes.standard.Rectangle({
+            size: { width: 140, height: 40 },
+            ports: portsConfig(),
+            attrs: {
+                body:  { fill: 'transparent', stroke: '#9ca3af', strokeWidth: 1, strokeDasharray: '5 4', rx: 3, ry: 3 },
+                label: { text: 'Text label', fill: '#374151', fontSize: 13 }
+            }
+        }));
+    });
+
+    // ── Delete / Clear ────────────────────────────────────────────────
+    document.getElementById('btn-delete').addEventListener('click', deleteSelected);
+    document.getElementById('btn-clear').addEventListener('click', () => {
+        if (!graph.getCells().length) return;
+        if (confirm('Remove all shapes and connections?')) {
+            clearAllSelection();
+            graph.clear();
+            captureSnapshot();
+            setStatus('Canvas cleared');
+        }
+    });
+
+    // ── Zoom / Fit ────────────────────────────────────────────────────
+    document.getElementById('btn-zoom-in').addEventListener('click', () => {
+        paper.scale(Math.min(MAX_SCALE, paper.scale().sx * 1.2));
+        syncDrawLayer();
+    });
+    document.getElementById('btn-zoom-out').addEventListener('click', () => {
+        paper.scale(Math.max(MIN_SCALE, paper.scale().sx / 1.2));
+        syncDrawLayer();
+    });
+    document.getElementById('btn-fit').addEventListener('click', () => {
+        if (!graph.getCells().length) return;
+        paper.scaleContentToFit({ padding: 48, maxScale: MAX_SCALE });
+        syncDrawLayer();
+        setStatus('Fit to canvas');
+    });
+
+    // ── Export / Import ───────────────────────────────────────────────
+    document.getElementById('btn-export').addEventListener('click', () => {
+        const blob = new Blob([JSON.stringify(graph.toJSON(), null, 2)], { type: 'application/json' });
+        const url  = URL.createObjectURL(blob);
+        Object.assign(document.createElement('a'), { href: url, download: 'diagram.json' }).click();
+        URL.revokeObjectURL(url);
+        setStatus('Exported diagram.json');
+    });
+
+    document.getElementById('btn-import').addEventListener('click', () => {
+        const input = Object.assign(document.createElement('input'), { type: 'file', accept: '.json' });
+        input.onchange = ({ target: { files: [file] } }) => {
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = ({ target: { result } }) => {
+                try {
+                    clearAllSelection();
+                    graph.fromJSON(JSON.parse(result));
+                    captureSnapshot();
+                    setStatus(`Loaded: ${file.name}`);
+                } catch {
+                    alert('Could not parse file — make sure it is a JointJS JSON export.');
+                }
+            };
+            reader.readAsText(file);
+        };
+        input.click();
+    });
+
+    // ── Keyboard shortcuts ─────────────────────────────────────────────
+    document.addEventListener('keydown', evt => {
+        const tag  = document.activeElement?.tagName;
+        if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+
+        const ctrl = evt.ctrlKey || evt.metaKey;
+
+        if (evt.key === 'Escape') {
+            if (drawState)  { cancelDraw();  setStatus('Draw cancelled'); }
+            if (lassoState) { cancelLasso(); setStatus('Lasso cancelled'); }
+            if (mode !== 'select') setMode('select');
+            else { clearAllSelection(); setStatus('Ready'); }
+            return;
+        }
+        if (ctrl && evt.key === 'z')                            { evt.preventDefault(); undo(); return; }
+        if (ctrl && (evt.key === 'y' || evt.key === 'Z'))       { evt.preventDefault(); redo(); return; }
+        if (evt.key === 'Delete' || evt.key === 'Backspace')    { deleteSelected(); return; }
+    });
+
+    // ── Undo / Redo ───────────────────────────────────────────────────
+    const undoStack = [JSON.stringify(graph.toJSON())];
+    const redoStack = [];
+    let suppress    = false;
+    let debounce    = null;
+
+    function captureSnapshot() {
+        if (suppress) return;
+        clearTimeout(debounce);
+        debounce = setTimeout(() => {
+            if (suppress) return;
+            undoStack.push(JSON.stringify(graph.toJSON()));
+            if (undoStack.length > 60) undoStack.shift();
+            redoStack.length = 0;
+            refreshHistoryBtns();
+        }, 180);
+    }
+
+    function applySnapshot(json) {
+        suppress = true;
+        clearTimeout(debounce);
+        clearAllSelection();
+        graph.fromJSON(JSON.parse(json));
+        suppress = false;
+        refreshHistoryBtns();
+    }
+
+    function undo() { if (undoStack.length <= 1) return; redoStack.push(undoStack.pop()); applySnapshot(undoStack[undoStack.length - 1]); setStatus('Undo'); }
+    function redo() { if (!redoStack.length) return;     undoStack.push(redoStack.pop()); applySnapshot(undoStack[undoStack.length - 1]); setStatus('Redo'); }
+
+    function refreshHistoryBtns() {
+        document.getElementById('btn-undo').disabled = undoStack.length <= 1;
+        document.getElementById('btn-redo').disabled = redoStack.length === 0;
+    }
+
+    document.getElementById('btn-undo').addEventListener('click', undo);
+    document.getElementById('btn-redo').addEventListener('click', redo);
+
+    graph.on('add remove', captureSnapshot);
+    paper.on('element:pointerup link:pointerup', captureSnapshot);
+    paper.on('link:connect',    () => setStatus('Connection created'));
+    paper.on('link:disconnect', () => setStatus('Connection removed'));
+
+    // ── Status bar helpers ─────────────────────────────────────────────
+    function setStatus(msg) {
+        document.getElementById('status-msg').textContent = msg;
+    }
+
+    // ── Init ───────────────────────────────────────────────────────────
+    refreshHistoryBtns();
+    setMode('select');
+
+})();
+</script>
+</body>
+</html>
