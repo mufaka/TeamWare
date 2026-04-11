@@ -1,16 +1,19 @@
 ﻿# TeamWare
 
-TeamWare is a lightweight, self-hosted project and task management application built with ASP.NET Core MVC. It follows a GTD (Getting Things Done) inspired workflow with features for inbox capture, task management, project organization, periodic reviews, and in-app notifications.
+TeamWare is a lightweight, self-hosted project and task management application built with ASP.NET Core MVC. It follows a GTD (Getting Things Done) inspired workflow with features for inbox capture, task management, project organization, periodic reviews, and in-app notifications with a modern spin of being able to assign tasks to AI agents that communicate using the exposed Model Context Protocol (MCP) server.
+
+![Bot Army](assets/bot_army.png)
 
 ## Features
 
 - **Project Management** — Create, edit, archive, and delete projects; invite members with Owner/Admin/Member roles
+![project dashboard](assets/project_dashboard.png)
 - **Task Management** — Full CRUD with status tracking (To Do, In Progress, In Review, Done), priority levels, due dates, and member assignment
 - **Inbox Capture** — Quick-add items to a personal inbox, then clarify and convert them to project tasks
 - **What's Next** — A focused view of your Next Action tasks across all projects, ordered by priority and due date
 - **Someday/Maybe** — Park ideas that are not actionable right now
 - **Progress Tracking** — Per-project completion statistics, activity timeline, overdue task highlighting, and upcoming deadline visibility
-- **Comments** — Threaded comments on tasks with real-time HTMX updates
+- **Comments** — Threaded comments on tasks with real-time HTMX updates with markdown support
 - **Notifications** — In-app alerts for task assignments, status changes, new comments, and review reminders
 - **Weekly Review** — A guided multi-step review workflow to process your inbox, re-prioritize tasks, and review Someday/Maybe items
 - **User Profile** — Manage display name, avatar URL, password, and light/dark theme preference
@@ -22,6 +25,9 @@ TeamWare is a lightweight, self-hosted project and task management application b
 - **Project Lounge** — Real-time chat rooms for each project and a site-wide #general room, with @mentions, emoji reactions, message pinning, message-to-task conversion, and unread tracking
 - **AI Assistant** — Optional Ollama-powered AI features: rewrite project/task descriptions, polish comments, expand inbox items, generate project summaries, personal digests, and GTD review preparation
 - **Agent Users** — Admin-managed service accounts for AI agents that interact via MCP, with bot badges, pause/resume control, and automatic PAT provisioning
+![agents](assets/agents.png)
+- **Shared Whiteboards** - Whiteboard sessions with realtime updates to all joined users. Owners can make any active user the presenter
+![whiteboard](assets/whiteboard.png)
 
 ## Tech Stack
 
