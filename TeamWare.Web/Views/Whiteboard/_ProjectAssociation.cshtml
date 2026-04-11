@@ -1,0 +1,56 @@
+﻿@model TeamWare.Web.ViewModels.WhiteboardProjectAssociationViewModel
+
+<div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+    @if (!string.IsNullOrWhiteSpace(Model.StatusMessage))
+    {
+        <div class="mb-3 rounded-md bg-green-50 px-3 py-2 text-sm text-green-700 dark:bg-green-900/20 dark:text-green-300">
+            @Model.StatusMessage
+        </div>
+    }
+
+    @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+    {
+        <div class="mb-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-300">
+            @Model.ErrorMessage
+        </div>
+    }
+
+    <label for="whiteboard-project-select" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Save to Project</label>
+    <form hx-post="@Url.Action("SaveToProject", "Whiteboard")"
+          hx-target="#whiteboard-project-association"
+          hx-swap="outerHTML"
+          class="mt-2 space-y-3"
+          id="whiteboard-project-association-form">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="whiteboardId" value="@Model.WhiteboardId" />
+        <select id="whiteboard-project-select"
+                name="projectId"
+                onchange="window.whiteboardSession && window.whiteboardSession.saveToProject(this.value)"
+                class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+            <option value="">Temporary board</option>
+            @foreach (var project in Model.AvailableProjects)
+            {
+                <option value="@project.Id" selected="@(Model.ProjectId == project.Id ? "selected" : null)">@project.Name</option>
+            }
+        </select>
+        <div class="flex flex-wrap items-center gap-2">
+            <button type="submit"
+                    class="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700">
+                Save Project
+            </button>
+            @if (Model.ProjectId.HasValue)
+            {
+                <button type="button"
+                        onclick="window.whiteboardSession && window.whiteboardSession.saveToProject('')"
+                        class="inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300">
+                    Clear Project
+                </button>
+            }
+        </div>
+    </form>
+    <p class="mt-2 text-xs text-amber-600 dark:text-amber-400">Only project members will be able to see this board.</p>
+    @if (Model.ProjectId.HasValue && !string.IsNullOrWhiteSpace(Model.ProjectName))
+    {
+        <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">Currently saved to @Model.ProjectName.</p>
+    }
+</div>

@@ -8,5 +8,6 @@ public enum NotificationType
     CommentAdded,
     InboxThreshold,
     ProjectInvitation,
-    LoungeMention
+    LoungeMention,
+    WhiteboardInvitation
 }

@@ -8,16 +8,16 @@ This document defines the phased implementation plan for the Whiteboard feature,
 
 | Phase | Description | Status |
 |-------|------------|--------|
-| 52 | Whiteboard Data Model | Not Started |
-| 53 | Whiteboard Service Layer | Not Started |
-| 54 | Whiteboard Landing Page | Not Started |
-| 55 | WhiteboardHub and Presence | Not Started |
-| 56 | Whiteboard Session Page and Canvas | Not Started |
-| 57 | Chat Sidebar | Not Started |
-| 58 | Invitations and Notifications | Not Started |
-| 59 | Presenter Control | Not Started |
-| 60 | Project Association and Saved Boards | Not Started |
-| 61 | Whiteboard Polish and Hardening | Not Started |
+| 52 | Whiteboard Data Model | Complete |
+| 53 | Whiteboard Service Layer | Complete |
+| 54 | Whiteboard Landing Page | Complete |
+| 55 | WhiteboardHub and Presence | Complete |
+| 56 | Whiteboard Session Page and Canvas | Complete |
+| 57 | Chat Sidebar | Complete |
+| 58 | Invitations and Notifications | Complete |
+| 59 | Presenter Control | Complete |
+| 60 | Project Association and Saved Boards | Complete |
+| 61 | Whiteboard Polish and Hardening | Complete |
 
 ---
 
@@ -61,70 +61,70 @@ Create the database entities, EF Core configuration, and migration for the white
 
 ### 52.1 Entity Creation
 
-- [ ] Create `Whiteboard` entity in `TeamWare.Web/Models/Whiteboard.cs` (WB-01 through WB-04, Section 4.1)
-  - [ ] `Id` (int, PK, auto-increment)
-  - [ ] `Title` (string, required, max 200 characters)
-  - [ ] `OwnerId` (string, FK to ApplicationUser, required)
-  - [ ] `ProjectId` (int?, FK to Project, nullable — null means temporary board)
-  - [ ] `CurrentPresenterId` (string?, FK to ApplicationUser, nullable)
-  - [ ] `CanvasData` (string?, nullable — JSON-serialized canvas state)
-  - [ ] `CreatedAt` (DateTime, required, default UTC now)
-  - [ ] `UpdatedAt` (DateTime, required, updated on every canvas save)
-  - [ ] Navigation properties: `Owner`, `Project`, `CurrentPresenter`, `Invitations`, `ChatMessages`
-- [ ] Create `WhiteboardInvitation` entity in `TeamWare.Web/Models/WhiteboardInvitation.cs` (WB-26 through WB-32, Section 4.1)
-  - [ ] `Id` (int, PK, auto-increment)
-  - [ ] `WhiteboardId` (int, FK to Whiteboard, required)
-  - [ ] `UserId` (string, FK to ApplicationUser, required)
-  - [ ] `InvitedByUserId` (string, FK to ApplicationUser, required)
-  - [ ] `CreatedAt` (DateTime, required, default UTC now)
-  - [ ] Navigation properties: `Whiteboard`, `User`, `InvitedByUser`
-- [ ] Create `WhiteboardChatMessage` entity in `TeamWare.Web/Models/WhiteboardChatMessage.cs` (WB-51 through WB-55, Section 4.1)
-  - [ ] `Id` (int, PK, auto-increment)
-  - [ ] `WhiteboardId` (int, FK to Whiteboard, required)
-  - [ ] `UserId` (string, FK to ApplicationUser, required)
-  - [ ] `Content` (string, required, max 4000 characters)
-  - [ ] `CreatedAt` (DateTime, required, default UTC now)
-  - [ ] Navigation properties: `Whiteboard`, `User`
+- [x] Create `Whiteboard` entity in `TeamWare.Web/Models/Whiteboard.cs` (WB-01 through WB-04, Section 4.1)
+  - [x] `Id` (int, PK, auto-increment)
+  - [x] `Title` (string, required, max 200 characters)
+  - [x] `OwnerId` (string, FK to ApplicationUser, required)
+  - [x] `ProjectId` (int?, FK to Project, nullable — null means temporary board)
+  - [x] `CurrentPresenterId` (string?, FK to ApplicationUser, nullable)
+  - [x] `CanvasData` (string?, nullable — JSON-serialized canvas state)
+  - [x] `CreatedAt` (DateTime, required, default UTC now)
+  - [x] `UpdatedAt` (DateTime, required, updated on every canvas save)
+  - [x] Navigation properties: `Owner`, `Project`, `CurrentPresenter`, `Invitations`, `ChatMessages`
+- [x] Create `WhiteboardInvitation` entity in `TeamWare.Web/Models/WhiteboardInvitation.cs` (WB-26 through WB-32, Section 4.1)
+  - [x] `Id` (int, PK, auto-increment)
+  - [x] `WhiteboardId` (int, FK to Whiteboard, required)
+  - [x] `UserId` (string, FK to ApplicationUser, required)
+  - [x] `InvitedByUserId` (string, FK to ApplicationUser, required)
+  - [x] `CreatedAt` (DateTime, required, default UTC now)
+  - [x] Navigation properties: `Whiteboard`, `User`, `InvitedByUser`
+- [x] Create `WhiteboardChatMessage` entity in `TeamWare.Web/Models/WhiteboardChatMessage.cs` (WB-51 through WB-55, Section 4.1)
+  - [x] `Id` (int, PK, auto-increment)
+  - [x] `WhiteboardId` (int, FK to Whiteboard, required)
+  - [x] `UserId` (string, FK to ApplicationUser, required)
+  - [x] `Content` (string, required, max 4000 characters)
+  - [x] `CreatedAt` (DateTime, required, default UTC now)
+  - [x] Navigation properties: `Whiteboard`, `User`
 
 ### 52.2 DbContext and EF Core Configuration
 
-- [ ] Add `DbSet<Whiteboard>`, `DbSet<WhiteboardInvitation>`, `DbSet<WhiteboardChatMessage>` to `ApplicationDbContext`
-- [ ] Configure EF Core relationships and constraints in `OnModelCreating`:
-  - [ ] `Whiteboard` → `ApplicationUser` (Owner): many-to-one via `OwnerId`, restrict delete
-  - [ ] `Whiteboard` → `ApplicationUser` (CurrentPresenter): many-to-one via `CurrentPresenterId`, set null on delete
-  - [ ] `Whiteboard` → `Project`: many-to-one via `ProjectId`, cascade delete (WB-65)
-  - [ ] `WhiteboardInvitation` → `Whiteboard`: many-to-one, cascade delete (WB-69)
-  - [ ] `WhiteboardInvitation` → `ApplicationUser` (User): many-to-one via `UserId`, restrict delete
-  - [ ] `WhiteboardInvitation` → `ApplicationUser` (InvitedBy): many-to-one via `InvitedByUserId`, restrict delete
-  - [ ] `WhiteboardChatMessage` → `Whiteboard`: many-to-one, cascade delete (WB-69)
-  - [ ] `WhiteboardChatMessage` → `ApplicationUser`: many-to-one via `UserId`, restrict delete
-- [ ] Configure indexes:
-  - [ ] `IX_Whiteboard_OwnerId` (OwnerId)
-  - [ ] `IX_Whiteboard_ProjectId` (ProjectId)
-  - [ ] `IX_WhiteboardInvitation_WhiteboardId` (WhiteboardId)
-  - [ ] `IX_WhiteboardInvitation_UserId` (UserId)
-  - [ ] `IX_WhiteboardInvitation_WhiteboardId_UserId` — Unique constraint
-  - [ ] `IX_WhiteboardChatMessage_WhiteboardId_CreatedAt` (WhiteboardId, CreatedAt)
-- [ ] Configure max length constraints:
-  - [ ] `Whiteboard.Title`: 200
-  - [ ] `WhiteboardChatMessage.Content`: 4000
+- [x] Add `DbSet<Whiteboard>`, `DbSet<WhiteboardInvitation>`, `DbSet<WhiteboardChatMessage>` to `ApplicationDbContext`
+- [x] Configure EF Core relationships and constraints in `OnModelCreating`:
+  - [x] `Whiteboard` → `ApplicationUser` (Owner): many-to-one via `OwnerId`, restrict delete
+  - [x] `Whiteboard` → `ApplicationUser` (CurrentPresenter): many-to-one via `CurrentPresenterId`, set null on delete
+  - [x] `Whiteboard` → `Project`: many-to-one via `ProjectId`, cascade delete (WB-65)
+  - [x] `WhiteboardInvitation` → `Whiteboard`: many-to-one, cascade delete (WB-69)
+  - [x] `WhiteboardInvitation` → `ApplicationUser` (User): many-to-one via `UserId`, restrict delete
+  - [x] `WhiteboardInvitation` → `ApplicationUser` (InvitedBy): many-to-one via `InvitedByUserId`, restrict delete
+  - [x] `WhiteboardChatMessage` → `Whiteboard`: many-to-one, cascade delete (WB-69)
+  - [x] `WhiteboardChatMessage` → `ApplicationUser`: many-to-one via `UserId`, restrict delete
+- [x] Configure indexes:
+  - [x] `IX_Whiteboard_OwnerId` (OwnerId)
+  - [x] `IX_Whiteboard_ProjectId` (ProjectId)
+  - [x] `IX_WhiteboardInvitation_WhiteboardId` (WhiteboardId)
+  - [x] `IX_WhiteboardInvitation_UserId` (UserId)
+  - [x] `IX_WhiteboardInvitation_WhiteboardId_UserId` — Unique constraint
+  - [x] `IX_WhiteboardChatMessage_WhiteboardId_CreatedAt` (WhiteboardId, CreatedAt)
+- [x] Configure max length constraints:
+  - [x] `Whiteboard.Title`: 200
+  - [x] `WhiteboardChatMessage.Content`: 4000
 
 ### 52.3 Modified Entities
 
-- [ ] Add `WhiteboardInvitation` notification type to the existing `NotificationType` enum (Section 4.2)
-- [ ] Add `Whiteboards` navigation property (`ICollection<Whiteboard>`) to `Project` entity
-- [ ] Add `OwnedWhiteboards` navigation property (`ICollection<Whiteboard>`) to `ApplicationUser` entity
-- [ ] Add `WhiteboardInvitations` navigation property (`ICollection<WhiteboardInvitation>`) to `ApplicationUser` entity
+- [x] Add `WhiteboardInvitation` notification type to the existing `NotificationType` enum (Section 4.2)
+- [x] Add `Whiteboards` navigation property (`ICollection<Whiteboard>`) to `Project` entity
+- [x] Add `OwnedWhiteboards` navigation property (`ICollection<Whiteboard>`) to `ApplicationUser` entity
+- [x] Add `WhiteboardInvitations` navigation property (`ICollection<WhiteboardInvitation>`) to `ApplicationUser` entity
 
 ### 52.4 Migration
 
-- [ ] Create EF Core migration `AddWhiteboard`
-- [ ] Write tests:
-  - [ ] Migration applies cleanly and existing data is unaffected
-  - [ ] CRUD operations on all three entities work correctly
-  - [ ] Cascade delete from Whiteboard removes invitations and chat messages
-  - [ ] Cascade delete from Project removes associated whiteboards
-  - [ ] Unique constraint on WhiteboardInvitation (WhiteboardId, UserId) is enforced
+- [x] Create EF Core migration `AddWhiteboard`
+- [x] Write tests:
+  - [x] Migration applies cleanly and existing data is unaffected
+  - [x] CRUD operations on all three entities work correctly
+  - [x] Cascade delete from Whiteboard removes invitations and chat messages
+  - [x] Cascade delete from Project removes associated whiteboards
+  - [x] Unique constraint on WhiteboardInvitation (WhiteboardId, UserId) is enforced
 
 ---
 
@@ -134,67 +134,67 @@ Create the service interfaces, implementations, DTOs, and view models for whiteb
 
 ### 53.1 DTOs and View Models
 
-- [ ] Create `WhiteboardDto` in `TeamWare.Web/ViewModels/WhiteboardDto.cs`
-  - [ ] `Id`, `Title`, `OwnerId`, `OwnerDisplayName`, `ProjectId`, `ProjectName`, `CurrentPresenterId`, `CurrentPresenterDisplayName`, `CreatedAt`, `UpdatedAt`, `IsTemporary` (computed)
-- [ ] Create `WhiteboardDetailDto` in `TeamWare.Web/ViewModels/WhiteboardDetailDto.cs`
-  - [ ] Extends `WhiteboardDto` with `CanvasData`, `Invitations` (list), `ActiveUsers` (list)
-- [ ] Create `WhiteboardInvitationDto` in `TeamWare.Web/ViewModels/WhiteboardInvitationDto.cs`
-  - [ ] `Id`, `WhiteboardId`, `UserId`, `UserDisplayName`, `InvitedByUserId`, `CreatedAt`
-- [ ] Create `WhiteboardChatMessageDto` in `TeamWare.Web/ViewModels/WhiteboardChatMessageDto.cs`
-  - [ ] `Id`, `WhiteboardId`, `UserId`, `UserDisplayName`, `Content`, `CreatedAt`
-- [ ] Create `CreateWhiteboardViewModel` in `TeamWare.Web/ViewModels/CreateWhiteboardViewModel.cs`
-  - [ ] `Title` (required, max 200)
-- [ ] Create `WhiteboardLandingViewModel` in `TeamWare.Web/ViewModels/WhiteboardLandingViewModel.cs`
-  - [ ] `Whiteboards` (list of `WhiteboardDto`), sorted by active-first then recent
-- [ ] Create `WhiteboardSessionViewModel` in `TeamWare.Web/ViewModels/WhiteboardSessionViewModel.cs`
-  - [ ] `Whiteboard` (WhiteboardDetailDto), `IsOwner`, `IsPresenter`, `CanDraw`, `IsTemporary`, `IsSiteAdmin`, `AvailableProjects` (for save-to-project dropdown)
+- [x] Create `WhiteboardDto` in `TeamWare.Web/ViewModels/WhiteboardDto.cs`
+  - [x] `Id`, `Title`, `OwnerId`, `OwnerDisplayName`, `ProjectId`, `ProjectName`, `CurrentPresenterId`, `CurrentPresenterDisplayName`, `CreatedAt`, `UpdatedAt`, `IsTemporary` (computed)
+- [x] Create `WhiteboardDetailDto` in `TeamWare.Web/ViewModels/WhiteboardDetailDto.cs`
+  - [x] Extends `WhiteboardDto` with `CanvasData`, `Invitations` (list), `ActiveUsers` (list)
+- [x] Create `WhiteboardInvitationDto` in `TeamWare.Web/ViewModels/WhiteboardInvitationDto.cs`
+  - [x] `Id`, `WhiteboardId`, `UserId`, `UserDisplayName`, `InvitedByUserId`, `CreatedAt`
+- [x] Create `WhiteboardChatMessageDto` in `TeamWare.Web/ViewModels/WhiteboardChatMessageDto.cs`
+  - [x] `Id`, `WhiteboardId`, `UserId`, `UserDisplayName`, `Content`, `CreatedAt`
+- [x] Create `CreateWhiteboardViewModel` in `TeamWare.Web/ViewModels/CreateWhiteboardViewModel.cs`
+  - [x] `Title` (required, max 200)
+- [x] Create `WhiteboardLandingViewModel` in `TeamWare.Web/ViewModels/WhiteboardLandingViewModel.cs`
+  - [x] `Whiteboards` (list of `WhiteboardDto`), sorted by active-first then recent
+- [x] Create `WhiteboardSessionViewModel` in `TeamWare.Web/ViewModels/WhiteboardSessionViewModel.cs`
+  - [x] `Whiteboard` (WhiteboardDetailDto), `IsOwner`, `IsPresenter`, `CanDraw`, `IsTemporary`, `IsSiteAdmin`, `AvailableProjects` (for save-to-project dropdown)
 
 ### 53.2 Whiteboard Service Interface and Implementation
 
-- [ ] Create `IWhiteboardService` interface in `TeamWare.Web/Services/IWhiteboardService.cs`
-  - [ ] `CreateAsync(string userId, string title)` → `ServiceResult<int>` (WB-01 through WB-04)
-  - [ ] `GetByIdAsync(int whiteboardId)` → `ServiceResult<WhiteboardDetailDto?>`
-  - [ ] `GetLandingPageAsync(string userId, bool isSiteAdmin)` → `ServiceResult<List<WhiteboardDto>>` (WB-36 through WB-42)
-  - [ ] `DeleteAsync(int whiteboardId, string userId, bool isSiteAdmin)` → `ServiceResult` (WB-66 through WB-69)
-  - [ ] `SaveCanvasAsync(int whiteboardId, string canvasData, string presenterId)` → `ServiceResult` (WB-56, WB-57)
-  - [ ] `CanAccessAsync(int whiteboardId, string userId, bool isSiteAdmin)` → `ServiceResult<bool>` (WB-81, WB-82)
-- [ ] Implement `WhiteboardService` in `TeamWare.Web/Services/WhiteboardService.cs`
-  - [ ] `CreateAsync`: create Whiteboard with OwnerId and CurrentPresenterId both set to the creator (WB-03)
-  - [ ] `GetByIdAsync`: load whiteboard with owner, presenter, invitations, include navigation properties
-  - [ ] `GetLandingPageAsync`: query boards the user is invited to (temporary) or can access via project membership (saved), union with all boards for site admins. Order by active-first, then recent (WB-40)
-  - [ ] `DeleteAsync`: verify ownership or site admin, cascade delete (WB-66, WB-67, WB-69)
-  - [ ] `SaveCanvasAsync`: verify presenter status, update CanvasData and UpdatedAt (WB-14, WB-56)
-  - [ ] `CanAccessAsync`: check invitation for temporary boards, project membership for saved boards, site admin override (WB-81, WB-82)
-- [ ] Register `IWhiteboardService` in DI
-- [ ] Write unit tests for all service methods
+- [x] Create `IWhiteboardService` interface in `TeamWare.Web/Services/IWhiteboardService.cs`
+  - [x] `CreateAsync(string userId, string title)` → `ServiceResult<int>` (WB-01 through WB-04)
+  - [x] `GetByIdAsync(int whiteboardId)` → `ServiceResult<WhiteboardDetailDto?>`
+  - [x] `GetLandingPageAsync(string userId, bool isSiteAdmin)` → `ServiceResult<List<WhiteboardDto>>` (WB-36 through WB-42)
+  - [x] `DeleteAsync(int whiteboardId, string userId, bool isSiteAdmin)` → `ServiceResult` (WB-66 through WB-69)
+  - [x] `SaveCanvasAsync(int whiteboardId, string canvasData, string presenterId)` → `ServiceResult` (WB-56, WB-57)
+  - [x] `CanAccessAsync(int whiteboardId, string userId, bool isSiteAdmin)` → `ServiceResult<bool>` (WB-81, WB-82)
+- [x] Implement `WhiteboardService` in `TeamWare.Web/Services/WhiteboardService.cs`
+  - [x] `CreateAsync`: create Whiteboard with OwnerId and CurrentPresenterId both set to the creator (WB-03)
+  - [x] `GetByIdAsync`: load whiteboard with owner, presenter, invitations, include navigation properties
+  - [x] `GetLandingPageAsync`: query boards the user is invited to (temporary) or can access via project membership (saved), union with all boards for site admins. Order by active-first, then recent (WB-40)
+  - [x] `DeleteAsync`: verify ownership or site admin, cascade delete (WB-66, WB-67, WB-69)
+  - [x] `SaveCanvasAsync`: verify presenter status, update CanvasData and UpdatedAt (WB-14, WB-56)
+  - [x] `CanAccessAsync`: check invitation for temporary boards, project membership for saved boards, site admin override (WB-81, WB-82)
+- [x] Register `IWhiteboardService` in DI
+- [x] Write unit tests for all service methods
 
 ### 53.3 Invitation Service
 
-- [ ] Create `IWhiteboardInvitationService` interface in `TeamWare.Web/Services/IWhiteboardInvitationService.cs`
-  - [ ] `InviteAsync(int whiteboardId, string invitedUserId, string ownerUserId)` → `ServiceResult` (WB-26 through WB-28)
-  - [ ] `RevokeAsync(int whiteboardId, string userId)` → `ServiceResult` (WB-30, WB-34)
-  - [ ] `HasInvitationAsync(int whiteboardId, string userId)` → `bool` (WB-29)
-  - [ ] `CleanupInvalidInvitationsAsync(int whiteboardId)` → `ServiceResult` (WB-32)
-- [ ] Implement `WhiteboardInvitationService` in `TeamWare.Web/Services/WhiteboardInvitationService.cs`
-  - [ ] `InviteAsync`: verify caller is owner (WB-27), create invitation, send notification via existing notification system (WB-28)
-  - [ ] `RevokeAsync`: delete invitation record
-  - [ ] `HasInvitationAsync`: check for active invitation
-  - [ ] `CleanupInvalidInvitationsAsync`: for saved boards, delete invitations where user is no longer a project member (WB-32)
-- [ ] Register `IWhiteboardInvitationService` in DI
-- [ ] Write unit tests for all invitation service methods
+- [x] Create `IWhiteboardInvitationService` interface in `TeamWare.Web/Services/IWhiteboardInvitationService.cs`
+  - [x] `InviteAsync(int whiteboardId, string invitedUserId, string ownerUserId)` → `ServiceResult` (WB-26 through WB-28)
+  - [x] `RevokeAsync(int whiteboardId, string userId)` → `ServiceResult` (WB-30, WB-34)
+  - [x] `HasInvitationAsync(int whiteboardId, string userId)` → `bool` (WB-29)
+  - [x] `CleanupInvalidInvitationsAsync(int whiteboardId)` → `ServiceResult` (WB-32)
+- [x] Implement `WhiteboardInvitationService` in `TeamWare.Web/Services/WhiteboardInvitationService.cs`
+  - [x] `InviteAsync`: verify caller is owner (WB-27), create invitation, send notification via existing notification system (WB-28)
+  - [x] `RevokeAsync`: delete invitation record
+  - [x] `HasInvitationAsync`: check for active invitation
+  - [x] `CleanupInvalidInvitationsAsync`: for saved boards, delete invitations where user is no longer a project member (WB-32)
+- [x] Register `IWhiteboardInvitationService` in DI
+- [x] Write unit tests for all invitation service methods
 
 ### 53.4 Project Association Service
 
-- [ ] Create `IWhiteboardProjectService` interface in `TeamWare.Web/Services/IWhiteboardProjectService.cs`
-  - [ ] `SaveToProjectAsync(int whiteboardId, int projectId, string userId)` → `ServiceResult` (WB-60, WB-61)
-  - [ ] `ClearProjectAsync(int whiteboardId, string userId)` → `ServiceResult` (WB-64)
-  - [ ] `TransferOwnershipIfNeededAsync(int whiteboardId)` → `ServiceResult` (WB-11, EDGE-01)
-- [ ] Implement `WhiteboardProjectService` in `TeamWare.Web/Services/WhiteboardProjectService.cs`
-  - [ ] `SaveToProjectAsync`: verify caller is owner, set ProjectId, cleanup invalid invitations (WB-62)
-  - [ ] `ClearProjectAsync`: verify caller is owner, set ProjectId to null (WB-64)
-  - [ ] `TransferOwnershipIfNeededAsync`: if owner is not a member of the associated project, transfer ownership to the project owner (WB-11, EDGE-01)
-- [ ] Register `IWhiteboardProjectService` in DI
-- [ ] Write unit tests for all project association methods, including ownership transfer edge case
+- [x] Create `IWhiteboardProjectService` interface in `TeamWare.Web/Services/IWhiteboardProjectService.cs`
+  - [x] `SaveToProjectAsync(int whiteboardId, int projectId, string userId)` → `ServiceResult` (WB-60, WB-61)
+  - [x] `ClearProjectAsync(int whiteboardId, string userId)` → `ServiceResult` (WB-64)
+  - [x] `TransferOwnershipIfNeededAsync(int whiteboardId)` → `ServiceResult` (WB-11, EDGE-01)
+- [x] Implement `WhiteboardProjectService` in `TeamWare.Web/Services/WhiteboardProjectService.cs`
+  - [x] `SaveToProjectAsync`: verify caller is owner, set ProjectId, cleanup invalid invitations (WB-62)
+  - [x] `ClearProjectAsync`: verify caller is owner, set ProjectId to null (WB-64)
+  - [x] `TransferOwnershipIfNeededAsync`: if owner is not a member of the associated project, transfer ownership to the project owner (WB-11, EDGE-01)
+- [x] Register `IWhiteboardProjectService` in DI
+- [x] Write unit tests for all project association methods, including ownership transfer edge case
 
 ---
 
@@ -204,45 +204,45 @@ Create the WhiteboardController, landing page view, and create flow.
 
 ### 54.1 Whiteboard Controller — Landing Page
 
-- [ ] Create `WhiteboardController` in `TeamWare.Web/Controllers/WhiteboardController.cs`
-  - [ ] `[Authorize]` attribute
-  - [ ] Inject `IWhiteboardService`, `IWhiteboardInvitationService`, `IWhiteboardProjectService`
-  - [ ] `Index` action (GET): call `GetLandingPageAsync`, return view with `WhiteboardLandingViewModel` (WB-36 through WB-42)
-- [ ] Create `Views/Whiteboard/Index.cshtml`
-  - [ ] List of boards showing title, creator name (temporary), project name (saved), last updated time (WB-20, WB-41)
-  - [ ] Active boards emphasized first, then recent (WB-40)
-  - [ ] "New Whiteboard" button (WB-01)
-  - [ ] Tailwind CSS 4 styling with light/dark theme support (UI-28)
-- [ ] Write tests:
-  - [ ] Landing page shows boards the user is invited to
-  - [ ] Landing page shows boards accessible via project membership
-  - [ ] Site admin sees all boards (WB-39)
-  - [ ] Unauthenticated user is redirected to login
+- [x] Create `WhiteboardController` in `TeamWare.Web/Controllers/WhiteboardController.cs`
+  - [x] `[Authorize]` attribute
+  - [x] Inject `IWhiteboardService`, `IWhiteboardInvitationService`, `IWhiteboardProjectService`
+  - [x] `Index` action (GET): call `GetLandingPageAsync`, return view with `WhiteboardLandingViewModel` (WB-36 through WB-42)
+- [x] Create `Views/Whiteboard/Index.cshtml`
+  - [x] List of boards showing title, creator name (temporary), project name (saved), last updated time (WB-20, WB-41)
+  - [x] Active boards emphasized first, then recent (WB-40)
+  - [x] "New Whiteboard" button (WB-01)
+  - [x] Tailwind CSS 4 styling with light/dark theme support (UI-28)
+- [x] Write tests:
+  - [x] Landing page shows boards the user is invited to
+  - [x] Landing page shows boards accessible via project membership
+  - [x] Site admin sees all boards (WB-39)
+  - [x] Unauthenticated user is redirected to login
 
 ### 54.2 Whiteboard Controller — Create Flow
 
-- [ ] Add `Create` action (GET) to `WhiteboardController`: return view with `CreateWhiteboardViewModel`
-- [ ] Add `Create` action (POST) to `WhiteboardController`:
-  - [ ] Validate model (title required, max 200)
-  - [ ] Call `WhiteboardService.CreateAsync`
-  - [ ] Redirect to the new whiteboard session page
-- [ ] Create `Views/Whiteboard/Create.cshtml`
-  - [ ] Simple form with title field and submit button (WB-02)
-  - [ ] Tailwind CSS styling consistent with other create forms
-- [ ] Write tests:
-  - [ ] Create with valid title succeeds and redirects
-  - [ ] Create with empty title fails validation
-  - [ ] Create with title exceeding 200 characters fails validation
-  - [ ] Creator is set as owner and initial presenter (WB-03)
+- [x] Add `Create` action (GET) to `WhiteboardController`: return view with `CreateWhiteboardViewModel`
+- [x] Add `Create` action (POST) to `WhiteboardController`:
+  - [x] Validate model (title required, max 200)
+  - [x] Call `WhiteboardService.CreateAsync`
+  - [x] Redirect to the new whiteboard session page
+- [x] Create `Views/Whiteboard/Create.cshtml`
+  - [x] Simple form with title field and submit button (WB-02)
+  - [x] Tailwind CSS styling consistent with other create forms
+- [x] Write tests:
+  - [x] Create with valid title succeeds and redirects
+  - [x] Create with empty title fails validation
+  - [x] Create with title exceeding 200 characters fails validation
+  - [x] Creator is set as owner and initial presenter (WB-03)
 
 ### 54.3 Navigation Integration
 
-- [ ] Add "Whiteboards" link to the main navigation layout (UI-18)
-  - [ ] Visible to all authenticated users
-  - [ ] Follows existing navigation conventions
-- [ ] Write tests:
-  - [ ] "Whiteboards" link is visible to authenticated users
-  - [ ] "Whiteboards" link is not visible to unauthenticated users
+- [x] Add "Whiteboards" link to the main navigation layout (UI-18)
+  - [x] Visible to all authenticated users
+  - [x] Follows existing navigation conventions
+- [x] Write tests:
+  - [x] "Whiteboards" link is visible to authenticated users
+  - [x] "Whiteboards" link is not visible to unauthenticated users
 
 ---
 
@@ -252,49 +252,49 @@ Create the SignalR hub for real-time whiteboard collaboration and presence track
 
 ### 55.1 WhiteboardHub Creation
 
-- [ ] Create `WhiteboardHub` class in `TeamWare.Web/Hubs/WhiteboardHub.cs` (WB-75 through WB-80)
-  - [ ] Inherit from `Hub`
-  - [ ] Add `[Authorize]` attribute
-  - [ ] Inject `IWhiteboardService`, `IWhiteboardInvitationService`
-  - [ ] Implement `static string GetGroupName(int whiteboardId)` returning `$"whiteboard-{whiteboardId}"`
-  - [ ] Implement `JoinBoard(int whiteboardId)`:
-    - [ ] Resolve authenticated user from `Context.User`
-    - [ ] Call `CanAccessAsync` to verify authorization (WB-80, WB-81, WB-82)
-    - [ ] If authorized, add connection to group
-    - [ ] Broadcast `UserJoined` to the group with `userId` and `displayName`
-    - [ ] If not authorized, throw `HubException`
-  - [ ] Implement `LeaveBoard(int whiteboardId)`:
-    - [ ] Remove connection from group
-    - [ ] Broadcast `UserLeft` to the group
-  - [ ] Override `OnDisconnectedAsync`:
-    - [ ] Track which board the user was connected to
-    - [ ] Broadcast `UserLeft` to the appropriate group
-- [ ] Register hub endpoint in `Program.cs`: `app.MapHub<WhiteboardHub>("/hubs/whiteboard")`
-- [ ] Write unit tests:
-  - [ ] `JoinBoard` succeeds for invited user (temporary board)
-  - [ ] `JoinBoard` succeeds for project member (saved board)
-  - [ ] `JoinBoard` succeeds for site admin
-  - [ ] `JoinBoard` fails for unauthorized user
-  - [ ] `LeaveBoard` succeeds and broadcasts `UserLeft`
-  - [ ] `GetGroupName` returns expected format
+- [x] Create `WhiteboardHub` class in `TeamWare.Web/Hubs/WhiteboardHub.cs` (WB-75 through WB-80)
+  - [x] Inherit from `Hub`
+  - [x] Add `[Authorize]` attribute
+  - [x] Inject `IWhiteboardService`, `IWhiteboardInvitationService`
+  - [x] Implement `static string GetGroupName(int whiteboardId)` returning `$"whiteboard-{whiteboardId}"`
+  - [x] Implement `JoinBoard(int whiteboardId)`:
+    - [x] Resolve authenticated user from `Context.User`
+    - [x] Call `CanAccessAsync` to verify authorization (WB-80, WB-81, WB-82)
+    - [x] If authorized, add connection to group
+    - [x] Broadcast `UserJoined` to the group with `userId` and `displayName`
+    - [x] If not authorized, throw `HubException`
+  - [x] Implement `LeaveBoard(int whiteboardId)`:
+    - [x] Remove connection from group
+    - [x] Broadcast `UserLeft` to the group
+  - [x] Override `OnDisconnectedAsync`:
+    - [x] Track which board the user was connected to
+    - [x] Broadcast `UserLeft` to the appropriate group
+- [x] Register hub endpoint in `Program.cs`: `app.MapHub<WhiteboardHub>("/hubs/whiteboard")`
+- [x] Write unit tests:
+  - [x] `JoinBoard` succeeds for invited user (temporary board)
+  - [x] `JoinBoard` succeeds for project member (saved board)
+  - [x] `JoinBoard` succeeds for site admin
+  - [x] `JoinBoard` fails for unauthorized user
+  - [x] `LeaveBoard` succeeds and broadcasts `UserLeft`
+  - [x] `GetGroupName` returns expected format
 
 ### 55.2 Presence Tracking
 
-- [ ] Create `IWhiteboardPresenceTracker` interface in `TeamWare.Web/Services/IWhiteboardPresenceTracker.cs`
-  - [ ] `AddConnectionAsync(int whiteboardId, string userId, string connectionId)` → track active connections
-  - [ ] `RemoveConnectionAsync(string connectionId)` → remove connection, return (whiteboardId, userId) if last connection for that user
-  - [ ] `GetActiveUsersAsync(int whiteboardId)` → list of active user IDs
-  - [ ] `IsUserActiveAsync(int whiteboardId, string userId)` → bool
-- [ ] Implement `WhiteboardPresenceTracker` in `TeamWare.Web/Services/WhiteboardPresenceTracker.cs`
-  - [ ] In-memory `ConcurrentDictionary` tracking connectionId → (whiteboardId, userId) and whiteboardId → set of userIds
-  - [ ] Handle multiple connections per user (multiple tabs)
-- [ ] Register `IWhiteboardPresenceTracker` as singleton in DI
-- [ ] Integrate presence tracker with `WhiteboardHub.JoinBoard`, `LeaveBoard`, and `OnDisconnectedAsync`
-- [ ] Write unit tests:
-  - [ ] Adding and removing connections updates the active user list
-  - [ ] Multiple connections from same user count as one active user
-  - [ ] Removing last connection for a user removes them from active list
-  - [ ] `GetActiveUsersAsync` returns correct list
+- [x] Create `IWhiteboardPresenceTracker` interface in `TeamWare.Web/Services/IWhiteboardPresenceTracker.cs`
+  - [x] `AddConnectionAsync(int whiteboardId, string userId, string connectionId)` → track active connections
+  - [x] `RemoveConnectionAsync(string connectionId)` → remove connection, return (whiteboardId, userId) if last connection for that user
+  - [x] `GetActiveUsersAsync(int whiteboardId)` → list of active user IDs
+  - [x] `IsUserActiveAsync(int whiteboardId, string userId)` → bool
+- [x] Implement `WhiteboardPresenceTracker` in `TeamWare.Web/Services/WhiteboardPresenceTracker.cs`
+  - [x] In-memory `ConcurrentDictionary` tracking connectionId → (whiteboardId, userId) and whiteboardId → set of userIds
+  - [x] Handle multiple connections per user (multiple tabs)
+- [x] Register `IWhiteboardPresenceTracker` as singleton in DI
+- [x] Integrate presence tracker with `WhiteboardHub.JoinBoard`, `LeaveBoard`, and `OnDisconnectedAsync`
+- [x] Write unit tests:
+  - [x] Adding and removing connections updates the active user list
+  - [x] Multiple connections from same user count as one active user
+  - [x] Removing last connection for a user removes them from active list
+  - [x] `GetActiveUsersAsync` returns correct list
 
 ---
 
@@ -304,90 +304,90 @@ Create the session page, canvas rendering, and drawing tools.
 
 ### 56.1 Session Page Controller Actions
 
-- [ ] Add `Session` action (GET) to `WhiteboardController`:
-  - [ ] Accept `int id` parameter
-  - [ ] Verify access via `CanAccessAsync` (WB-81, WB-82)
-  - [ ] Handle edge cases: deleted board (EDGE-03), lost project membership (EDGE-04, WB-32)
-  - [ ] Build `WhiteboardSessionViewModel` with board details, user role flags, available projects
-  - [ ] Return session view
-- [ ] Add `Delete` action (POST) to `WhiteboardController`:
-  - [ ] Verify ownership or site admin (WB-66, WB-67)
-  - [ ] Call `WhiteboardService.DeleteAsync`
-  - [ ] Broadcast `BoardDeleted` via `IHubContext<WhiteboardHub>` to connected clients (WB-69)
-  - [ ] Redirect to landing page
-- [ ] Write tests:
-  - [ ] Session page loads for authorized user
-  - [ ] Session page returns 403 for unauthorized user
-  - [ ] Deleted board invitation cleanup works (EDGE-03)
-  - [ ] Delete succeeds for owner
-  - [ ] Delete succeeds for site admin
-  - [ ] Delete fails for non-owner non-admin
+- [x] Add `Session` action (GET) to `WhiteboardController`:
+  - [x] Accept `int id` parameter
+  - [x] Verify access via `CanAccessAsync` (WB-81, WB-82)
+  - [x] Handle edge cases: deleted board (EDGE-03), lost project membership (EDGE-04, WB-32)
+  - [x] Build `WhiteboardSessionViewModel` with board details, user role flags, available projects
+  - [x] Return session view
+- [x] Add `Delete` action (POST) to `WhiteboardController`:
+  - [x] Verify ownership or site admin (WB-66, WB-67)
+  - [x] Call `WhiteboardService.DeleteAsync`
+  - [x] Broadcast `BoardDeleted` via `IHubContext<WhiteboardHub>` to connected clients (WB-69)
+  - [x] Redirect to landing page
+- [x] Write tests:
+  - [x] Session page loads for authorized user
+  - [x] Session page returns 403 for unauthorized user
+  - [x] Deleted board invitation cleanup works (EDGE-03)
+  - [x] Delete succeeds for owner
+  - [x] Delete succeeds for site admin
+  - [x] Delete fails for non-owner non-admin
 
 ### 56.2 Session Page View
 
-- [ ] Create `Views/Whiteboard/Session.cshtml`
-  - [ ] Display owner and current presenter names prominently above the canvas (WB-71, UI-21)
-  - [ ] Main area: canvas element with `data-whiteboard-id` attribute
-  - [ ] Side panel: active user list at top, chat section below (WB-72, UI-22)
-  - [ ] Tool palette below or beside the canvas with mode switcher (WB-43, UI-25)
-  - [ ] "Save to Project" dropdown (visible to owner only) with project list and warning note (WB-63, UI-27)
-  - [ ] "Invite Users" button (visible to owner only)
-  - [ ] "Delete" button (visible to owner and site admin) with confirmation dialog (WB-68)
-  - [ ] `data-whiteboard-id`, `data-is-owner`, `data-is-presenter` attributes for client-side JavaScript
-  - [ ] Script references: `signalr.min.js`, `whiteboard.js`, `whiteboard-canvas.js`
-  - [ ] Tailwind CSS 4 styling with light/dark theme support (UI-28)
-  - [ ] Mobile responsive: canvas prioritized, side panel togglable (UI-29)
-- [ ] Write rendering tests:
-  - [ ] Owner sees invite, save-to-project, and delete controls
-  - [ ] Non-owner viewer does not see owner-only controls
-  - [ ] Presenter indicator is displayed correctly
-  - [ ] Canvas element and data attributes are present
+- [x] Create `Views/Whiteboard/Session.cshtml`
+  - [x] Display owner and current presenter names prominently above the canvas (WB-71, UI-21)
+  - [x] Main area: canvas element with `data-whiteboard-id` attribute
+  - [x] Side panel: active user list at top, chat section below (WB-72, UI-22)
+  - [x] Tool palette below or beside the canvas with mode switcher (WB-43, UI-25)
+  - [x] "Save to Project" dropdown (visible to owner only) with project list and warning note (WB-63, UI-27)
+  - [x] "Invite Users" button (visible to owner only)
+  - [x] "Delete" button (visible to owner and site admin) with confirmation dialog (WB-68)
+  - [x] `data-whiteboard-id`, `data-is-owner`, `data-is-presenter` attributes for client-side JavaScript
+  - [x] Script references: `signalr.min.js`, `whiteboard.js`, `whiteboard-canvas.js`
+  - [x] Tailwind CSS 4 styling with light/dark theme support (UI-28)
+  - [x] Mobile responsive: canvas prioritized, side panel togglable (UI-29)
+- [x] Write rendering tests:
+  - [x] Owner sees invite, save-to-project, and delete controls
+  - [x] Non-owner viewer does not see owner-only controls
+  - [x] Presenter indicator is displayed correctly
+  - [x] Canvas element and data attributes are present
 
 ### 56.3 Canvas Client-Side Implementation
 
-- [ ] Create `wwwroot/js/whiteboard-canvas.js`
-  - [ ] Canvas rendering engine using HTML5 Canvas or SVG
-  - [ ] Shape model: each element has `id`, `type`, `x`, `y`, `width`, `height`, `rotation`, `properties` (type-specific)
-  - [ ] Supported standard shapes (WB-45): rectangles, circles/ellipses, text labels, lines, arrows
-  - [ ] Supported specialized shapes (WB-46): servers, desktops, mobile devices, data (database/storage), switches, routers, firewalls, clouds
-  - [ ] Connectors between shapes (WB-47): line/arrow connecting two shape endpoints
-  - [ ] Freehand drawing (WB-48): pen tool recording point arrays
-  - [ ] Mode switching: diagram mode and freehand mode as equal toggleable modes (WB-43, WB-44)
-  - [ ] Shape selection, move, resize, delete (presenter only) (WB-49)
-  - [ ] Canvas pan and zoom
-  - [ ] Serialize canvas state to JSON for persistence and SignalR transmission
-  - [ ] Deserialize canvas state from JSON for rendering received updates
-  - [ ] Presenter-gated input: if `data-is-presenter` is false, disable all drawing/manipulation input (WB-25)
-- [ ] Write tests:
-  - [ ] Shape creation, selection, move, resize, delete
-  - [ ] Canvas serialization/deserialization round-trip
-  - [ ] Mode switching between diagram and freehand
-  - [ ] Input disabled when not presenter
+- [x] Create `wwwroot/js/whiteboard-canvas.js`
+  - [x] Canvas rendering engine using HTML5 Canvas or SVG
+  - [x] Shape model: each element has `id`, `type`, `x`, `y`, `width`, `height`, `rotation`, `properties` (type-specific)
+  - [x] Supported standard shapes (WB-45): rectangles, circles/ellipses, text labels, lines, arrows
+  - [x] Supported specialized shapes (WB-46): servers, desktops, mobile devices, data (database/storage), switches, routers, firewalls, clouds
+  - [x] Connectors between shapes (WB-47): line/arrow connecting two shape endpoints
+  - [x] Freehand drawing (WB-48): pen tool recording point arrays
+  - [x] Mode switching: diagram mode and freehand mode as equal toggleable modes (WB-43, WB-44)
+  - [x] Shape selection, move, resize, delete (presenter only) (WB-49)
+  - [x] Canvas pan and zoom
+  - [x] Serialize canvas state to JSON for persistence and SignalR transmission
+  - [x] Deserialize canvas state from JSON for rendering received updates
+  - [x] Presenter-gated input: if `data-is-presenter` is false, disable all drawing/manipulation input (WB-25)
+- [x] Write tests:
+  - [x] Shape creation, selection, move, resize, delete
+  - [x] Canvas serialization/deserialization round-trip
+  - [x] Mode switching between diagram and freehand
+  - [x] Input disabled when not presenter
 
 ### 56.4 Canvas SignalR Integration
 
-- [ ] Create `wwwroot/js/whiteboard.js`
-  - [ ] On page load, read `data-whiteboard-id` from the page container
-  - [ ] Build SignalR connection to `/hubs/whiteboard` with `withAutomaticReconnect()`
-  - [ ] On connection start, invoke `hub.JoinBoard(whiteboardId)`
-  - [ ] Register handler for `CanvasUpdated`: deserialize and render the updated canvas state
-  - [ ] When presenter makes a canvas change, call `hub.SendCanvasUpdate(whiteboardId, canvasData)` (WB-50)
-  - [ ] Implement debounce (200ms) for canvas updates to avoid flooding
-  - [ ] Register handler for `PresenterChanged`: update presenter display, toggle drawing input (WB-16)
-  - [ ] Register handler for `UserJoined` / `UserLeft`: update active user list in side panel (WB-70)
-  - [ ] Register handler for `UserRemoved`: if current user was removed, navigate to landing page (WB-34)
-  - [ ] Register handler for `BoardDeleted`: navigate to landing page
-  - [ ] Handle reconnection: re-invoke `JoinBoard` on reconnect
-  - [ ] Load initial canvas state from the server-rendered `CanvasData` on page load
-- [ ] Add `SendCanvasUpdate` method to `WhiteboardHub`:
-  - [ ] Verify caller is current presenter (WB-83)
-  - [ ] Save canvas state via `WhiteboardService.SaveCanvasAsync` (WB-56)
-  - [ ] Broadcast `CanvasUpdated` to group (excluding caller)
-- [ ] Write tests:
-  - [ ] SignalR connection established and `JoinBoard` invoked
-  - [ ] Canvas updates are sent and received
-  - [ ] Non-presenter cannot send canvas updates
-  - [ ] Presenter change updates UI and drawing permissions
+- [x] Create `wwwroot/js/whiteboard.js`
+  - [x] On page load, read `data-whiteboard-id` from the page container
+  - [x] Build SignalR connection to `/hubs/whiteboard` with `withAutomaticReconnect()`
+  - [x] On connection start, invoke `hub.JoinBoard(whiteboardId)`
+  - [x] Register handler for `CanvasUpdated`: deserialize and render the updated canvas state
+  - [x] When presenter makes a canvas change, call `hub.SendCanvasUpdate(whiteboardId, canvasData)` (WB-50)
+  - [x] Implement debounce (200ms) for canvas updates to avoid flooding
+  - [x] Register handler for `PresenterChanged`: update presenter display, toggle drawing input (WB-16)
+  - [x] Register handler for `UserJoined` / `UserLeft`: update active user list in side panel (WB-70)
+  - [x] Register handler for `UserRemoved`: if current user was removed, navigate to landing page (WB-34)
+  - [x] Register handler for `BoardDeleted`: navigate to landing page
+  - [x] Handle reconnection: re-invoke `JoinBoard` on reconnect
+  - [x] Load initial canvas state from the server-rendered `CanvasData` on page load
+- [x] Add `SendCanvasUpdate` method to `WhiteboardHub`:
+  - [x] Verify caller is current presenter (WB-83)
+  - [x] Save canvas state via `WhiteboardService.SaveCanvasAsync` (WB-56)
+  - [x] Broadcast `CanvasUpdated` to group (excluding caller)
+- [x] Write tests:
+  - [x] SignalR connection established and `JoinBoard` invoked
+  - [x] Canvas updates are sent and received
+  - [x] Non-presenter cannot send canvas updates
+  - [x] Presenter change updates UI and drawing permissions
 
 ---
 
@@ -397,40 +397,40 @@ Add real-time chat to the whiteboard session page.
 
 ### 57.1 Chat Service
 
-- [ ] Create `IWhiteboardChatService` interface in `TeamWare.Web/Services/IWhiteboardChatService.cs`
-  - [ ] `SendMessageAsync(int whiteboardId, string userId, string content)` → `ServiceResult<WhiteboardChatMessageDto>` (WB-51 through WB-55)
-  - [ ] `GetMessagesAsync(int whiteboardId, int page, int pageSize)` → `ServiceResult<List<WhiteboardChatMessageDto>>`
-- [ ] Implement `WhiteboardChatService` in `TeamWare.Web/Services/WhiteboardChatService.cs`
-  - [ ] `SendMessageAsync`: validate content length (max 4000, WB-54), create message, return DTO
-  - [ ] `GetMessagesAsync`: load messages ordered by CreatedAt descending, paginated
-- [ ] Register `IWhiteboardChatService` in DI
-- [ ] Write unit tests for send and get methods
+- [x] Create `IWhiteboardChatService` interface in `TeamWare.Web/Services/IWhiteboardChatService.cs`
+  - [x] `SendMessageAsync(int whiteboardId, string userId, string content)` → `ServiceResult<WhiteboardChatMessageDto>` (WB-51 through WB-55)
+  - [x] `GetMessagesAsync(int whiteboardId, int page, int pageSize)` → `ServiceResult<List<WhiteboardChatMessageDto>>`
+- [x] Implement `WhiteboardChatService` in `TeamWare.Web/Services/WhiteboardChatService.cs`
+  - [x] `SendMessageAsync`: validate content length (max 4000, WB-54), create message, return DTO
+  - [x] `GetMessagesAsync`: load messages ordered by CreatedAt descending, paginated
+- [x] Register `IWhiteboardChatService` in DI
+- [x] Write unit tests for send and get methods
 
 ### 57.2 Chat Hub Methods
 
-- [ ] Add `SendChatMessage` method to `WhiteboardHub` (WB-78):
-  - [ ] Verify caller is connected to the whiteboard (WB-84)
-  - [ ] Call `WhiteboardChatService.SendMessageAsync`
-  - [ ] Broadcast `ChatMessageReceived` to group with message details (WB-53)
-- [ ] Write tests:
-  - [ ] Chat message is saved and broadcast
-  - [ ] Message exceeding 4000 characters is rejected
-  - [ ] Unauthorized user cannot send chat messages
+- [x] Add `SendChatMessage` method to `WhiteboardHub` (WB-78):
+  - [x] Verify caller is connected to the whiteboard (WB-84)
+  - [x] Call `WhiteboardChatService.SendMessageAsync`
+  - [x] Broadcast `ChatMessageReceived` to group with message details (WB-53)
+- [x] Write tests:
+  - [x] Chat message is saved and broadcast
+  - [x] Message exceeding 4000 characters is rejected
+  - [x] Unauthorized user cannot send chat messages
 
 ### 57.3 Chat UI
 
-- [ ] Add chat section to `Session.cshtml` side panel (UI-22):
-  - [ ] Scrollable message list showing author display name and timestamp (WB-55)
-  - [ ] Message input field at the bottom of the chat area
-  - [ ] Auto-scroll to newest message
-  - [ ] Load initial chat history from server on page load (paginated)
-- [ ] Add chat handling to `whiteboard.js`:
-  - [ ] Register `ChatMessageReceived` handler: append message to chat list, auto-scroll
-  - [ ] On message submit: call `hub.SendChatMessage(whiteboardId, content)`, clear input
-- [ ] Write tests:
-  - [ ] Chat messages display with author and timestamp
-  - [ ] New messages auto-scroll the chat area
-  - [ ] Chat input clears after sending
+- [x] Add chat section to `Session.cshtml` side panel (UI-22):
+  - [x] Scrollable message list showing author display name and timestamp (WB-55)
+  - [x] Message input field at the bottom of the chat area
+  - [x] Auto-scroll to newest message
+  - [x] Load initial chat history from server on page load (paginated)
+- [x] Add chat handling to `whiteboard.js`:
+  - [x] Register `ChatMessageReceived` handler: append message to chat list, auto-scroll
+  - [x] On message submit: call `hub.SendChatMessage(whiteboardId, content)`, clear input
+- [x] Write tests:
+  - [x] Chat messages display with author and timestamp
+  - [x] New messages auto-scroll the chat area
+  - [x] Chat input clears after sending
 
 ---
 
@@ -440,48 +440,48 @@ Implement the invitation flow including sending invitations, receiving notificat
 
 ### 58.1 Invitation Controller Actions
 
-- [ ] Add `Invite` action (POST) to `WhiteboardController`:
-  - [ ] Accept whiteboard ID and user ID(s) to invite
-  - [ ] Verify caller is owner (WB-27, WB-85)
-  - [ ] Call `WhiteboardInvitationService.InviteAsync` for each user
-  - [ ] Return success/failure response (HTMX partial or JSON)
-- [ ] Add `InviteForm` action (GET) to `WhiteboardController`:
-  - [ ] Return partial view with user search/selection for inviting users
-  - [ ] Exclude users already invited and the owner
-- [ ] Write tests:
-  - [ ] Owner can invite users
-  - [ ] Non-owner cannot invite users
-  - [ ] Duplicate invitation is handled gracefully
-  - [ ] Invited user receives notification
+- [x] Add `Invite` action (POST) to `WhiteboardController`:
+  - [x] Accept whiteboard ID and user ID(s) to invite
+  - [x] Verify caller is owner (WB-27, WB-85)
+  - [x] Call `WhiteboardInvitationService.InviteAsync` for each user
+  - [x] Return success/failure response (HTMX partial or JSON)
+- [x] Add `InviteForm` action (GET) to `WhiteboardController`:
+  - [x] Return partial view with user search/selection for inviting users
+  - [x] Exclude users already invited and the owner
+- [x] Write tests:
+  - [x] Owner can invite users
+  - [x] Non-owner cannot invite users
+  - [x] Duplicate invitation is handled gracefully
+  - [x] Invited user receives notification
 
 ### 58.2 Notification Integration
 
-- [ ] Create `WhiteboardInvitation` notification handler using existing notification patterns
-  - [ ] Notification links to the whiteboard session page
-  - [ ] Notification text includes whiteboard title and inviter name
-- [ ] Handle notification click:
-  - [ ] If board still exists and user has access, navigate to session page
-  - [ ] If board is deleted, clean up invitation and show "board no longer available" message (EDGE-03, WB-31)
-  - [ ] If saved board and user lost project membership, clean up invitation and show "no longer have permission" (EDGE-04, WB-32)
-- [ ] Write tests:
-  - [ ] Notification is created when invitation is sent
-  - [ ] Notification links to correct session page
-  - [ ] Deleted board invitation cleanup on notification click
-  - [ ] Lost project membership invitation cleanup on notification click
+- [x] Create `WhiteboardInvitation` notification handler using existing notification patterns
+  - [x] Notification links to the whiteboard session page
+  - [x] Notification text includes whiteboard title and inviter name
+- [x] Handle notification click:
+  - [x] If board still exists and user has access, navigate to session page
+  - [x] If board is deleted, clean up invitation and show "board no longer available" message (EDGE-03, WB-31)
+  - [x] If saved board and user lost project membership, clean up invitation and show "no longer have permission" (EDGE-04, WB-32)
+- [x] Write tests:
+  - [x] Notification is created when invitation is sent
+  - [x] Notification links to correct session page
+  - [x] Deleted board invitation cleanup on notification click
+  - [x] Lost project membership invitation cleanup on notification click
 
 ### 58.3 Invitation UI on Session Page
 
-- [ ] Add invite user modal/dropdown to session page (owner only):
-  - [ ] User search field to find users by name
-  - [ ] "Invite" button per user result
-  - [ ] Show already-invited users as disabled
-  - [ ] HTMX for inline invite without page reload
-- [ ] Add invited users list to session page sidebar (visible to owner):
-  - [ ] Show invited users who are not currently connected
-- [ ] Write tests:
-  - [ ] Invite UI is visible only to owner
-  - [ ] User search returns correct results
-  - [ ] Invitation is sent and reflected in the UI
+- [x] Add invite user modal/dropdown to session page (owner only):
+  - [x] User search field to find users by name
+  - [x] "Invite" button per user result
+  - [x] Show already-invited users as disabled
+  - [x] HTMX for inline invite without page reload
+- [x] Add invited users list to session page sidebar (visible to owner):
+  - [x] Show invited users who are not currently connected
+- [x] Write tests:
+  - [x] Invite UI is visible only to owner
+  - [x] User search returns correct results
+  - [x] Invitation is sent and reflected in the UI
 
 ---
 
@@ -491,55 +491,55 @@ Implement presenter assignment, reclamation, and user removal.
 
 ### 59.1 Presenter Hub Methods
 
-- [ ] Add `AssignPresenter` method to `WhiteboardHub` (WB-78):
-  - [ ] Verify caller is owner (WB-86)
-  - [ ] Verify target user is currently viewing the whiteboard via presence tracker (WB-15, WB-18)
-  - [ ] Update `CurrentPresenterId` in database
-  - [ ] Broadcast `PresenterChanged` to group (WB-16)
-- [ ] Add `ReclaimPresenter` method to `WhiteboardHub` (WB-78):
-  - [ ] Verify caller is owner (WB-86)
-  - [ ] Update `CurrentPresenterId` to owner's user ID
-  - [ ] Broadcast `PresenterChanged` to group (WB-17)
-- [ ] Write tests:
-  - [ ] Owner can assign presenter to active viewer
-  - [ ] Owner cannot assign presenter to non-active user
-  - [ ] Non-owner cannot assign presenter
-  - [ ] Owner can reclaim presenter
-  - [ ] Non-owner cannot reclaim presenter
-  - [ ] `PresenterChanged` is broadcast after assignment/reclamation
+- [x] Add `AssignPresenter` method to `WhiteboardHub` (WB-78):
+  - [x] Verify caller is owner (WB-86)
+  - [x] Verify target user is currently viewing the whiteboard via presence tracker (WB-15, WB-18)
+  - [x] Update `CurrentPresenterId` in database
+  - [x] Broadcast `PresenterChanged` to group (WB-16)
+- [x] Add `ReclaimPresenter` method to `WhiteboardHub` (WB-78):
+  - [x] Verify caller is owner (WB-86)
+  - [x] Update `CurrentPresenterId` to owner's user ID
+  - [x] Broadcast `PresenterChanged` to group (WB-17)
+- [x] Write tests:
+  - [x] Owner can assign presenter to active viewer
+  - [x] Owner cannot assign presenter to non-active user
+  - [x] Non-owner cannot assign presenter
+  - [x] Owner can reclaim presenter
+  - [x] Non-owner cannot reclaim presenter
+  - [x] `PresenterChanged` is broadcast after assignment/reclamation
 
 ### 59.2 User Removal Hub Method
 
-- [ ] Add `RemoveUser` method to `WhiteboardHub` (WB-78):
-  - [ ] Verify caller is owner (WB-87)
-  - [ ] Verify board is temporary (WB-35)
-  - [ ] Revoke invitation via `WhiteboardInvitationService.RevokeAsync` (WB-34)
-  - [ ] Broadcast `UserRemoved` to the removed user's connections
-  - [ ] Remove the user's connections from the SignalR group
-  - [ ] If removed user was presenter, clear `CurrentPresenterId` and broadcast `PresenterChanged`
-- [ ] Write tests:
-  - [ ] Owner can remove user from temporary board
-  - [ ] Owner cannot remove user from saved board (WB-35)
-  - [ ] Non-owner cannot remove user
-  - [ ] Removed user's invitation is revoked
-  - [ ] Removed user receives `UserRemoved` event
-  - [ ] If removed user was presenter, presenter is cleared
+- [x] Add `RemoveUser` method to `WhiteboardHub` (WB-78):
+  - [x] Verify caller is owner (WB-87)
+  - [x] Verify board is temporary (WB-35)
+  - [x] Revoke invitation via `WhiteboardInvitationService.RevokeAsync` (WB-34)
+  - [x] Broadcast `UserRemoved` to the removed user's connections
+  - [x] Remove the user's connections from the SignalR group
+  - [x] If removed user was presenter, clear `CurrentPresenterId` and broadcast `PresenterChanged`
+- [x] Write tests:
+  - [x] Owner can remove user from temporary board
+  - [x] Owner cannot remove user from saved board (WB-35)
+  - [x] Non-owner cannot remove user
+  - [x] Removed user's invitation is revoked
+  - [x] Removed user receives `UserRemoved` event
+  - [x] If removed user was presenter, presenter is cleared
 
 ### 59.3 Presenter Context Menu UI
 
-- [ ] Add context menu to active user list items in session page (UI-24):
-  - [ ] "Make Presenter" option: visible to owner for any non-presenter active user (WB-19)
-  - [ ] "Remove User" option: visible to owner on temporary boards only (WB-33, WB-35)
-  - [ ] Alpine.js for context menu show/hide behavior
-- [ ] Wire context menu actions to SignalR hub calls:
-  - [ ] "Make Presenter" → `hub.AssignPresenter(whiteboardId, userId)`
-  - [ ] "Remove User" → `hub.RemoveUser(whiteboardId, userId)`
-- [ ] Update presenter display above board when `PresenterChanged` is received (UI-21)
-- [ ] Write tests:
-  - [ ] Context menu appears for owner
-  - [ ] Context menu does not appear for non-owner
-  - [ ] "Remove User" not shown on saved boards
-  - [ ] Presenter change updates the prominent display
+- [x] Add context menu to active user list items in session page (UI-24):
+  - [x] "Make Presenter" option: visible to owner for any non-presenter active user (WB-19)
+  - [x] "Remove User" option: visible to owner on temporary boards only (WB-33, WB-35)
+  - [x] Alpine.js for context menu show/hide behavior
+- [x] Wire context menu actions to SignalR hub calls:
+  - [x] "Make Presenter" → `hub.AssignPresenter(whiteboardId, userId)`
+  - [x] "Remove User" → `hub.RemoveUser(whiteboardId, userId)`
+- [x] Update presenter display above board when `PresenterChanged` is received (UI-21)
+- [x] Write tests:
+  - [x] Context menu appears for owner
+  - [x] Context menu does not appear for non-owner
+  - [x] "Remove User" not shown on saved boards
+  - [x] Presenter change updates the prominent display
 
 ---
 
@@ -549,47 +549,47 @@ Implement save-to-project, change project, clear project, and ownership transfer
 
 ### 60.1 Project Association Controller Actions
 
-- [ ] Add `SaveToProject` action (POST) to `WhiteboardController`:
-  - [ ] Accept whiteboard ID and project ID
-  - [ ] Verify caller is owner (WB-88)
-  - [ ] Verify caller is a member of the target project
-  - [ ] Call `WhiteboardProjectService.SaveToProjectAsync` (WB-60)
-  - [ ] Return updated session page or HTMX partial
-- [ ] Add `ClearProject` action (POST) to `WhiteboardController`:
-  - [ ] Verify caller is owner (WB-88)
-  - [ ] Call `WhiteboardProjectService.ClearProjectAsync` (WB-64)
-  - [ ] Return updated session page or HTMX partial
-- [ ] Write tests:
-  - [ ] Owner can save board to project they belong to
-  - [ ] Owner cannot save board to project they do not belong to
-  - [ ] Non-owner cannot save board to project
-  - [ ] Clearing project restores temporary status (EDGE-07)
+- [x] Add `SaveToProject` action (POST) to `WhiteboardController`:
+  - [x] Accept whiteboard ID and project ID
+  - [x] Verify caller is owner (WB-88)
+  - [x] Verify caller is a member of the target project
+  - [x] Call `WhiteboardProjectService.SaveToProjectAsync` (WB-60)
+  - [x] Return updated session page or HTMX partial
+- [x] Add `ClearProject` action (POST) to `WhiteboardController`:
+  - [x] Verify caller is owner (WB-88)
+  - [x] Call `WhiteboardProjectService.ClearProjectAsync` (WB-64)
+  - [x] Return updated session page or HTMX partial
+- [x] Write tests:
+  - [x] Owner can save board to project they belong to
+  - [x] Owner cannot save board to project they do not belong to
+  - [x] Non-owner cannot save board to project
+  - [x] Clearing project restores temporary status (EDGE-07)
 
 ### 60.2 Save-to-Project UI
 
-- [ ] Add project selection dropdown to session page (owner only):
-  - [ ] List projects the owner is a member of
-  - [ ] Show current project association if saved
-  - [ ] "Clear Project" button if currently saved (WB-64)
-  - [ ] Warning note: "Only project members will be able to see this board" (WB-63, UI-27)
-- [ ] Wire save/clear actions to controller endpoints
-- [ ] Write tests:
-  - [ ] Project dropdown is visible only to owner
-  - [ ] Warning note is displayed
-  - [ ] Save and clear actions work correctly
+- [x] Add project selection dropdown to session page (owner only):
+  - [x] List projects the owner is a member of
+  - [x] Show current project association if saved
+  - [x] "Clear Project" button if currently saved (WB-64)
+  - [x] Warning note: "Only project members will be able to see this board" (WB-63, UI-27)
+- [x] Wire save/clear actions to controller endpoints
+- [x] Write tests:
+  - [x] Project dropdown is visible only to owner
+  - [x] Warning note is displayed
+  - [x] Save and clear actions work correctly
 
 ### 60.3 Ownership Transfer
 
-- [ ] Integrate ownership transfer into project membership change hooks:
-  - [ ] When a user is removed from a project, check if they own any whiteboards saved to that project
-  - [ ] If so, call `WhiteboardProjectService.TransferOwnershipIfNeededAsync` (WB-11, EDGE-01)
-  - [ ] Transfer ownership to the project owner
-- [ ] Integrate project deletion cascade:
-  - [ ] Verify that EF Core cascade delete configuration handles project deletion → whiteboard deletion (WB-65, EDGE-02)
-- [ ] Write tests:
-  - [ ] Ownership transfers when owner loses project membership (EDGE-01)
-  - [ ] New owner is the project owner
-  - [ ] Project deletion cascades to all associated whiteboards (EDGE-02)
+- [x] Integrate ownership transfer into project membership change hooks:
+  - [x] When a user is removed from a project, check if they own any whiteboards saved to that project
+  - [x] If so, call `WhiteboardProjectService.TransferOwnershipIfNeededAsync` (WB-11, EDGE-01)
+  - [x] Transfer ownership to the project owner
+- [x] Integrate project deletion cascade:
+  - [x] Verify that EF Core cascade delete configuration handles project deletion → whiteboard deletion (WB-65, EDGE-02)
+- [x] Write tests:
+  - [x] Ownership transfers when owner loses project membership (EDGE-01)
+  - [x] New owner is the project owner
+  - [x] Project deletion cascades to all associated whiteboards (EDGE-02)
 
 ---
 
@@ -599,48 +599,48 @@ Final phase: security review, edge cases, UI polish, accessibility, and document
 
 ### 61.1 Security Hardening
 
-- [ ] Verify all WhiteboardHub methods enforce authorization server-side (WB-80, WB-90, SEC-08)
-- [ ] Verify all controller actions enforce authorization (WB-90)
-- [ ] Verify canvas data is validated server-side to prevent injection (SEC-09)
-- [ ] Verify chat message content is sanitized to prevent XSS (SEC-10)
-- [ ] Verify invitation-gated access for temporary boards (WB-29, WB-81)
-- [ ] Verify project membership access for saved boards (WB-62, WB-82)
-- [ ] Verify site admin can access all boards (WB-39, WB-67, WB-89)
+- [x] Verify all WhiteboardHub methods enforce authorization server-side (WB-80, WB-90, SEC-08)
+- [x] Verify all controller actions enforce authorization (WB-90)
+- [x] Verify canvas data is validated server-side to prevent injection (SEC-09)
+- [x] Verify chat message content is sanitized to prevent XSS (SEC-10)
+- [x] Verify invitation-gated access for temporary boards (WB-29, WB-81)
+- [x] Verify project membership access for saved boards (WB-62, WB-82)
+- [x] Verify site admin can access all boards (WB-39, WB-67, WB-89)
 
 ### 61.2 Edge Cases and Regression Testing
 
-- [ ] Presenter disconnects: board remains active, no one can draw, owner must reclaim (EDGE-05, WB-73)
-- [ ] Owner disconnects: board remains active, presenter retains status (EDGE-06)
-- [ ] User follows invitation to deleted board: invitation cleaned up, user informed (EDGE-03, WB-31)
-- [ ] User with invitation to saved board loses project membership: invitation cleaned up, access denied (EDGE-04, WB-32)
-- [ ] Project association cleared: board returns to temporary, invitations remain (EDGE-07)
-- [ ] Multiple browser tabs from same user: presence tracking handles correctly
-- [ ] Rapid canvas updates: debounce prevents flooding
-- [ ] Large canvas state: JSON serialization handles large payloads
-- [ ] Concurrent presenter assignment: no race conditions
+- [x] Presenter disconnects: board remains active, no one can draw, owner must reclaim (EDGE-05, WB-73)
+- [x] Owner disconnects: board remains active, presenter retains status (EDGE-06)
+- [x] User follows invitation to deleted board: invitation cleaned up, user informed (EDGE-03, WB-31)
+- [x] User with invitation to saved board loses project membership: invitation cleaned up, access denied (EDGE-04, WB-32)
+- [x] Project association cleared: board returns to temporary, invitations remain (EDGE-07)
+- [x] Multiple browser tabs from same user: presence tracking handles correctly
+- [x] Rapid canvas updates: debounce prevents flooding
+- [x] Large canvas state: JSON serialization handles large payloads
+- [x] Concurrent presenter assignment: no race conditions
 
 ### 61.3 UI Consistency Review
 
-- [ ] Verify Tailwind CSS 4 styling matches existing TeamWare conventions (UI-28)
-- [ ] Verify light/dark theme support throughout all whiteboard views
-- [ ] Verify mobile responsiveness: canvas prioritized, side panel togglable (UI-29)
-- [ ] Verify the landing page layout is consistent with other list pages
-- [ ] Verify confirmation dialogs follow existing patterns
-- [ ] Verify toast notifications (if any) follow existing patterns
+- [x] Verify Tailwind CSS 4 styling matches existing TeamWare conventions (UI-28)
+- [x] Verify light/dark theme support throughout all whiteboard views
+- [x] Verify mobile responsiveness: canvas prioritized, side panel togglable (UI-29)
+- [x] Verify the landing page layout is consistent with other list pages
+- [x] Verify confirmation dialogs follow existing patterns
+- [x] Verify toast notifications (if any) follow existing patterns
 
 ### 61.4 Performance Verification
 
-- [ ] Verify canvas updates via SignalR have no perceptible delay under normal conditions (PERF-06)
-- [ ] Verify landing page loads within 500ms (PERF-07)
-- [ ] Profile canvas rendering with 50+ shapes
-- [ ] Profile SignalR message throughput with 20 concurrent viewers
+- [x] Verify canvas updates via SignalR have no perceptible delay under normal conditions (PERF-06)
+- [x] Verify landing page loads within 500ms (PERF-07)
+- [x] Profile canvas rendering with 50+ shapes
+- [x] Profile SignalR message throughput with 20 concurrent viewers
 
 ### 61.5 Documentation
 
-- [ ] Update `WhiteBoardSpecification.md` with any deviations from the specification
-- [ ] Document the client-side canvas architecture and shape model
-- [ ] Document the WhiteboardHub API for future reference
-- [ ] Note stale-board cleanup as a future Hangfire enhancement (out of scope)
+- [x] Update `WhiteBoardSpecification.md` with any deviations from the specification
+- [x] Document the client-side canvas architecture and shape model
+- [x] Document the WhiteboardHub API for future reference
+- [x] Note stale-board cleanup as a future Hangfire enhancement (out of scope)
 
 ---
 

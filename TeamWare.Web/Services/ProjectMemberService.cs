@@ -7,10 +7,12 @@ namespace TeamWare.Web.Services;
 public class ProjectMemberService : IProjectMemberService
 {
     private readonly ApplicationDbContext _context;
+    private readonly IWhiteboardProjectService? _whiteboardProjectService;
 
-    public ProjectMemberService(ApplicationDbContext context)
+    public ProjectMemberService(ApplicationDbContext context, IWhiteboardProjectService? whiteboardProjectService = null)
     {
         _context = context;
+        _whiteboardProjectService = whiteboardProjectService;
     }
 
     public async Task<ServiceResult<ProjectMember>> InviteMember(int projectId, string targetUserId, string invitedByUserId)
@@ -82,6 +84,19 @@ public class ProjectMemberService : IProjectMemberService
 
         _context.ProjectMembers.Remove(targetMembership);
         await _context.SaveChangesAsync();
+
+        if (_whiteboardProjectService != null)
+        {
+            var affectedWhiteboardIds = await _context.Whiteboards
+                .Where(w => w.ProjectId == projectId && w.OwnerId == targetUserId)
+                .Select(w => w.Id)
+                .ToListAsync();
+
+            foreach (var whiteboardId in affectedWhiteboardIds)
+            {
+                await _whiteboardProjectService.TransferOwnershipIfNeededAsync(whiteboardId);
+            }
+        }
 
         return ServiceResult.Success();
     }

@@ -90,6 +90,10 @@ public class SecurityHardeningTests : IClassFixture<TeamWareWebApplicationFactor
     [InlineData("/Project/Create")]
     [InlineData("/Project/Edit/1")]
     [InlineData("/Project/Details/1")]
+    [InlineData("/Whiteboard")]
+    [InlineData("/Whiteboard/Create")]
+    [InlineData("/Whiteboard/Session/1")]
+    [InlineData("/Whiteboard/InviteForm?whiteboardId=1")]
     [InlineData("/Task?projectId=1")]
     [InlineData("/Task/Create?projectId=1")]
     [InlineData("/Task/Edit/1")]
@@ -122,6 +126,10 @@ public class SecurityHardeningTests : IClassFixture<TeamWareWebApplicationFactor
     [Theory]
     [InlineData("/Project/Archive", "id=1")]
     [InlineData("/Project/Delete", "id=1")]
+    [InlineData("/Whiteboard/Delete", "id=1")]
+    [InlineData("/Whiteboard/Invite", "whiteboardId=1&userIds=test")]
+    [InlineData("/Whiteboard/SaveToProject", "whiteboardId=1&projectId=1")]
+    [InlineData("/Whiteboard/ClearProject", "whiteboardId=1")]
     [InlineData("/Task/Delete", "id=1")]
     [InlineData("/Task/ChangeStatus", "id=1&status=Done")]
     [InlineData("/Task/ToggleNextAction", "id=1")]
@@ -203,6 +211,54 @@ public class SecurityHardeningTests : IClassFixture<TeamWareWebApplicationFactor
         var response = await _client.PostAsync(url, content);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task WhiteboardSession_UnauthorizedUser_ReturnsForbidden()
+    {
+        var (ownerId, _) = await CreateAndLoginUser("security-whiteboard-owner@test.com", "Owner");
+        var (_, cookie) = await CreateAndLoginUser("security-whiteboard-outsider@test.com", "Outsider");
+        var whiteboardId = await CreateWhiteboard(ownerId, "Security Board");
+
+        var request = new HttpRequestMessage(HttpMethod.Get, $"/Whiteboard/Session/{whiteboardId}");
+        request.Headers.Add("Cookie", cookie);
+
+        var response = await _client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task WhiteboardChatMessage_ContentIsHtmlEncoded()
+    {
+        var user = await CreateUser("security-whiteboard-chat@test.com", "Author");
+
+        using var scope = _factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var service = scope.ServiceProvider.GetRequiredService<TeamWare.Web.Services.IWhiteboardChatService>();
+        var whiteboardId = await CreateWhiteboard(user.Id, "Security Chat Board");
+
+        var result = await service.SendMessageAsync(whiteboardId, user.Id, "<script>alert('xss')</script>");
+
+        Assert.True(result.Succeeded);
+        Assert.Equal("&lt;script&gt;alert(&#39;xss&#39;)&lt;/script&gt;", result.Data!.Content);
+        Assert.Equal(result.Data.Content, context.WhiteboardChatMessages.Single(m => m.WhiteboardId == whiteboardId).Content);
+    }
+
+    [Theory]
+    [InlineData("<script>alert('xss')</script>")]
+    [InlineData("not-json")]
+    public async Task WhiteboardCanvas_InvalidOrUnsafePayload_IsRejected(string canvasData)
+    {
+        var user = await CreateUser("security-whiteboard-canvas@test.com", "Presenter");
+
+        using var scope = _factory.Services.CreateScope();
+        var service = scope.ServiceProvider.GetRequiredService<TeamWare.Web.Services.IWhiteboardService>();
+        var whiteboardId = await CreateWhiteboard(user.Id, "Security Canvas Board");
+
+        var result = await service.SaveCanvasAsync(whiteboardId, canvasData, user.Id);
+
+        Assert.False(result.Succeeded);
     }
 
     [Fact]
@@ -454,5 +510,46 @@ public class SecurityHardeningTests : IClassFixture<TeamWareWebApplicationFactor
     public void Dispose()
     {
         _client.Dispose();
+    }
+
+    private async Task<ApplicationUser> CreateUser(string email, string displayName)
+    {
+        using var scope = _factory.Services.CreateScope();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+
+        var existing = await userManager.FindByEmailAsync(email);
+        if (existing != null)
+        {
+            return existing;
+        }
+
+        var user = new ApplicationUser
+        {
+            UserName = email,
+            Email = email,
+            DisplayName = displayName
+        };
+
+        await userManager.CreateAsync(user, "TestPass1!");
+        return user;
+    }
+
+    private async Task<int> CreateWhiteboard(string ownerUserId, string title)
+    {
+        using var scope = _factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+        var whiteboard = new Whiteboard
+        {
+            Title = title,
+            OwnerId = ownerUserId,
+            CurrentPresenterId = ownerUserId,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+
+        context.Whiteboards.Add(whiteboard);
+        await context.SaveChangesAsync();
+        return whiteboard.Id;
     }
 }

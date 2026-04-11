@@ -25,5 +25,7 @@ public class Project
 
     public ICollection<ProjectInvitation> Invitations { get; set; } = new List<ProjectInvitation>();
 
+    public ICollection<Whiteboard> Whiteboards { get; set; } = new List<Whiteboard>();
+
     public ICollection<LoungeMessage> LoungeMessages { get; set; } = new List<LoungeMessage>();
 }
