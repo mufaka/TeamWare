@@ -296,7 +296,7 @@ public class WhiteboardService : IWhiteboardService
                     CreatedAt = i.CreatedAt
                 })
                 .ToList(),
-            ActiveUsers = new List<string>()
+            ActiveUsers = new List<ActiveUserDto>()
         };
     }
 }

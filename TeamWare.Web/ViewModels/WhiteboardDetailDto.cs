@@ -6,5 +6,5 @@ public class WhiteboardDetailDto : WhiteboardDto
 
     public List<WhiteboardInvitationDto> Invitations { get; set; } = new();
 
-    public List<string> ActiveUsers { get; set; } = new();
+    public List<ActiveUserDto> ActiveUsers { get; set; } = new();
 }

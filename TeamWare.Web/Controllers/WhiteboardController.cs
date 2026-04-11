@@ -22,6 +22,7 @@ public class WhiteboardController : Controller
     private readonly IProjectService _projectService;
     private readonly IHubContext<WhiteboardHub> _whiteboardHubContext;
     private readonly IUserDirectoryService _userDirectoryService;
+    private readonly ApplicationDbContext _dbContext;
 
     public WhiteboardController(
         IWhiteboardService whiteboardService,
@@ -31,7 +32,8 @@ public class WhiteboardController : Controller
         IWhiteboardPresenceTracker whiteboardPresenceTracker,
         IProjectService projectService,
         IHubContext<WhiteboardHub> whiteboardHubContext,
-        IUserDirectoryService userDirectoryService)
+        IUserDirectoryService userDirectoryService,
+        ApplicationDbContext dbContext)
     {
         _whiteboardService = whiteboardService;
         _whiteboardInvitationService = whiteboardInvitationService;
@@ -41,6 +43,7 @@ public class WhiteboardController : Controller
         _projectService = projectService;
         _whiteboardHubContext = whiteboardHubContext;
         _userDirectoryService = userDirectoryService;
+        _dbContext = dbContext;
     }
 
     [HttpGet]
@@ -117,7 +120,20 @@ public class WhiteboardController : Controller
 
         var availableProjectsResult = await _projectService.GetProjectsForUser(userId);
         var chatMessagesResult = await _whiteboardChatService.GetMessagesAsync(id, 1, 50);
-        whiteboardResult.Data.ActiveUsers = await _whiteboardPresenceTracker.GetActiveUsersAsync(id);
+
+        var activeUserIds = await _whiteboardPresenceTracker.GetActiveUsersAsync(id);
+        var userDisplayNames = await _dbContext.Users
+            .Where(u => activeUserIds.Contains(u.Id))
+            .ToDictionaryAsync(u => u.Id, u => u.DisplayName);
+        whiteboardResult.Data.ActiveUsers = activeUserIds
+            .Select(uid => new ActiveUserDto
+            {
+                UserId = uid,
+                DisplayName = userDisplayNames.TryGetValue(uid, out var name) && !string.IsNullOrWhiteSpace(name)
+                    ? name
+                    : uid
+            })
+            .ToList();
 
         var viewModel = new WhiteboardSessionViewModel
         {
