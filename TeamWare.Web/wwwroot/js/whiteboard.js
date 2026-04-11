@@ -20,7 +20,9 @@
         var initialCanvasElement = document.getElementById("whiteboard-initial-canvas");
         var initialActiveUsers = Array.from(document.querySelectorAll("#whiteboard-active-users [data-user-id]"));
         var activeUsers = new Map(initialActiveUsers.map(function (item) {
-            return [item.getAttribute("data-user-id"), item.getAttribute("data-user-id")];
+            var userId = item.getAttribute("data-user-id");
+            var displayName = item.getAttribute("data-user-display-name") || userId;
+            return [userId, displayName];
         }));
         var isOwner = session.getAttribute("data-is-owner") === "true";
         var isTemporary = session.getAttribute("data-is-temporary") === "true";
@@ -40,15 +42,18 @@
         }
 
         // Mode buttons (shared between both engines)
+        var inactiveClasses = ["border", "border-gray-300", "bg-white", "text-gray-700", "dark:border-gray-600", "dark:bg-gray-700", "dark:text-gray-300"];
+        var activeClasses = ["bg-indigo-600", "border-2", "border-indigo-600", "text-white", "ring-2", "ring-indigo-300", "ring-offset-1", "dark:ring-indigo-500", "dark:ring-offset-gray-800"];
+
         document.querySelectorAll("[data-whiteboard-mode]").forEach(function (button) {
             button.addEventListener("click", function () {
                 document.querySelectorAll("[data-whiteboard-mode]").forEach(function (candidate) {
-                    candidate.classList.remove("bg-indigo-600", "text-white");
-                    candidate.classList.add("border", "border-gray-300", "bg-white", "text-gray-700");
+                    activeClasses.forEach(function (cls) { candidate.classList.remove(cls); });
+                    inactiveClasses.forEach(function (cls) { candidate.classList.add(cls); });
                 });
 
-                button.classList.remove("border", "border-gray-300", "bg-white", "text-gray-700");
-                button.classList.add("bg-indigo-600", "text-white");
+                inactiveClasses.forEach(function (cls) { button.classList.remove(cls); });
+                activeClasses.forEach(function (cls) { button.classList.add(cls); });
                 canvas.setMode(button.getAttribute("data-whiteboard-mode"));
             });
         });
@@ -108,8 +113,12 @@
             // Pen width
             document.querySelectorAll(".pen-size").forEach(function (btn) {
                 btn.addEventListener("click", function () {
-                    document.querySelectorAll(".pen-size").forEach(function (b) { b.classList.remove("active"); });
-                    btn.classList.add("active");
+                    document.querySelectorAll(".pen-size").forEach(function (b) {
+                        activeClasses.forEach(function (cls) { b.classList.remove(cls); });
+                        inactiveClasses.forEach(function (cls) { b.classList.add(cls); });
+                    });
+                    inactiveClasses.forEach(function (cls) { btn.classList.remove(cls); });
+                    activeClasses.forEach(function (cls) { btn.classList.add(cls); });
                     canvas.setPenWidth(btn.getAttribute("data-width"));
                 });
             });
